@@ -11,8 +11,11 @@ NPC, portanto a árvore pode ser atualizada depois sem recriar os diálogos pela
 2. Execute `/easy_npc dialog library reload`.
 3. Aplique a biblioteca com
    `/easy_npc dialog library apply <seletor_de_npcs> paravexia:crossroads/intro`.
+   IDs entre aspas também são aceitos.
 4. Edite o arquivo e execute
    `/easy_npc dialog library reload <seletor_de_npcs>` para recarregar e sincronizar em uma etapa.
+   Para vincular uma biblioteca nova durante a recarga, use
+   `/easy_npc dialog library reload <seletor_de_npcs> paravexia:crossroads/intro`.
 
 Também existem os comandos `list`, `sync` e `unlink`. `sync` mantém cada NPC na biblioteca à qual
 ele já está ligado. `unlink` conserva uma cópia independente da conversa no NPC e interrompe futuras

@@ -22,6 +22,7 @@ package de.markusbordihn.easynpc.server.commands;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.datafixers.util.Pair;
 import de.markusbordihn.easynpc.commands.Command;
 import de.markusbordihn.easynpc.commands.arguments.DialogArgument;
@@ -43,6 +44,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 public class DialogCommand extends Command {
+
+  static final String LIBRARY_ARG = "library";
 
   private DialogCommand() {}
 
@@ -136,20 +139,27 @@ public class DialogCommand extends Command {
                           reloadLibraries(context.getSource());
                           return syncLibraries(context.getSource(),
                               EasyNPCArgument.getEntitiesWithAccess(context, NPC_TARGETS_ARG));
-                        })))
+                        })
+                        .then(
+                            libraryArgument()
+                                .executes(context -> {
+                                  reloadLibraries(context.getSource());
+                                  return applyLibrary(
+                                      context.getSource(),
+                                      EasyNPCArgument.getEntitiesWithAccess(
+                                          context, NPC_TARGETS_ARG),
+                                      StringArgumentType.getString(context, LIBRARY_ARG));
+                                }))))
         .then(
             Commands.literal("apply")
                 .then(
                     Commands.argument(NPC_TARGETS_ARG, EasyNPCArgument.npc())
                         .then(
-                            Commands.argument("library", StringArgumentType.word())
-                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                    DialogueLibraryManager.entries().keySet().stream()
-                                        .map(ResourceLocation::toString), builder))
+                            libraryArgument()
                                 .executes(context -> applyLibrary(
                                     context.getSource(),
                                     EasyNPCArgument.getEntitiesWithAccess(context, NPC_TARGETS_ARG),
-                                    StringArgumentType.getString(context, "library"))))))
+                                    StringArgumentType.getString(context, LIBRARY_ARG))))))
         .then(
             Commands.literal("sync")
                 .then(
@@ -162,6 +172,16 @@ public class DialogCommand extends Command {
                     Commands.argument(NPC_TARGETS_ARG, EasyNPCArgument.npc())
                         .executes(context -> unlinkLibraries(context.getSource(),
                             EasyNPCArgument.getEntitiesWithAccess(context, NPC_TARGETS_ARG)))));
+  }
+
+  private static RequiredArgumentBuilder<CommandSourceStack, String> libraryArgument() {
+    return Commands.argument(LIBRARY_ARG, StringArgumentType.greedyString())
+        .suggests(
+            (context, builder) ->
+                SharedSuggestionProvider.suggest(
+                    DialogueLibraryManager.entries().keySet().stream()
+                        .map(ResourceLocation::toString),
+                    builder));
   }
 
   private static int listLibraries(CommandSourceStack source) {
@@ -185,10 +205,22 @@ public class DialogCommand extends Command {
 
   private static int applyLibrary(CommandSourceStack source,
       Collection<? extends EasyNPC<?>> npcs, String rawId) {
-    ResourceLocation id = ResourceLocation.tryParse(rawId);
-    if (id == null) return sendFailureMessage(source, "Invalid dialogue library id: " + rawId);
+    ResourceLocation id = parseLibraryId(rawId);
+    if (id == null) {
+      return sendFailureMessage(
+          source,
+          "Invalid dialogue library id: "
+              + rawId
+              + ". Expected namespace:path, for example paravexia:crossroads/intro.");
+    }
     if (DialogueLibraryManager.copy(id).isEmpty())
-      return sendFailureMessage(source, "Unknown dialogue library: " + id);
+      return sendFailureMessage(
+          source,
+          "Unknown dialogue library: "
+              + id
+              + ". Run /"
+              + de.markusbordihn.easynpc.Constants.MOD_COMMAND
+              + " dialog library list to see the loaded ids.");
     int applied = 0;
     for (EasyNPC<?> npc : npcs) {
       var copy = DialogueLibraryManager.copy(id);
@@ -200,6 +232,15 @@ public class DialogCommand extends Command {
     return sendSuccessMessage(source,
         "Applied " + id + " to " + applied + " NPC" + (applied == 1 ? "" : "s"),
         ChatFormatting.GREEN);
+  }
+
+  static ResourceLocation parseLibraryId(String rawId) {
+    if (rawId == null) return null;
+    String value = rawId.trim();
+    if (value.length() >= 2 && value.charAt(0) == '"' && value.charAt(value.length() - 1) == '"') {
+      value = value.substring(1, value.length() - 1);
+    }
+    return ResourceLocation.tryParse(value);
   }
 
   private static int syncLibraries(CommandSourceStack source,
