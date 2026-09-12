@@ -6,12 +6,12 @@ issueTrackerURL = "https://github.com/MarkusBordihn/BOs-Easy-NPC/issues"
 [[mods]]
 modId = "easy_npc"
 version = "${file.jarVersion}"
-displayName = "Easy NPC"
+displayName = "Easy NPC — Paravexia Dialogues"
 displayURL = "https://www.curseforge.com/minecraft/mc-mods/easy-npc"
 logoFile = "logo.png"
-credits = ""
+credits = "Cinematic dialogue fork for Paravexia; original Easy NPC by Markus Bordihn"
 authors = "Markus Bordihn"
-description = '''Create easily NPCs for your world or for your mods.'''
+description = '''Easy NPC with a cinematic, Hades-inspired dialogue interface for NeoForge 1.21.1.'''
 
 [[dependencies.easy_npc]]
 modId = "neoforge"

@@ -1,0 +1,11 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "easy_npc:font/cinzel_semibold.ttf",
+      "shift": [0.0, 0.5],
+      "size": 12.0,
+      "oversample": 3.0
+    }
+  ]
+}

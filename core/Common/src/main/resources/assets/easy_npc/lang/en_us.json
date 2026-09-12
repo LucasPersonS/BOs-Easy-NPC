@@ -1,4 +1,8 @@
 {
+  "hades.easy_npc.locked": "Requirements not met",
+  "hades.easy_npc.reveal": "Space / click: reveal dialogue",
+  "hades.easy_npc.controls": "Tab: select   Enter: confirm",
+  "hades.easy_npc.speaking": "NPC speaking",
   "block.easy_npc.boss_spawner": "EasyNPC Boss Spawner",
   "block.easy_npc.default_spawner": "EasyNPC Default Spawner",
   "block.easy_npc.group_spawner": "EasyNPC Group Spawner",

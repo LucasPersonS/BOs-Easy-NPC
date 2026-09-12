@@ -1,0 +1,6 @@
+{
+  "gui.speak": {
+    "subtitle": "hades.easy_npc.speaking",
+    "sounds": [{"name": "easy_npc:gui/speak", "stream": false}]
+  }
+}

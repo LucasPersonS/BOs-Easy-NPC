@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc.server.commands;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.datafixers.util.Pair;
 import de.markusbordihn.easynpc.commands.Command;
@@ -28,12 +29,17 @@ import de.markusbordihn.easynpc.commands.arguments.EasyNPCArgument;
 import de.markusbordihn.easynpc.data.dialog.DialogDataEntry;
 import de.markusbordihn.easynpc.data.dialog.DialogDataSet;
 import de.markusbordihn.easynpc.data.dialog.DialogPriority;
+import de.markusbordihn.easynpc.data.dialog.DialogueLibraryManager;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
+import java.util.Collection;
+import java.util.stream.Collectors;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 public class DialogCommand extends Command {
@@ -113,7 +119,121 @@ public class DialogCommand extends Command {
                             context ->
                                 closeDialog(
                                     context.getSource(),
-                                    EntityArgument.getPlayer(context, PLAYER_ARG)))));
+                                    EntityArgument.getPlayer(context, PLAYER_ARG)))))
+        .then(registerLibrary());
+  }
+
+  private static ArgumentBuilder<CommandSourceStack, ?> registerLibrary() {
+    return Commands.literal("library")
+        .requires(cs -> cs.hasPermission(Commands.LEVEL_GAMEMASTERS))
+        .then(Commands.literal("list").executes(context -> listLibraries(context.getSource())))
+        .then(
+            Commands.literal("reload")
+                .executes(context -> reloadLibraries(context.getSource()))
+                .then(
+                    Commands.argument(NPC_TARGETS_ARG, EasyNPCArgument.npc())
+                        .executes(context -> {
+                          reloadLibraries(context.getSource());
+                          return syncLibraries(context.getSource(),
+                              EasyNPCArgument.getEntitiesWithAccess(context, NPC_TARGETS_ARG));
+                        })))
+        .then(
+            Commands.literal("apply")
+                .then(
+                    Commands.argument(NPC_TARGETS_ARG, EasyNPCArgument.npc())
+                        .then(
+                            Commands.argument("library", StringArgumentType.word())
+                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                                    DialogueLibraryManager.entries().keySet().stream()
+                                        .map(ResourceLocation::toString), builder))
+                                .executes(context -> applyLibrary(
+                                    context.getSource(),
+                                    EasyNPCArgument.getEntitiesWithAccess(context, NPC_TARGETS_ARG),
+                                    StringArgumentType.getString(context, "library"))))))
+        .then(
+            Commands.literal("sync")
+                .then(
+                    Commands.argument(NPC_TARGETS_ARG, EasyNPCArgument.npc())
+                        .executes(context -> syncLibraries(context.getSource(),
+                            EasyNPCArgument.getEntitiesWithAccess(context, NPC_TARGETS_ARG)))))
+        .then(
+            Commands.literal("unlink")
+                .then(
+                    Commands.argument(NPC_TARGETS_ARG, EasyNPCArgument.npc())
+                        .executes(context -> unlinkLibraries(context.getSource(),
+                            EasyNPCArgument.getEntitiesWithAccess(context, NPC_TARGETS_ARG)))));
+  }
+
+  private static int listLibraries(CommandSourceStack source) {
+    var entries = DialogueLibraryManager.entries();
+    if (entries.isEmpty()) {
+      return sendFailureMessage(source, "No dialogue libraries found in "
+          + DialogueLibraryManager.DIRECTORY);
+    }
+    String ids = entries.keySet().stream().map(ResourceLocation::toString)
+        .collect(Collectors.joining(", "));
+    return sendSuccessMessage(source, "Dialogue libraries (" + entries.size() + "): " + ids);
+  }
+
+  private static int reloadLibraries(CommandSourceStack source) {
+    DialogueLibraryManager.LoadResult result = DialogueLibraryManager.reload();
+    String message = "Loaded " + result.loaded() + " dialogue libraries";
+    if (result.rejected() > 0) message += "; rejected " + result.rejected() + " invalid files";
+    return result.loaded() > 0 ? sendSuccessMessage(source, message, ChatFormatting.GREEN)
+        : sendFailureMessage(source, message + " from " + DialogueLibraryManager.DIRECTORY);
+  }
+
+  private static int applyLibrary(CommandSourceStack source,
+      Collection<? extends EasyNPC<?>> npcs, String rawId) {
+    ResourceLocation id = ResourceLocation.tryParse(rawId);
+    if (id == null) return sendFailureMessage(source, "Invalid dialogue library id: " + rawId);
+    if (DialogueLibraryManager.copy(id).isEmpty())
+      return sendFailureMessage(source, "Unknown dialogue library: " + id);
+    int applied = 0;
+    for (EasyNPC<?> npc : npcs) {
+      var copy = DialogueLibraryManager.copy(id);
+      if (copy.isPresent()) {
+        npc.getEasyNPCDialogData().setDialogDataSet(copy.get());
+        applied++;
+      }
+    }
+    return sendSuccessMessage(source,
+        "Applied " + id + " to " + applied + " NPC" + (applied == 1 ? "" : "s"),
+        ChatFormatting.GREEN);
+  }
+
+  private static int syncLibraries(CommandSourceStack source,
+      Collection<? extends EasyNPC<?>> npcs) {
+    int synced = 0;
+    int skipped = 0;
+    for (EasyNPC<?> npc : npcs) {
+      String rawId = npc.getEasyNPCDialogData().getDialogDataSet().getLibraryId();
+      ResourceLocation id = ResourceLocation.tryParse(rawId);
+      var copy = id != null ? DialogueLibraryManager.copy(id) : java.util.Optional.<DialogDataSet>empty();
+      if (copy.isPresent()) {
+        npc.getEasyNPCDialogData().setDialogDataSet(copy.get());
+        synced++;
+      } else skipped++;
+    }
+    String message = "Synced " + synced + " NPC" + (synced == 1 ? "" : "s")
+        + (skipped > 0 ? "; skipped " + skipped + " unlinked or missing libraries" : "");
+    return synced > 0 ? sendSuccessMessage(source, message, ChatFormatting.GREEN)
+        : sendFailureMessage(source, message);
+  }
+
+  private static int unlinkLibraries(CommandSourceStack source,
+      Collection<? extends EasyNPC<?>> npcs) {
+    int unlinked = 0;
+    for (EasyNPC<?> npc : npcs) {
+      DialogDataSet data = npc.getEasyNPCDialogData().getDialogDataSet();
+      if (data.isLinkedToLibrary()) {
+        data.setLibraryId("");
+        npc.getEasyNPCDialogData().setDialogDataSet(data);
+        unlinked++;
+      }
+    }
+    return sendSuccessMessage(source,
+        "Unlinked " + unlinked + " NPC" + (unlinked == 1 ? "" : "s"));
   }
 
   public static int setPriority(

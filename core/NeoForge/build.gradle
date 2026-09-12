@@ -6,6 +6,8 @@ plugins {
   id "com.modrinth.minotaur" version "2.+"
 }
 
+evaluationDependsOn(':Common')
+
 base {
   archivesName = "${project.mod_id}-neoforge-${project.minecraft_version}"
 }

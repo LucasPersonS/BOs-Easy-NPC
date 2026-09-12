@@ -1,4 +1,8 @@
 {
+  "hades.easy_npc.locked": "Requisitos não atendidos",
+  "hades.easy_npc.reveal": "Espaço / clique: revelar diálogo",
+  "hades.easy_npc.controls": "Tab: selecionar   Enter: confirmar",
+  "hades.easy_npc.speaking": "NPC falando",
   "block.easy_npc.boss_spawner": "Gerador de Chefe EasyNPC",
   "block.easy_npc.default_spawner": "Gerador Padrão EasyNPC",
   "block.easy_npc.group_spawner": "Gerador de Grupo EasyNPC",

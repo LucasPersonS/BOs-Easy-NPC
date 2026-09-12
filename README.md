@@ -1,5 +1,9 @@
 # 🗣 Easy NPC (1.21.1)
 
+> **Paravexia dialogue fork:** the NeoForge 1.21.1 edition includes a cinematic interaction screen,
+> custom Hades-inspired typography and reusable dialogue libraries for managing large NPC casts.
+> See the [dialogue library guide](docs/DIALOGUE_LIBRARIES.md).
+
 ![Easy NPC Versions](http://cf.way2muchnoise.eu/versions/Minecraft_559312_all.svg)
 
 [![Download on CurseForge](http://cf.way2muchnoise.eu/title/559312.svg)](https://www.curseforge.com/minecraft/mc-mods/easy-npc)

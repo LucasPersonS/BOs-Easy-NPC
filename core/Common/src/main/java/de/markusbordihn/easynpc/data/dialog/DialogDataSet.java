@@ -44,6 +44,7 @@ public class DialogDataSet {
 
   public static final String DATA_DIALOG_DATA_SET_TAG = "DialogDataSet";
   public static final String DATA_TYPE_TAG = "Type";
+  public static final String DATA_LIBRARY_TAG = "Library";
   public static final StreamCodec<RegistryFriendlyByteBuf, DialogDataSet> STREAM_CODEC =
       new StreamCodec<>() {
         @Override
@@ -63,6 +64,7 @@ public class DialogDataSet {
   private final HashMap<String, DialogDataEntry> dialogByLabelMap = new HashMap<>();
   private final HashMap<UUID, DialogDataEntry> dialogByIdMap = new HashMap<>();
   private DialogType dialogType = DialogType.STANDARD;
+  private String libraryId = "";
 
   public DialogDataSet() {}
 
@@ -168,6 +170,10 @@ public class DialogDataSet {
 
   public boolean hasDialog() {
     return !this.dialogByLabelMap.isEmpty();
+  }
+
+  public int size() {
+    return this.dialogByLabelMap.size();
   }
 
   public boolean hasDialog(String label) {
@@ -283,6 +289,18 @@ public class DialogDataSet {
     return this.dialogType;
   }
 
+  public String getLibraryId() {
+    return this.libraryId;
+  }
+
+  public boolean isLinkedToLibrary() {
+    return this.libraryId != null && !this.libraryId.isBlank();
+  }
+
+  public void setLibraryId(String libraryId) {
+    this.libraryId = libraryId != null ? libraryId.trim() : "";
+  }
+
   public void load(CompoundTag compoundTag) {
     if (compoundTag == null || !compoundTag.contains(DATA_DIALOG_DATA_SET_TAG)) {
       return;
@@ -291,6 +309,7 @@ public class DialogDataSet {
     if (compoundTag.contains(DATA_TYPE_TAG)) {
       this.dialogType = DialogType.valueOf(compoundTag.getString(DATA_TYPE_TAG));
     }
+    this.libraryId = compoundTag.getString(DATA_LIBRARY_TAG);
 
     this.dialogByLabelMap.clear();
     this.dialogByIdMap.clear();
@@ -315,6 +334,9 @@ public class DialogDataSet {
     }
     CompoundTagUtils.putIfNotEmpty(compoundTag, DATA_DIALOG_DATA_SET_TAG, dialogListTag);
     compoundTag.putString(DATA_TYPE_TAG, this.resolveDialogType().name());
+    if (this.libraryId != null && !this.libraryId.isBlank()) {
+      compoundTag.putString(DATA_LIBRARY_TAG, this.libraryId);
+    }
 
     return compoundTag;
   }

@@ -32,10 +32,12 @@ Client Dialog Configuration
 
 typewriterEnabled: Reveal dialog text character by character (default: true)
 typewriterCharsPerSecond: Number of characters revealed per second (default: 40)
+hadesSpeakEnabled: Play the supplied voice effect during cinematic dialogue (default: true)
 
 """;
 
   public static boolean TYPEWRITER_ENABLED = true;
+  public static boolean HADES_SPEAK_ENABLED = true;
   public static int TYPEWRITER_CHARS_PER_SECOND = 40;
 
   public static void registerConfig() {
@@ -49,6 +51,7 @@ typewriterCharsPerSecond: Number of characters revealed per second (default: 40)
     Properties unmodifiedProperties = (Properties) properties.clone();
 
     TYPEWRITER_ENABLED = parseConfigValue(properties, "typewriterEnabled", TYPEWRITER_ENABLED);
+    HADES_SPEAK_ENABLED = parseConfigValue(properties, "hadesSpeakEnabled", HADES_SPEAK_ENABLED);
     TYPEWRITER_CHARS_PER_SECOND =
         parseConfigValue(properties, "typewriterCharsPerSecond", TYPEWRITER_CHARS_PER_SECOND);
 

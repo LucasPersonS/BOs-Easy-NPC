@@ -1,0 +1,39 @@
+{
+  Id:"paravexia:crossroads/intro",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Encruzilhada",
+        Priority:100,
+        Texts:[
+          {Text:"dialog.paravexia.crossroads.greeting"},
+          {Text:"dialog.paravexia.crossroads.greeting_return"}
+        ],
+        Buttons:[
+          {
+            Label:"ask_crossroads",
+            Name:"dialog.paravexia.crossroads.ask",
+            Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"crossroads_lore"}]
+          },
+          {
+            Label:"leave",
+            Name:"dialog.paravexia.common.leave",
+            Actions:[{Type:"CLOSE_DIALOG"}]
+          }
+        ]
+      },
+      {
+        Label:"crossroads_lore",
+        Name:"A Encruzilhada",
+        Texts:[{Text:"dialog.paravexia.crossroads.lore"}],
+        Buttons:[{
+          Label:"return",
+          Name:"dialog.paravexia.common.return",
+          Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]
+        }]
+      }
+    ]
+  }
+}
