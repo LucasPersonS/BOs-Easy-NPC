@@ -2,10 +2,14 @@
   "providers": [
     {
       "type": "ttf",
-      "file": "easy_npc:font/alegreya_sans_regular.ttf",
+      "file": "easy_npc:alegreya_sans_regular.ttf",
       "shift": [0.0, 0.5],
       "size": 11.0,
       "oversample": 3.0
+    },
+    {
+      "type": "reference",
+      "id": "minecraft:default"
     }
   ]
 }
