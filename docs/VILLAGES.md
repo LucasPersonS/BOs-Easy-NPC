@@ -54,8 +54,8 @@ lets them, and a budget guard degrades villages when Easy NPC tick time goes ove
 | `npcs[].profile` | `extra`, `resident`, `functional`, `guard` |
 | `npcs[].home` | POI id; the NPC spawns there and returns there without schedule |
 | `npcs[].schedule` | residents only; ≤ 12 entries, `start` = day time 0–23999, unique. The latest entry that started applies; before the first one the last entry of the previous day applies |
-| `dialogue_library` | optional Hades dialogue library id (`config/easy_npc/dialogues`), linked like `/easy_npc dialog library apply` |
-| `skin` | optional, stored only (not applied yet) |
+| `dialogue_library` | optional Hades dialogue library id (`config/easy_npc/dialogues`), linked like `/easy_npc dialog library apply`. A library that is not loaded yet only gives a warning; NPCs link to it on chunk load, when the village wakes and right after `/easy_npc dialog library reload` |
+| `skin` | optional. `namespace:textures/....png` = texture from a jar/resource pack (e.g. `easy_npc:textures/entity/paravexia/ancoradouro/odete.png`, rendered for `humanoid` and `humanoid_slim`); a Minecraft player name = that player's skin (resolved off the server thread). Anything else is ignored with a warning. Applied on spawn, on chunk load and when a re-published spec changes it; a missing `skin` leaves the NPC's current skin alone |
 | `name`, `lore` | name ≤ 64 chars, lore ≤ 4000 chars, lore stored only |
 | any `hash` field | ignored on input; the server computes SHA-1 of the canonical JSON |
 
@@ -80,6 +80,19 @@ re-applying a profile neither rebuilds goals nor marks NPC data as changed. `res
 adds `RANDOM_STROLL_AROUND_HOME` to residents (costs movement packets).
 
 ## Runtime
+
+- **Standing spots:** NPCs never stand on the raw POI block. Every NPC gets a slot at its POI
+  (immovable profiles first, then residents, in spec order; slot 0 is the POI, the next ones ring
+  around it 2 blocks apart) and each slot is resolved to the nearest block where the NPC fits:
+  feet and head free of colliding blocks and liquids, solid block below, searched up to 6 blocks
+  sideways and up/down (vertical moves count double, so a POI inside a wall resolves to the floor
+  next to it, a POI under the floor or in the air to the same column). Only loaded chunks are read.
+  Spots handed out are reserved, so NPCs are never placed inside each other. Spawns, resident
+  schedule targets and immovable NPCs (placed once per session, also fixing NPCs from older
+  versions) all use these spots; they are cached until the spec or a POI changes.
+- **Stuck recovery:** with each awake village check (40 ticks), an NPC inside a block is moved to
+  the nearest free spot, and a walking resident whose navigation stopped without progress for 3
+  checks is moved to its target.
 
 - **Wake/sleep:** every village is checked at most every `checkIntervalTicks` (40), staggered, at most
   `villagesCheckedPerTick` (4) per tick, using `level.players()` distance only. Awake when a non-spectator
@@ -107,7 +120,11 @@ adds `RANDOM_STROLL_AROUND_HOME` to residents (costs movement packets).
 `poi add <village> <poi> <type>` (your position) · `npc add <village> <npc> <profile> <homePoi>` ·
 `npc remove <village> <npc>` · `schedule set <village> <npc> <dayTimeStart> <poi>` ·
 `wake|sleep|auto <village>` (force for tests, `auto` follows players again) · `status [village]` ·
-`import <file>` (reads `config/easy_npc/villages/<file>.json`).
+`import <file> [here]` (reads `config/easy_npc/villages/<file>.json`, Tab lists the files; `here` moves
+the whole preset so its center is your position, in your dimension) · `poi set <village> <poi>` (moves a
+POI to your position and places its NPCs again) · `poi list <village>` (every POI with coordinates and
+where NPCs actually stand: green ok, red no free spot within 6 blocks, gray not loaded) ·
+`respawn <village> <npc|all>` (moves loaded NPCs back to their spots for the current time).
 
 ## API for the bridge (`VillageApi`, JDK types only, runs on the server thread)
 

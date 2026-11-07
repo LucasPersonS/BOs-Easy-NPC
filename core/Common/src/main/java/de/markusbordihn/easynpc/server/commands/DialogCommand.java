@@ -197,6 +197,8 @@ public class DialogCommand extends Command {
 
   private static int reloadLibraries(CommandSourceStack source) {
     DialogueLibraryManager.LoadResult result = DialogueLibraryManager.reload();
+    // Village NPCs whose library file was missing at import link to it on the next village check.
+    de.markusbordihn.easynpc.paravexia.village.VillageRuntime.onDialogueLibrariesReloaded();
     String message = "Loaded " + result.loaded() + " dialogue libraries";
     if (result.rejected() > 0) message += "; rejected " + result.rejected() + " invalid files";
     return result.loaded() > 0 ? sendSuccessMessage(source, message, ChatFormatting.GREEN)

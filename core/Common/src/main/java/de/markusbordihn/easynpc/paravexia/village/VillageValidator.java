@@ -120,6 +120,27 @@ public final class VillageValidator {
     }
   }
 
+  /**
+   * Problems that do not block publishing: the field is ignored and staff get a message.
+   */
+  public static List<String> warnings(VillageSpec spec) {
+    List<String> warnings = new ArrayList<>();
+    for (VillageSpec.Npc npc : spec.npcs()) {
+      npc.skin()
+          .filter(skin -> VillageSkins.parse(skin).kind() == VillageSkins.Kind.INVALID)
+          .ifPresent(
+              skin ->
+                  warnings.add(
+                      "NPC '"
+                          + npc.key()
+                          + "' skin '"
+                          + skin
+                          + "' is neither a texture (namespace:textures/....png) nor a player name;"
+                          + " ignored"));
+    }
+    return warnings;
+  }
+
   public static boolean isInside(VillageSpec spec, BlockPos pos) {
     long dx = pos.getX() - spec.center().getX();
     long dz = pos.getZ() - spec.center().getZ();

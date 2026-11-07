@@ -21,7 +21,10 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.core.BlockPos;
 
 /** /easy_npc village … — staff tools for the Paravexia village runtime (permission level 2). */
@@ -38,6 +41,7 @@ public final class VillageCommand extends Command {
   private static final String PROFILE_ARG = "profile";
   private static final String START_ARG = "dayTimeStart";
   private static final String FILE_ARG = "file";
+  private static final String NPC_KEY_ARG = "npc";
 
   private static final SuggestionProvider<CommandSourceStack> VILLAGES =
       (context, builder) ->
@@ -49,6 +53,19 @@ public final class VillageCommand extends Command {
   // Lists config/easy_npc/villages/*.json so staff can Tab-complete the file to import.
   private static final SuggestionProvider<CommandSourceStack> FILES =
       (context, builder) -> SharedSuggestionProvider.suggest(listVillageFiles(), builder);
+  private static final SuggestionProvider<CommandSourceStack> POIS =
+      (context, builder) ->
+          SharedSuggestionProvider.suggest(
+              village(context).map(village -> village.spec().pois().stream().map(VillageSpec.Poi::id).toList())
+                  .orElse(java.util.List.of()),
+              builder);
+  private static final SuggestionProvider<CommandSourceStack> NPC_KEYS =
+      (context, builder) -> {
+        java.util.List<String> keys = new java.util.ArrayList<>();
+        keys.add("all");
+        village(context).ifPresent(village -> village.spec().npcs().forEach(npc -> keys.add(npc.key())));
+        return SharedSuggestionProvider.suggest(keys, builder);
+      };
   private static final SuggestionProvider<CommandSourceStack> PROFILES =
       (context, builder) ->
           SharedSuggestionProvider.suggest(
@@ -87,7 +104,24 @@ public final class VillageCommand extends Command {
                                         .then(
                                             Commands.argument("type", StringArgumentType.word())
                                                 .suggests(POI_TYPES)
-                                                .executes(VillageCommand::addPoi))))))
+                                                .executes(VillageCommand::addPoi)))))
+                .then(
+                    Commands.literal("set")
+                        .then(
+                            villageArgument()
+                                .then(
+                                    Commands.argument(POI_ARG, StringArgumentType.word())
+                                        .suggests(POIS)
+                                        .executes(VillageCommand::setPoi))))
+                .then(Commands.literal("list").then(villageArgument().executes(VillageCommand::listPois))))
+        .then(
+            Commands.literal("respawn")
+                .then(
+                    villageArgument()
+                        .then(
+                            Commands.argument(NPC_KEY_ARG, StringArgumentType.word())
+                                .suggests(NPC_KEYS)
+                                .executes(VillageCommand::respawn))))
         .then(
             Commands.literal("npc")
                 .then(
@@ -136,7 +170,8 @@ public final class VillageCommand extends Command {
                 .then(
                     Commands.argument(FILE_ARG, StringArgumentType.word())
                         .suggests(FILES)
-                        .executes(VillageCommand::importFile)));
+                        .executes(context -> importFile(context, false))
+                        .then(Commands.literal("here").executes(context -> importFile(context, true)))));
   }
 
   private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String>
@@ -259,7 +294,75 @@ public final class VillageCommand extends Command {
     return sendSuccessMessage(context.getSource(), text.toString());
   }
 
-  private static int importFile(CommandContext<CommandSourceStack> context) {
+  private static Optional<VillageSavedData.Village> village(CommandContext<CommandSourceStack> context) {
+    String villageId;
+    try {
+      villageId = StringArgumentType.getString(context, VILLAGE_ARG);
+    } catch (IllegalArgumentException exception) {
+      return Optional.empty();
+    }
+    return VillageRuntime.data().flatMap(data -> data.village(villageId));
+  }
+
+  private static int setPoi(CommandContext<CommandSourceStack> context) {
+    return feedback(
+        context.getSource(),
+        VillageService.setPoi(
+            StringArgumentType.getString(context, VILLAGE_ARG),
+            StringArgumentType.getString(context, POI_ARG),
+            BlockPos.containing(context.getSource().getPosition())));
+  }
+
+  private static int listPois(CommandContext<CommandSourceStack> context) {
+    String villageId = StringArgumentType.getString(context, VILLAGE_ARG);
+    if (VillageRuntime.data().flatMap(data -> data.village(villageId)).isEmpty()) {
+      return sendFailureMessage(context.getSource(), "Unknown village " + villageId + ".");
+    }
+    MutableComponent text = Component.literal("POIs of " + villageId + ":");
+    int missing = 0;
+    for (VillageRuntime.PoiReport report : VillageRuntime.poiReport(villageId)) {
+      BlockPos pos = report.pos();
+      MutableComponent line =
+          Component.literal("\n- " + report.id() + " (" + report.type().serializedName() + ") "
+              + pos.getX() + " " + pos.getY() + " " + pos.getZ() + ": ");
+      if (!report.loaded()) {
+        line.append(Component.literal("not loaded").withStyle(ChatFormatting.GRAY));
+      } else if (report.spot().isPresent()) {
+        BlockPos spot = report.spot().get();
+        line.append(
+            Component.literal(
+                    spot.equals(pos)
+                        ? "ok"
+                        : "ok, NPCs stand at " + spot.getX() + " " + spot.getY() + " " + spot.getZ())
+                .withStyle(ChatFormatting.GREEN));
+      } else {
+        missing++;
+        line.append(Component.literal("no free spot within 6 blocks, use poi set").withStyle(ChatFormatting.RED));
+      }
+      text.append(line);
+    }
+    final MutableComponent message = text;
+    context.getSource().sendSuccess(() -> message, false);
+    return missing == 0 ? 1 : 0;
+  }
+
+  private static int respawn(CommandContext<CommandSourceStack> context) {
+    String villageId = StringArgumentType.getString(context, VILLAGE_ARG);
+    String key = StringArgumentType.getString(context, NPC_KEY_ARG);
+    Optional<VillageSavedData.Village> village = VillageRuntime.data().flatMap(data -> data.village(villageId));
+    if (village.isEmpty()) {
+      return sendFailureMessage(context.getSource(), "Unknown village " + villageId + ".");
+    }
+    boolean all = "all".equals(key);
+    if (!all && village.get().spec().npc(key).isEmpty()) {
+      return sendFailureMessage(context.getSource(), "Unknown NPC " + key + " in village " + villageId + ".");
+    }
+    int moved = VillageRuntime.respawn(villageId, all ? null : key);
+    return sendSuccessMessage(
+        context.getSource(), "Moved " + moved + " loaded NPC" + (moved == 1 ? "" : "s") + " of " + villageId + " to their spots.");
+  }
+
+  private static int importFile(CommandContext<CommandSourceStack> context, boolean here) {
     String file = StringArgumentType.getString(context, FILE_ARG);
     if (!FILE_PATTERN.matcher(file).matches()) {
       return sendFailureMessage(context.getSource(), "File name must match " + FILE_PATTERN.pattern());
@@ -283,7 +386,15 @@ public final class VillageCommand extends Command {
     if (spec.error().isPresent()) {
       return sendFailureMessage(context.getSource(), spec.error().get().message());
     }
-    return feedback(context.getSource(), VillageService.apply(spec.getOrThrow()));
+    VillageSpec village = spec.getOrThrow();
+    if (here) {
+      // Same as tools/mover-vila.js: the preset keeps its layout, centered on the executor.
+      village =
+          village.shiftedTo(
+              BlockPos.containing(context.getSource().getPosition()),
+              context.getSource().getLevel().dimension().location());
+    }
+    return feedback(context.getSource(), VillageService.apply(village));
   }
 
   /** Creates config/easy_npc/villages so staff know where to drop village files. */

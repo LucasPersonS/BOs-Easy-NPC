@@ -208,6 +208,20 @@ public record VillageSpec(
         formatVersion, id, name, dimension, center, radius, wakeRadius, lore, pois, updated);
   }
 
+  /**
+   * The same village moved so that its center lands on {@code newCenter} in {@code newDimension};
+   * every POI keeps its offset to the center (used by {@code import <file> here}).
+   */
+  public VillageSpec shiftedTo(BlockPos newCenter, ResourceLocation newDimension) {
+    BlockPos delta = newCenter.subtract(this.center);
+    List<Poi> moved = new ArrayList<>();
+    for (Poi poi : this.pois) {
+      moved.add(new Poi(poi.id(), poi.type(), poi.pos().offset(delta)));
+    }
+    return new VillageSpec(
+        formatVersion, id, name, newDimension, newCenter, radius, wakeRadius, lore, moved, npcs);
+  }
+
   public long count(VillageProfile profile) {
     return this.npcs.stream().filter(npc -> npc.profile() == profile).count();
   }

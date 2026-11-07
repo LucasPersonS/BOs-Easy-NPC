@@ -32,7 +32,7 @@ final class VillageSpawner {
       ServerLevel level,
       VillageSavedData.Village village,
       VillageSpec.Npc npc,
-      VillageSpec.Poi home) {
+      BlockPos pos) {
     Optional<EntityType<?>> entityType = BuiltInRegistries.ENTITY_TYPE.getOptional(npc.entityType());
     if (entityType.isEmpty()) {
       log.warn("[Villages] Unknown entity type {} for {}/{}.", npc.entityType(), village.spec().id(), npc.key());
@@ -47,7 +47,6 @@ final class VillageSpawner {
       return Optional.empty();
     }
 
-    BlockPos pos = home.pos();
     mob.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, level.random.nextFloat() * 360F, 0F);
     mob.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.COMMAND, null);
     if (!npc.name().isEmpty()) {
@@ -58,6 +57,7 @@ final class VillageSpawner {
       navigationData.setHomePosition(pos);
     }
     npc.dialogueLibrary().ifPresent(libraryId -> linkLibrary(easyNPC, libraryId));
+    VillageSkins.apply(easyNPC, npc.skin(), level.getServer());
 
     // Bind before adding, so the join hook already knows the NPC belongs to the village.
     VillageSavedData data = VillageSavedData.get(level.getServer());
@@ -72,20 +72,31 @@ final class VillageSpawner {
     return Optional.of(uuid);
   }
 
+  /**
+   * Links the NPC to the library when it is not linked to it yet. A library that is not loaded is
+   * skipped quietly: the runtime retries on chunk load, on wake and after a library reload, so a
+   * library file added after the village was imported still gets linked.
+   */
   static boolean linkLibrary(EasyNPC<?> easyNPC, String libraryId) {
     ResourceLocation id = ResourceLocation.tryParse(libraryId.trim());
     DialogDataCapable<?> dialogData = easyNPC.getEasyNPCDialogData();
     if (id == null || dialogData == null) {
       return false;
     }
+    if (id.toString().equals(dialogData.getDialogDataSet().getLibraryId())) {
+      return true;
+    }
     Optional<DialogDataSet> copy = DialogueLibraryManager.copy(id);
     if (copy.isEmpty()) {
-      log.warn("[Villages] Unknown dialogue library {} for {}.", id, easyNPC.getEntityUUID());
+      log.debug("[Villages] Dialogue library {} for {} is not loaded yet.", id, easyNPC.getEntityUUID());
       return false;
     }
-    if (!id.toString().equals(dialogData.getDialogDataSet().getLibraryId())) {
-      dialogData.setDialogDataSet(copy.get());
-    }
+    dialogData.setDialogDataSet(copy.get());
     return true;
+  }
+
+  static boolean isLibraryLoaded(String libraryId) {
+    ResourceLocation id = ResourceLocation.tryParse(libraryId.trim());
+    return id != null && DialogueLibraryManager.entries().containsKey(id);
   }
 }

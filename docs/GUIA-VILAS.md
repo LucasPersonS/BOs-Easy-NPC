@@ -79,7 +79,13 @@ Outros comandos:
 - `/easy_npc village npc remove aldeia_norte <npc>` — tira da vila (o NPC continua no mundo).
 - `/easy_npc village remove aldeia_norte` — apaga a vila (NPCs ficam). Com `delete_npcs` no fim, apaga os NPCs criados por ela.
 - `/easy_npc village wake aldeia_norte` / `sleep` / `auto` — força acordar/dormir para testes; `auto` volta ao normal.
-- `/easy_npc village import aldeia_norte` — carrega `config/easy_npc/villages/aldeia_norte.json` (formato em `docs/VILLAGES.md`).
+- `/easy_npc village import aldeia_norte` — carrega `config/easy_npc/villages/aldeia_norte.json` (formato em `docs/VILLAGES.md`). Aperte Tab para ver os arquivos.
+- `/easy_npc village import aldeia_norte here` — carrega o preset **centrado onde você está** (não precisa do `mover-vila.js`).
+- `/easy_npc village poi list aldeia_norte` — lista os pontos: verde = ok (mostra onde os NPCs ficam de fato), vermelho = sem lugar livre perto, cinza = área não carregada.
+- `/easy_npc village poi set aldeia_norte forja` — move o ponto para onde você está e reposiciona quem usa esse ponto.
+- `/easy_npc village respawn aldeia_norte all` — devolve os NPCs carregados para os seus lugares.
+
+Os NPCs nunca ficam no bloco exato do ponto: cada um ganha um lugar livre perto dele (chão firme, sem bloco na cabeça, sem água), a 2 blocos dos outros. Ponto dentro de parede, embaixo do chão ou no ar é corrigido sozinho; NPC preso dentro de bloco ou travado no caminho é movido para o lugar certo.
 
 ---
 

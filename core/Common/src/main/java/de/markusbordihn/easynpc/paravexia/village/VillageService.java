@@ -40,11 +40,13 @@ public final class VillageService {
       return Result.failure(errors);
     }
 
+    List<String> warnings = warnings(spec);
     String hash = spec.hash();
     Optional<VillageSavedData.Village> existing = data.village(spec.id());
     if (existing.isPresent() && existing.get().spec().hash().equals(hash)) {
       VillageRuntime.queueMissingSpawns(existing.get());
-      return new Result(true, List.of("Village " + spec.id() + " is unchanged."), 0, 0, 0, hash);
+      return new Result(
+          true, withWarnings("Village " + spec.id() + " is unchanged.", warnings), 0, 0, 0, hash);
     }
 
     int removed = 0;
@@ -74,7 +76,35 @@ public final class VillageService {
         queued,
         updated,
         removed);
-    return new Result(true, List.of("Village " + spec.id() + " applied."), queued, updated, removed, hash);
+    return new Result(
+        true, withWarnings("Village " + spec.id() + " applied.", warnings), queued, updated, removed, hash);
+  }
+
+  /** Non-blocking problems: invalid skins and dialogue libraries that are not loaded (yet). */
+  private static List<String> warnings(VillageSpec spec) {
+    List<String> warnings = VillageValidator.warnings(spec);
+    java.util.Set<String> reported = new java.util.HashSet<>();
+    for (VillageSpec.Npc npc : spec.npcs()) {
+      npc.dialogueLibrary()
+          .filter(reported::add)
+          .filter(libraryId -> !VillageSpawner.isLibraryLoaded(libraryId))
+          .ifPresent(
+              libraryId ->
+                  warnings.add(
+                      "Dialogue library '"
+                          + libraryId
+                          + "' is not loaded; NPCs link to it after /easy_npc dialog library reload"));
+    }
+    return warnings;
+  }
+
+  private static List<String> withWarnings(String message, List<String> warnings) {
+    List<String> messages = new ArrayList<>();
+    messages.add(message);
+    for (String warning : warnings) {
+      messages.add("Warning: " + warning);
+    }
+    return messages;
   }
 
   /** Spawned NPCs are deleted, adopted ones (key = their UUID) are only released. */
@@ -104,6 +134,7 @@ public final class VillageService {
           updated++;
         }
         npc.dialogueLibrary().ifPresent(libraryId -> VillageSpawner.linkLibrary(easyNPC, libraryId));
+        VillageSkins.apply(easyNPC, npc.skin(), level.getServer());
       }
     }
     return updated;
@@ -140,6 +171,21 @@ public final class VillageService {
 
   public static Result addPoi(String villageId, String poiId, PoiType type, BlockPos pos) {
     return update(villageId, spec -> spec.withPoi(new VillageSpec.Poi(poiId, type, pos)));
+  }
+
+  /** Moves an existing POI and places the NPCs that use it again. */
+  public static Result setPoi(String villageId, String poiId, BlockPos pos) {
+    Optional<VillageSavedData.Village> village =
+        VillageRuntime.data().flatMap(data -> data.village(villageId));
+    Optional<VillageSpec.Poi> poi = village.flatMap(value -> value.spec().poi(poiId));
+    if (poi.isEmpty()) {
+      return Result.failure("Unknown POI " + poiId + " in village " + villageId + ".");
+    }
+    Result result = update(villageId, spec -> spec.withPoi(new VillageSpec.Poi(poiId, poi.get().type(), pos)));
+    if (result.ok()) {
+      VillageRuntime.onPoiMoved(villageId, poiId);
+    }
+    return result;
   }
 
   /** Adopts an existing NPC into the village; its key is its UUID. */
