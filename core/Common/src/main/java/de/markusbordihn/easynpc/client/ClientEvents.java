@@ -21,11 +21,16 @@ package de.markusbordihn.easynpc.client;
 
 import de.markusbordihn.easynpc.client.dialog.WorldDialogOverlay;
 import de.markusbordihn.easynpc.client.renderer.entity.SpeechBubbleFrameRenderer;
+import de.markusbordihn.easynpc.client.renderer.layer.ShoulderNPCCache;
 import de.markusbordihn.easynpc.client.renderer.manager.EntityTypeManager;
+import de.markusbordihn.easynpc.client.texture.CustomTextureManager;
+import de.markusbordihn.easynpc.client.texture.PlayerTextureManager;
+import de.markusbordihn.easynpc.client.texture.RemoteTextureManager;
 import de.markusbordihn.easynpc.client.texture.TextureRegistrationQueue;
 import de.markusbordihn.easynpc.data.action.SpeechBubbleManager;
 import de.markusbordihn.easynpc.data.dialog.DialogDataManager;
 import de.markusbordihn.easynpc.data.highlight.NPCHighlightManager;
+import de.markusbordihn.easynpc.data.visibility.NPCVisibilityConditionManager;
 import de.markusbordihn.easynpc.io.DataFileHandler;
 import net.minecraft.client.Minecraft;
 
@@ -44,6 +49,8 @@ public class ClientEvents {
     SpeechBubbleManager.clear();
     SpeechBubbleFrameRenderer.clear();
     NPCHighlightManager.clear();
+    NPCVisibilityConditionManager.clear();
+    ShoulderNPCCache.clear();
     clearTextureCaches();
   }
 
@@ -54,19 +61,9 @@ public class ClientEvents {
   }
 
   private static void clearTextureCaches() {
-    try {
-      Class.forName("de.markusbordihn.easynpc.client.texture.CustomTextureManager")
-          .getMethod("clearTextureCache")
-          .invoke(null);
-      Class.forName("de.markusbordihn.easynpc.client.texture.RemoteTextureManager")
-          .getMethod("clearTextureCache")
-          .invoke(null);
-      Class.forName("de.markusbordihn.easynpc.client.texture.PlayerTextureManager")
-          .getMethod("clearTextureCache")
-          .invoke(null);
-      TextureRegistrationQueue.getInstance().clear();
-    } catch (Exception e) {
-      // Ignore - texture managers might not be loaded yet
-    }
+    CustomTextureManager.clearTextureCache();
+    RemoteTextureManager.clearTextureCache();
+    PlayerTextureManager.clearTextureCache();
+    TextureRegistrationQueue.getInstance().clear();
   }
 }

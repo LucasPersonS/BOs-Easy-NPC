@@ -52,7 +52,7 @@ public class IronGolemBase extends IronGolemRaw implements BaseEasyNPC<IronGolem
         .add(Attributes.ARMOR, 0.0D)
         .add(Attributes.ATTACK_DAMAGE, 15.0D)
         .add(Attributes.ATTACK_KNOCKBACK, 1.0D)
-        .add(Attributes.ATTACK_SPEED, 4.0D)
+        .add(Attributes.ATTACK_SPEED, 1.0D)
         .add(Attributes.FOLLOW_RANGE, 32.0D)
         .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D)
         .add(Attributes.MAX_HEALTH, 100.0D)
@@ -93,12 +93,9 @@ public class IronGolemBase extends IronGolemRaw implements BaseEasyNPC<IronGolem
 
   @Override
   public void travel(Vec3 vec3) {
-
     this.handleNavigationTravelEvent(vec3);
 
-    // Handle movement for NPC for specific conditions.
     if (this.hasTravelTargetObjectives()) {
-      // Allow travel for NPC, if travel objectives are used.
       super.travel(vec3);
     } else {
       this.calculateEntityAnimation(this instanceof FlyingAnimal);

@@ -21,11 +21,15 @@ package de.markusbordihn.easynpc.client.texture;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import de.markusbordihn.easynpc.data.skin.SkinModel;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class TextureErrorHandlerTest {
+
+  private static final String TEXTURE_URL_NOT_LOADED_BY_OTHER_TESTS =
+      "http://example.org/texture_error_handler.png";
 
   @Test
   @DisplayName("Should not have error message initially")
@@ -38,44 +42,36 @@ class TextureErrorHandlerTest {
   @Test
   void testProcessingErrorMessage() {
     TextureErrorHandler.clearLastErrorMessage();
-    TextureModelKey key =
-        new TextureModelKey(
-            UUID.randomUUID(), de.markusbordihn.easynpc.data.skin.SkinModel.HUMANOID, "test");
+    TextureModelKey key = new TextureModelKey(UUID.randomUUID(), SkinModel.HUMANOID, "test");
 
     TextureErrorHandler.processingErrorMessage(
-        key, "http://example.com/texture.png", "Invalid format");
+        key, TEXTURE_URL_NOT_LOADED_BY_OTHER_TESTS, "Invalid format");
+    String errorMessage = TextureErrorHandler.getLastErrorMessage();
 
-    assertTrue(TextureErrorHandler.hasLastErrorMessage());
-    assertNotNull(TextureErrorHandler.getLastErrorMessage());
-    assertTrue(TextureErrorHandler.getLastErrorMessage().contains("Unable to process texture"));
-    assertTrue(
-        TextureErrorHandler.getLastErrorMessage().contains("http://example.com/texture.png"));
-    assertTrue(TextureErrorHandler.getLastErrorMessage().contains("Invalid format"));
+    assertNotNull(errorMessage);
+    assertTrue(errorMessage.contains("Unable to process texture"));
+    assertTrue(errorMessage.contains(TEXTURE_URL_NOT_LOADED_BY_OTHER_TESTS));
+    assertTrue(errorMessage.contains("Invalid format"));
   }
 
   @Test
   void testUrlLoadErrorMessage() {
     TextureErrorHandler.clearLastErrorMessage();
-    TextureModelKey key =
-        new TextureModelKey(
-            UUID.randomUUID(), de.markusbordihn.easynpc.data.skin.SkinModel.HUMANOID, "test");
+    TextureModelKey key = new TextureModelKey(UUID.randomUUID(), SkinModel.HUMANOID, "test");
 
     TextureErrorHandler.urlLoadErrorMessage(
-        key, "http://example.com/texture.png", "Connection timeout");
+        key, TEXTURE_URL_NOT_LOADED_BY_OTHER_TESTS, "Connection timeout");
+    String errorMessage = TextureErrorHandler.getLastErrorMessage();
 
-    assertTrue(TextureErrorHandler.hasLastErrorMessage());
-    assertNotNull(TextureErrorHandler.getLastErrorMessage());
-    assertTrue(TextureErrorHandler.getLastErrorMessage().contains("Unable to load texture"));
-    assertTrue(
-        TextureErrorHandler.getLastErrorMessage().contains("http://example.com/texture.png"));
-    assertTrue(TextureErrorHandler.getLastErrorMessage().contains("Connection timeout"));
+    assertNotNull(errorMessage);
+    assertTrue(errorMessage.contains("Unable to load texture"));
+    assertTrue(errorMessage.contains(TEXTURE_URL_NOT_LOADED_BY_OTHER_TESTS));
+    assertTrue(errorMessage.contains("Connection timeout"));
   }
 
   @Test
   void testClearErrorMessage() {
-    TextureModelKey key =
-        new TextureModelKey(
-            UUID.randomUUID(), de.markusbordihn.easynpc.data.skin.SkinModel.HUMANOID, "test");
+    TextureModelKey key = new TextureModelKey(UUID.randomUUID(), SkinModel.HUMANOID, "test");
     TextureErrorHandler.processingErrorMessage(key, "http://example.com", "Test error");
 
     assertTrue(TextureErrorHandler.hasLastErrorMessage());
@@ -89,12 +85,8 @@ class TextureErrorHandlerTest {
   @Test
   void testOverwriteErrorMessage() {
     TextureErrorHandler.clearLastErrorMessage();
-    TextureModelKey key1 =
-        new TextureModelKey(
-            UUID.randomUUID(), de.markusbordihn.easynpc.data.skin.SkinModel.HUMANOID, "test1");
-    TextureModelKey key2 =
-        new TextureModelKey(
-            UUID.randomUUID(), de.markusbordihn.easynpc.data.skin.SkinModel.HUMANOID, "test2");
+    TextureModelKey key1 = new TextureModelKey(UUID.randomUUID(), SkinModel.HUMANOID, "test1");
+    TextureModelKey key2 = new TextureModelKey(UUID.randomUUID(), SkinModel.HUMANOID, "test2");
 
     TextureErrorHandler.processingErrorMessage(key1, "http://example.com/1", "First error");
     String firstMessage = TextureErrorHandler.getLastErrorMessage();

@@ -10,6 +10,15 @@ base {
   archivesName = "${project.mod_id}-fabric-${project.minecraft_version}"
 }
 
+sourceSets {
+  gameTest {
+    java.srcDir project(":Common").file('src/gameTest/java')
+    resources.srcDir project(":Common").file('src/gameTest/resources')
+    compileClasspath += main.compileClasspath + main.output
+    runtimeClasspath += main.runtimeClasspath + main.output
+  }
+}
+
 ext {
   getNextMajorVersion = { String currentVersion ->
     def versionParts = currentVersion.tokenize('.')
@@ -29,7 +38,6 @@ dependencies {
   modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
   modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 
-  // Include Common code
   implementation project(":Common")
 
   // Include Core Common code
@@ -40,16 +48,15 @@ dependencies {
     changing = true
   }
 
-  // Test dependencies
   testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.1'
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.1'
   testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.1'
 
   // Additional helpful Mods for development (runtime dependency, skipped for game tests)
-  if (!isGameTestRun && project.hasProperty('fabric_jei_version') && project.fabric_jei_version) {
+  if (!isTestRun && project.hasProperty('fabric_jei_version') && project.fabric_jei_version) {
     modLocalRuntime("maven.modrinth:jei:${project.fabric_jei_version}")
   }
-  if (!isGameTestRun && project.hasProperty('fabric_xaeros_minimap_version') && project.fabric_xaeros_minimap_version) {
+  if (!isTestRun && project.hasProperty('fabric_xaeros_minimap_version') && project.fabric_xaeros_minimap_version) {
     modLocalRuntime("xaero.minimap:xaerominimap-fabric-${project.minecraft_version}:${project.fabric_xaeros_minimap_version}") {
       transitive = false
     }
@@ -66,9 +73,13 @@ dependencies {
     modRuntimeOnly("maven.modrinth:easy-model-entities:${project.fabric_easy_model_entities_version}")
   }
 
+  if (isClientTestRun) {
+    modRuntimeOnly("maven.modrinth:armourers-workshop:${project.fabric_armourers_workshop_version}")
+  }
+
   // Tide (for testing, requires Cloth Config at runtime)
   // Tide uses the same version number across Minecraft versions, so pin the Modrinth version id
-  if (!isGameTestRun) {
+  if (!isTestRun) {
     modRuntimeOnly("maven.modrinth:tide:ztNu3GtG")
     modRuntimeOnly("maven.modrinth:cloth-config:15.0.140+fabric")
   }
@@ -79,6 +90,16 @@ dependencies {
 
 loom {
   accessWidenerPath = file("src/main/resources/easynpcconfig.accesswidener")
+
+  mods {
+    "${project.mod_id}" {
+      sourceSet sourceSets.main
+    }
+    "${project.mod_id}_gametest" {
+      sourceSet sourceSets.gameTest
+    }
+  }
+
   runs {
     client {
       client()
@@ -104,7 +125,9 @@ loom {
       server()
       name "Game Test"
       vmArg "-Dfabric-api.gametest"
+      vmArg "-D${project.mod_id}.gametest=true"
       runDir("run/gametest")
+      source sourceSets.gameTest
     }
   }
 }
@@ -122,6 +145,13 @@ processResources {
   }
 }
 
+processGameTestResources {
+  inputs.property "version", project.version
+  filesMatching("fabric.mod.json") {
+    expand "version": project.version
+  }
+}
+
 publishing {
   publications {
     mavenJava(MavenPublication) {
@@ -133,8 +163,14 @@ publishing {
   }
 }
 
-tasks.withType(JavaCompile).configureEach {
+// The game test source set compiles against the main output, so the Common main sources would be
+// compiled into it a second time.
+tasks.withType(JavaCompile).matching { compileTask -> compileTask.name != 'compileGameTestJava' }.configureEach {
   source(project(":Common").sourceSets.main.allSource)
+}
+
+tasks.named('compileGameTestJava') {
+  source(coreGameTestHelperSources)
 }
 
 tasks.named('build') {

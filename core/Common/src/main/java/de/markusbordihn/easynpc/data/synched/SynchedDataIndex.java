@@ -20,8 +20,10 @@
 package de.markusbordihn.easynpc.data.synched;
 
 public enum SynchedDataIndex {
+  ACTION_HAS_INTERACTION_EVENT(false),
   ATTACK_IS_CHARGING_CROSSBOW(false),
   DISPLAY_ATTRIBUTE_SET,
+  DISPLAY_HAS_VISIBILITY_CONDITIONS(false),
   ENTITY_ATTRIBUTES,
   MODEL_ANIMATION(false),
   MODEL_POSE,
@@ -33,6 +35,7 @@ public enum SynchedDataIndex {
   MODEL_VISIBILITY,
   NAVIGATION_HOME_POSITION,
   OWNER_UUID,
+  PAUSED(false),
   PROFESSION,
   PROGRESSION,
   RENDER_DATA,

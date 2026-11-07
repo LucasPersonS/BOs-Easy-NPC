@@ -21,12 +21,15 @@ package de.markusbordihn.easynpc.configui.client.screen.configuration.attribute;
 
 import de.markusbordihn.easynpc.client.screen.components.SpinButton;
 import de.markusbordihn.easynpc.client.screen.components.Text;
+import de.markusbordihn.easynpc.client.screen.components.TextButton;
 import de.markusbordihn.easynpc.client.screen.components.TextField;
 import de.markusbordihn.easynpc.configui.client.renderer.screen.EntityConfigScreenRenderer;
 import de.markusbordihn.easynpc.configui.client.screen.components.Checkbox;
+import de.markusbordihn.easynpc.configui.client.screen.components.ConditionButton;
 import de.markusbordihn.easynpc.configui.client.screen.components.SaveButton;
 import de.markusbordihn.easynpc.configui.menu.configuration.ConfigurationMenu;
 import de.markusbordihn.easynpc.configui.network.NetworkMessageHandlerManager;
+import de.markusbordihn.easynpc.data.configuration.ConfigurationType;
 import de.markusbordihn.easynpc.data.display.DisplayAttributeType;
 import de.markusbordihn.easynpc.data.render.EntityRenderConfig;
 import de.markusbordihn.easynpc.entity.easynpc.data.DisplayAttributeDataCapable;
@@ -60,6 +63,7 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
 
   private static final long PREVIEW_DAY_TIME = 6000L;
   private static final long PREVIEW_NIGHT_TIME = 18000L;
+  private static final int ENTITY_PREVIEW_LEFT = 290;
 
   private final HashSet<Checkbox> visibilityCheckboxSet = new HashSet<>();
 
@@ -77,18 +81,14 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
   public void init() {
     super.init();
 
-    // Default button stats
     this.displayAttributeButton.active = false;
 
-    // Button rows
     int firstButtonRow = this.leftPos + 10;
     int secondButtonRow = this.leftPos + 160;
 
-    // Attribute data
     DisplayAttributeDataCapable<?> displayAttributeData =
         this.getEasyNPC().getEasyNPCDisplayAttributeData();
 
-    // Light Level
     this.lightLevelBox =
         this.addRenderableWidget(
             new TextField(
@@ -161,7 +161,6 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
                 }));
     this.opacitySaveButton.active = false;
 
-    // Main is visible attribute
     Checkbox isVisibleCheckbox =
         this.addRenderableWidget(
             new Checkbox(
@@ -177,7 +176,6 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
                           this.getEasyNPCUUID(), DisplayAttributeType.VISIBLE, checkbox.selected());
                 }));
 
-    // Add time-based visibility attributes with header
     int checkboxTopPos = this.buttonTopPos + 65;
     int gamemodeCheckboxTopPos = checkboxTopPos;
     checkboxTopPos += 15;
@@ -199,7 +197,6 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
       checkboxTopPos += 20;
     }
 
-    // Add game mode visibility attributes with header
     for (DisplayAttributeType displayAttributeType : GAMEMODE_VISIBILITY_ATTRIBUTES) {
       Checkbox visibilityCheckbox =
           new Checkbox(
@@ -216,7 +213,6 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
       gamemodeCheckboxTopPos += 20;
     }
 
-    // Add special visibility attributes with header
     int specialSectionY = Math.max(checkboxTopPos, gamemodeCheckboxTopPos) + 5;
     checkboxTopPos = specialSectionY + 15;
 
@@ -251,12 +247,33 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
                         DisplayAttributeType.INTERACTION_WHEN_INVISIBLE,
                         checkbox.selected())));
 
+    this.addRenderableWidget(
+        new ConditionButton(
+            firstButtonRow,
+            checkboxTopPos + 18,
+            120,
+            this.getAdditionalScreenData().getVisibilityConditionSet().conditions().size(),
+            onPress ->
+                NetworkMessageHandlerManager.getServerHandler()
+                    .openVisibilityConditionEditor(this.getEasyNPCUUID())));
+
+    this.addRenderableWidget(
+        new TextButton(
+            firstButtonRow + 124,
+            checkboxTopPos + 18,
+            116,
+            "boss_bar_settings",
+            onPress ->
+                NetworkMessageHandlerManager.getServerHandler()
+                    .openConfiguration(
+                        this.getEasyNPCUUID(), ConfigurationType.BOSS_BAR_ATTRIBUTE)));
+
     // Preview to verify the configured visibility without changing the world time.
     this.addRenderableWidget(
         new SpinButton<>(
-            secondButtonRow + 60,
+            this.leftPos + ENTITY_PREVIEW_LEFT - 35,
             this.buttonTopPos + 215,
-            100,
+            70,
             16,
             new LinkedHashSet<>(List.of(PreviewTime.values())),
             this.previewTime,
@@ -295,11 +312,9 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
           this.opacityBox.getY() + 4);
     }
 
-    // Calculate section positions
     int timeSectionY = this.buttonTopPos + 65;
     int specialSectionY = this.buttonTopPos + 145;
 
-    // Time visibility section header
     Text.drawConfigString(
         guiGraphics, this.font, "time_visibility_settings", firstButtonRow, timeSectionY, 0x555555);
 
@@ -311,7 +326,6 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
         timeSectionY,
         0x555555);
 
-    // Special visibility section header
     Text.drawConfigString(
         guiGraphics,
         this.font,
@@ -320,7 +334,7 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
         specialSectionY,
         0x555555);
 
-    if (getEasyNPC() == null) {
+    if (this.getEasyNPC() == null) {
       return;
     }
 
@@ -329,7 +343,7 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
           guiGraphics,
           this.font,
           "preview_hidden",
-          secondButtonRow + 80,
+          this.leftPos + ENTITY_PREVIEW_LEFT - 25,
           this.contentTopPos + 150,
           0x999999);
       return;
@@ -337,8 +351,9 @@ public class DisplayAttributeConfigurationScreen<T extends ConfigurationMenu>
 
     EntityConfigScreenRenderer.renderEntity(
         guiGraphics,
-        getEasyNPC(),
-        EntityRenderConfig.guiScaled(this.leftPos + 265, this.contentTopPos + 160, 30),
+        this.getEasyNPC(),
+        EntityRenderConfig.guiScaled(
+            this.leftPos + ENTITY_PREVIEW_LEFT, this.contentTopPos + 160, 30),
         this.xMouse,
         this.yMouse);
   }

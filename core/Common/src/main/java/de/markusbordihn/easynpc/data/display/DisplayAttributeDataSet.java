@@ -25,6 +25,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.world.BossEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,6 +47,7 @@ public record DisplayAttributeDataSet(
         }
       };
   private static final Logger log = LogManager.getLogger(Constants.LOG_NAME);
+  private static final int MAX_STRING_VALUE_LENGTH = 256;
 
   public DisplayAttributeDataSet {
     attributes = withDefaultsForMissingAttributes(attributes);
@@ -66,7 +68,7 @@ public record DisplayAttributeDataSet(
   private static EnumMap<DisplayAttributeType, DisplayAttributeEntry> createDefaultAttributes() {
     EnumMap<DisplayAttributeType, DisplayAttributeEntry> map =
         new EnumMap<>(DisplayAttributeType.class);
-    map.put(DisplayAttributeType.LIGHT_LEVEL, new DisplayAttributeEntry(7));
+    map.put(DisplayAttributeType.LIGHT_LEVEL, new DisplayAttributeEntry(DisplayAttributeType.AMBIENT_LIGHT_LEVEL));
     map.put(DisplayAttributeType.VISIBLE, new DisplayAttributeEntry(true));
     map.put(DisplayAttributeType.VISIBLE_AT_DAY, new DisplayAttributeEntry(true));
     map.put(DisplayAttributeType.VISIBLE_AT_NIGHT, new DisplayAttributeEntry(true));
@@ -82,6 +84,19 @@ public record DisplayAttributeDataSet(
     map.put(
         DisplayAttributeType.OPACITY,
         new DisplayAttributeEntry(DisplayAttributeType.DEFAULT_OPACITY));
+    map.put(
+        DisplayAttributeType.BOSS_BAR_COLOR,
+        new DisplayAttributeEntry(BossEvent.BossBarColor.PURPLE.name()));
+    map.put(
+        DisplayAttributeType.BOSS_BAR_RANGE,
+        new DisplayAttributeEntry(DisplayAttributeType.DEFAULT_BOSS_BAR_RANGE));
+    map.put(
+        DisplayAttributeType.BOSS_BAR_STYLE,
+        new DisplayAttributeEntry(BossEvent.BossBarOverlay.PROGRESS.name()));
+    map.put(DisplayAttributeType.SHOW_BOSS_BAR, new DisplayAttributeEntry(false));
+    map.put(
+        DisplayAttributeType.BOSS_BAR_AUTO_HIDE,
+        new DisplayAttributeEntry(DisplayAttributeType.DEFAULT_BOSS_BAR_AUTO_HIDE_SECONDS));
     return map;
   }
 
@@ -125,34 +140,39 @@ public record DisplayAttributeDataSet(
 
   public static DisplayAttributeDataSet decode(RegistryFriendlyByteBuf buffer) {
     int size = buffer.readVarInt();
+    if (size < 0 || size > DisplayAttributeType.values().length) {
+      log.error("Received invalid display attribute count {}", size);
+      return createDefault();
+    }
+
     EnumMap<DisplayAttributeType, DisplayAttributeEntry> map =
         new EnumMap<>(DisplayAttributeType.class);
 
     for (int i = 0; i < size; i++) {
       DisplayAttributeType type = buffer.readEnum(DisplayAttributeType.class);
-      boolean boolValue = buffer.readBoolean();
+      boolean booleanValue = buffer.readBoolean();
       int intValue = buffer.readVarInt();
-      String stringValue = buffer.readUtf();
+      String stringValue = buffer.readUtf(MAX_STRING_VALUE_LENGTH);
 
       if (type == DisplayAttributeType.NONE) {
         continue;
       }
-      map.put(type, new DisplayAttributeEntry(boolValue, intValue, stringValue));
+      map.put(type, new DisplayAttributeEntry(booleanValue, intValue, stringValue));
     }
 
     return new DisplayAttributeDataSet(map);
   }
 
   public boolean hasAttribute(DisplayAttributeType attributeType) {
-    return attributes.containsKey(attributeType);
+    return this.attributes.containsKey(attributeType);
   }
 
   public DisplayAttributeEntry getAttribute(DisplayAttributeType attributeType) {
-    return attributes.get(attributeType);
+    return this.attributes.get(attributeType);
   }
 
   public boolean booleanValue(DisplayAttributeType attributeType) {
-    DisplayAttributeEntry entry = attributes.get(attributeType);
+    DisplayAttributeEntry entry = this.attributes.get(attributeType);
     return entry != null && entry.booleanValue();
   }
 
@@ -161,6 +181,7 @@ public record DisplayAttributeDataSet(
     if (attributeType == null || entry == null) {
       return this;
     }
+
     EnumMap<DisplayAttributeType, DisplayAttributeEntry> newAttributes =
         new EnumMap<>(this.attributes);
     newAttributes.put(attributeType, entry);
@@ -170,13 +191,13 @@ public record DisplayAttributeDataSet(
   public ListTag save() {
     ListTag listTag = new ListTag();
 
-    if (attributes == null || attributes.isEmpty()) {
+    if (this.attributes == null || this.attributes.isEmpty()) {
       return listTag;
     }
 
     EnumMap<DisplayAttributeType, DisplayAttributeEntry> defaultAttributes =
         createDefaultAttributes();
-    for (var entry : attributes.entrySet()) {
+    for (var entry : this.attributes.entrySet()) {
       if (entry.getKey() == DisplayAttributeType.NONE
           || entry.getValue().equals(defaultAttributes.get(entry.getKey()))) {
         continue;
@@ -192,8 +213,11 @@ public record DisplayAttributeDataSet(
 
   public void encode(RegistryFriendlyByteBuf buffer) {
     buffer.writeVarInt(
-        (int) attributes.keySet().stream().filter(key -> key != DisplayAttributeType.NONE).count());
-    for (var entry : attributes.entrySet()) {
+        (int)
+            this.attributes.keySet().stream()
+                .filter(attributeType -> attributeType != DisplayAttributeType.NONE)
+                .count());
+    for (var entry : this.attributes.entrySet()) {
       if (entry.getKey() == DisplayAttributeType.NONE) {
         continue;
       }

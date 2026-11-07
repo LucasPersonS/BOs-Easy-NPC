@@ -46,7 +46,8 @@ public record ExecuteActionEventMessage(UUID uuid, ActionEventType actionEventTy
       StreamCodec.of((buffer, message) -> message.write(buffer), ExecuteActionEventMessage::create);
 
   public static ExecuteActionEventMessage create(final FriendlyByteBuf buffer) {
-    return new ExecuteActionEventMessage(buffer.readUUID(), buffer.readEnum(ActionEventType.class));
+    return new ExecuteActionEventMessage(
+        buffer.readUUID(), NetworkMessageRecord.readEnum(buffer, ActionEventType.class));
   }
 
   private static boolean isDialogActionEvent(final ActionEventType actionEventType) {
@@ -73,7 +74,7 @@ public record ExecuteActionEventMessage(UUID uuid, ActionEventType actionEventTy
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPC(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPC(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }
@@ -88,7 +89,7 @@ public record ExecuteActionEventMessage(UUID uuid, ActionEventType actionEventTy
     }
 
     if (!isDialogActionEvent(this.actionEventType)
-        || !checkDialogSession(this.uuid, serverPlayer)) {
+        || !this.checkDialogSession(this.uuid, serverPlayer)) {
       log.warn(
           "Blocked action event {} for {} without valid dialog session from {}",
           this.actionEventType,

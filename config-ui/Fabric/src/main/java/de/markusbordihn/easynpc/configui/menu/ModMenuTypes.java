@@ -27,14 +27,17 @@ import de.markusbordihn.easynpc.configui.menu.configuration.action.DistanceActio
 import de.markusbordihn.easynpc.configui.menu.configuration.action.IntervalActionConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.attribute.AbilitiesAttributeConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.attribute.BaseAttributeConfigurationMenuWrapper;
+import de.markusbordihn.easynpc.configui.menu.configuration.attribute.BossBarAttributeConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.attribute.CombatAttributeConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.attribute.DisplayAttributeConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.attribute.MiscAttributeConfigurationMenuWrapper;
+import de.markusbordihn.easynpc.configui.menu.configuration.attribute.ProjectileAttributeConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.AdvancedDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.BasicDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.NoneDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.YesNoDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.equipment.EquipmentConfigurationMenuWrapper;
+import de.markusbordihn.easynpc.configui.menu.configuration.inventory.InventoryConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.main.MainConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.model.CobblemonModelConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.model.CustomModelConfigurationMenuWrapper;
@@ -209,6 +212,20 @@ public class ModMenuTypes {
               BuiltInRegistries.MENU,
               ConfigurationType.COMBAT_ATTRIBUTE.getId(),
               new MenuType<>(CombatAttributeConfigurationMenuWrapper::new, FeatureFlagSet.of()));
+  public static final MenuType<ProjectileAttributeConfigurationMenuWrapper>
+      PROJECTILE_ATTRIBUTE_CONFIGURATION_MENU =
+          Registry.register(
+              BuiltInRegistries.MENU,
+              ConfigurationType.PROJECTILE_ATTRIBUTE.getId(),
+              new MenuType<>(
+                  ProjectileAttributeConfigurationMenuWrapper::new, FeatureFlagSet.of()));
+  public static final MenuType<BossBarAttributeConfigurationMenuWrapper>
+      BOSS_BAR_ATTRIBUTE_CONFIGURATION_MENU =
+          Registry.register(
+              BuiltInRegistries.MENU,
+              ConfigurationType.BOSS_BAR_ATTRIBUTE.getId(),
+              new MenuType<>(
+                  BossBarAttributeConfigurationMenuWrapper::new, FeatureFlagSet.of()));
   public static final MenuType<CombatSoundConfigurationMenuWrapper>
       COMBAT_SOUND_CONFIGURATION_MENU =
           Registry.register(
@@ -370,6 +387,11 @@ public class ModMenuTypes {
           BuiltInRegistries.MENU,
           ConfigurationType.EQUIPMENT.getId(),
           new MenuType<>(EquipmentConfigurationMenuWrapper::new, FeatureFlagSet.of()));
+  public static final MenuType<InventoryConfigurationMenuWrapper> INVENTORY_CONFIGURATION_MENU =
+      Registry.register(
+          BuiltInRegistries.MENU,
+          ConfigurationType.INVENTORY.getId(),
+          new MenuType<>(InventoryConfigurationMenuWrapper::new, FeatureFlagSet.of()));
   public static final MenuType<FollowObjectiveConfigurationMenuWrapper>
       FOLLOW_OBJECTIVE_CONFIGURATION_MENU =
           Registry.register(

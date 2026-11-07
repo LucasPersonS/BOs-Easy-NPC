@@ -37,6 +37,7 @@ import de.markusbordihn.easynpc.configui.network.message.server.ChangeFactionMes
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeFactionRelationMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeHomePositionMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeInteractionAttributeMessage;
+import de.markusbordihn.easynpc.configui.network.message.server.ChangeInventoryAttributeMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeModelAnimationDataMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeModelEquipmentVisibilityMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeModelPoseMessage;
@@ -50,6 +51,7 @@ import de.markusbordihn.easynpc.configui.network.message.server.ChangeNamedPoseM
 import de.markusbordihn.easynpc.configui.network.message.server.ChangePoseMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangePositionMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeProfessionMessage;
+import de.markusbordihn.easynpc.configui.network.message.server.ChangeProjectileDataMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeRendererMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeSkinMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeSoundMessage;
@@ -76,6 +78,7 @@ import de.markusbordihn.easynpc.configui.network.message.server.OpenFactionsEdit
 import de.markusbordihn.easynpc.configui.network.message.server.OpenMenuMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.OpenTradingOfferActionEditorMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.OpenTradingOfferActionEntryEditorMessage;
+import de.markusbordihn.easynpc.configui.network.message.server.OpenVisibilityConditionEditorMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.RemoveDialogButtonMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.RemoveDialogMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.RemoveFactionEntryMessage;
@@ -87,6 +90,7 @@ import de.markusbordihn.easynpc.configui.network.message.server.RespawnNPCMessag
 import de.markusbordihn.easynpc.configui.network.message.server.SaveDialogButtonMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.SaveDialogMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.SaveDialogSetMessage;
+import de.markusbordihn.easynpc.configui.network.message.server.SaveVisibilityConditionsMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.SpawnPresetMessage;
 import de.markusbordihn.easynpc.network.NetworkHandlerManagerType;
 import de.markusbordihn.easynpc.network.message.NetworkMessageRecord;
@@ -152,6 +156,7 @@ public class NetworkHandlerManager {
       log.error("Failed to register client network handler!");
       return;
     }
+
     log.info("Registering client network handler ...");
 
     networkHandler.registerClientNetworkMessage(
@@ -180,6 +185,7 @@ public class NetworkHandlerManager {
       log.error("Failed to register server network handler!");
       return;
     }
+
     log.info("Registering server network handler ...");
 
     networkHandler.registerServerNetworkMessage(
@@ -249,6 +255,12 @@ public class NetworkHandlerManager {
         ChangeCombatAttributeMessage::create);
 
     networkHandler.registerServerNetworkMessage(
+        ChangeProjectileDataMessage.PAYLOAD_TYPE,
+        ChangeProjectileDataMessage.STREAM_CODEC,
+        ChangeProjectileDataMessage.class,
+        ChangeProjectileDataMessage::create);
+
+    networkHandler.registerServerNetworkMessage(
         ChangeDisplayAttributeMessage.PAYLOAD_TYPE,
         ChangeDisplayAttributeMessage.STREAM_CODEC,
         ChangeDisplayAttributeMessage.class,
@@ -283,6 +295,12 @@ public class NetworkHandlerManager {
         ChangeInteractionAttributeMessage.STREAM_CODEC,
         ChangeInteractionAttributeMessage.class,
         ChangeInteractionAttributeMessage::create);
+
+    networkHandler.registerServerNetworkMessage(
+        ChangeInventoryAttributeMessage.PAYLOAD_TYPE,
+        ChangeInventoryAttributeMessage.STREAM_CODEC,
+        ChangeInventoryAttributeMessage.class,
+        ChangeInventoryAttributeMessage::create);
 
     networkHandler.registerServerNetworkMessage(
         ChangeModelEquipmentVisibilityMessage.PAYLOAD_TYPE,
@@ -571,5 +589,17 @@ public class NetworkHandlerManager {
         SaveDialogSetMessage.STREAM_CODEC,
         SaveDialogSetMessage.class,
         SaveDialogSetMessage::create);
+
+    networkHandler.registerServerNetworkMessage(
+        OpenVisibilityConditionEditorMessage.PAYLOAD_TYPE,
+        OpenVisibilityConditionEditorMessage.STREAM_CODEC,
+        OpenVisibilityConditionEditorMessage.class,
+        OpenVisibilityConditionEditorMessage::create);
+
+    networkHandler.registerServerNetworkMessage(
+        SaveVisibilityConditionsMessage.PAYLOAD_TYPE,
+        SaveVisibilityConditionsMessage.STREAM_CODEC,
+        SaveVisibilityConditionsMessage.class,
+        SaveVisibilityConditionsMessage::create);
   }
 }

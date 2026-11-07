@@ -21,13 +21,16 @@ package de.markusbordihn.easynpc.data.dialog;
 
 import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.data.condition.ConditionDataEntry;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -114,7 +117,6 @@ public final class DialogDataEntry {
       return Component.empty();
     }
 
-    // Return first dialog text or random dialog text.
     DialogTextData dialogTextData =
         this.dialogTexts.size() == 1
             ? this.dialogTexts.iterator().next()
@@ -131,7 +133,7 @@ public final class DialogDataEntry {
   }
 
   public String getDialogText(DialogMetaData dialogMetaData) {
-    return DialogUtils.parseDialogText(getDialogText(), dialogMetaData);
+    return DialogUtils.parseDialogText(this.getDialogText(), dialogMetaData);
   }
 
   @SuppressWarnings("unused")
@@ -183,6 +185,7 @@ public final class DialogDataEntry {
         return button;
       }
     }
+
     return null;
   }
 
@@ -193,6 +196,7 @@ public final class DialogDataEntry {
         return button;
       }
     }
+
     return null;
   }
 
@@ -205,6 +209,7 @@ public final class DialogDataEntry {
     if (dialogButtonEntry == null) {
       return false;
     }
+
     for (DialogButtonEntry button : this.dialogButtons) {
       if (button.id().equals(dialogButtonEntry.id())
           && !button.id().equals(replacedDialogButtonId)) {
@@ -223,16 +228,16 @@ public final class DialogDataEntry {
       return;
     }
 
-    if (dialogButtonId != null) {
-      for (DialogButtonEntry button : this.dialogButtons) {
-        if (button.id().equals(dialogButtonId)) {
-          this.dialogButtons.remove(button);
-          this.dialogButtons.add(dialogButtonEntry);
-          return;
-        }
-      }
+    DialogButtonEntry replacedButton = this.getDialogButton(dialogButtonId);
+    if (replacedButton == null) {
+      this.dialogButtons.add(dialogButtonEntry);
+      return;
     }
-    this.dialogButtons.add(dialogButtonEntry);
+
+    List<DialogButtonEntry> orderedButtons = new ArrayList<>(this.dialogButtons);
+    orderedButtons.set(orderedButtons.indexOf(replacedButton), dialogButtonEntry);
+    this.dialogButtons.clear();
+    this.dialogButtons.addAll(orderedButtons);
   }
 
   @SuppressWarnings("unused")
@@ -279,17 +284,14 @@ public final class DialogDataEntry {
   public void load(CompoundTag compoundTag) {
     this.name = compoundTag.getString(DATA_DIALOG_NAME);
 
-    // Handle label and id creation
     this.setLabel(
-        compoundTag.contains(DATA_LABEL_TAG) ? compoundTag.getString(DATA_LABEL_TAG) : this.name);
+        compoundTag.contains(DATA_LABEL_TAG) ? compoundTag.getString(DATA_LABEL_TAG) : null);
 
     if (compoundTag.contains(DATA_TEXTS_TAG)) {
       this.dialogTexts.clear();
-      ListTag dialogTextsList = compoundTag.getList(DATA_TEXTS_TAG, 10);
-      if (!dialogTextsList.isEmpty()) {
-        for (int i = 0; i < dialogTextsList.size(); i++) {
-          this.dialogTexts.add(new DialogTextData(dialogTextsList.getCompound(i)));
-        }
+      ListTag dialogTextsList = compoundTag.getList(DATA_TEXTS_TAG, Tag.TAG_COMPOUND);
+      for (int i = 0; i < dialogTextsList.size(); i++) {
+        this.dialogTexts.add(new DialogTextData(dialogTextsList.getCompound(i)));
       }
     } else if (compoundTag.contains(DATA_TEXT_TAG)) {
       this.dialogTexts.clear();
@@ -298,23 +300,19 @@ public final class DialogDataEntry {
 
     if (compoundTag.contains(DATA_BUTTONS_TAG)) {
       this.dialogButtons.clear();
-      ListTag buttonsList = compoundTag.getList(DATA_BUTTONS_TAG, 10);
-      if (!buttonsList.isEmpty()) {
-        for (int i = 0; i < buttonsList.size(); i++) {
-          this.dialogButtons.add(new DialogButtonEntry(buttonsList.getCompound(i)));
-        }
+      ListTag buttonsList = compoundTag.getList(DATA_BUTTONS_TAG, Tag.TAG_COMPOUND);
+      for (int i = 0; i < buttonsList.size(); i++) {
+        this.dialogButtons.add(new DialogButtonEntry(buttonsList.getCompound(i)));
       }
     }
 
     if (compoundTag.contains(DATA_CONDITIONS_TAG)) {
       this.conditions.clear();
-      ListTag conditionsList = compoundTag.getList(DATA_CONDITIONS_TAG, 10);
-      if (!conditionsList.isEmpty()) {
-        for (int i = 0; i < conditionsList.size(); i++) {
-          ConditionDataEntry conditionEntry = new ConditionDataEntry(conditionsList.getCompound(i));
-          if (conditionEntry.isValid()) {
-            this.conditions.add(conditionEntry);
-          }
+      ListTag conditionsList = compoundTag.getList(DATA_CONDITIONS_TAG, Tag.TAG_COMPOUND);
+      for (int i = 0; i < conditionsList.size(); i++) {
+        ConditionDataEntry conditionEntry = new ConditionDataEntry(conditionsList.getCompound(i));
+        if (conditionEntry.isValid()) {
+          this.conditions.add(conditionEntry);
         }
       }
     }
@@ -332,8 +330,7 @@ public final class DialogDataEntry {
   public CompoundTag save(CompoundTag compoundTag) {
     compoundTag.putString(DATA_DIALOG_NAME, this.name.trim());
 
-    // Only save label if it is different from auto-generated label.
-    if (!Objects.equals(DialogUtils.generateDialogLabel(name), this.label)) {
+    if (!Objects.equals(DialogUtils.generateDialogLabel(this.name), this.label)) {
       compoundTag.putString(DATA_LABEL_TAG, this.label);
     }
 
@@ -383,7 +380,7 @@ public final class DialogDataEntry {
 
   @Override
   public String toString() {
-    return "DialogData [id="
+    return "DialogDataEntry [id="
         + this.id
         + ", name="
         + this.name

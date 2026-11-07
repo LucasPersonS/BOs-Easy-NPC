@@ -19,8 +19,13 @@
 
 package de.markusbordihn.easynpc.data.attribute;
 
+import java.util.EnumMap;
+import java.util.Map;
+import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 public class BaseAttributes {
@@ -31,10 +36,14 @@ public class BaseAttributes {
   public static final String FOLLOW_RANGE_TAG = BaseAttributeType.FOLLOW_RANGE.getTagName();
   public static final String KNOCKBACK_RESISTANCE_TAG =
       BaseAttributeType.KNOCKBACK_RESISTANCE.getTagName();
-  private double attackDamage = 2.0F;
-  private double attackKnockback = 0.0F;
-  private double followRange = 32.0F;
-  private double knockbackResistance = 0.0F;
+  public static final String MIN_VALUES_TAG = "MinValues";
+  public static final String MAX_VALUES_TAG = "MaxValues";
+  private final Map<BaseAttributeType, Double> minValues = new EnumMap<>(BaseAttributeType.class);
+  private final Map<BaseAttributeType, Double> maxValues = new EnumMap<>(BaseAttributeType.class);
+  private double attackDamage = 2.0D;
+  private double attackKnockback = 0.0D;
+  private double followRange = 32.0D;
+  private double knockbackResistance = 0.0D;
 
   public BaseAttributes() {}
 
@@ -46,26 +55,47 @@ public class BaseAttributes {
     if (livingEntity == null) {
       return;
     }
-    if (livingEntity.getAttribute(Attributes.FOLLOW_RANGE) != null) {
-      this.setFollowRange(livingEntity.getAttribute(Attributes.FOLLOW_RANGE).getBaseValue());
+
+    this.setFollowRange(getBaseValue(livingEntity, Attributes.FOLLOW_RANGE, this.followRange));
+    this.setKnockbackResistance(
+        getBaseValue(livingEntity, Attributes.KNOCKBACK_RESISTANCE, this.knockbackResistance));
+    this.setAttackDamage(getBaseValue(livingEntity, Attributes.ATTACK_DAMAGE, this.attackDamage));
+    this.setAttackKnockback(
+        getBaseValue(livingEntity, Attributes.ATTACK_KNOCKBACK, this.attackKnockback));
+    for (BaseAttributeType baseAttributeType : BaseAttributeType.values()) {
+      this.minValues.put(baseAttributeType, baseAttributeType.getMinValue());
+      this.maxValues.put(baseAttributeType, baseAttributeType.getMaxValue());
     }
-    if (livingEntity.getAttribute(Attributes.KNOCKBACK_RESISTANCE) != null) {
-      this.setKnockbackResistance(
-          livingEntity.getAttribute(Attributes.KNOCKBACK_RESISTANCE).getBaseValue());
+  }
+
+  private static void loadValues(
+      CompoundTag compoundTag, String tagName, Map<BaseAttributeType, Double> values) {
+    CompoundTag valuesTag = compoundTag.getCompound(tagName);
+    for (BaseAttributeType baseAttributeType : BaseAttributeType.values()) {
+      if (valuesTag.contains(baseAttributeType.getTagName())) {
+        values.put(baseAttributeType, valuesTag.getDouble(baseAttributeType.getTagName()));
+      }
     }
-    if (livingEntity.getAttribute(Attributes.ATTACK_DAMAGE) != null) {
-      this.setAttackDamage(livingEntity.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
-    }
-    if (livingEntity.getAttribute(Attributes.ATTACK_KNOCKBACK) != null) {
-      this.setAttackKnockback(
-          livingEntity.getAttribute(Attributes.ATTACK_KNOCKBACK).getBaseValue());
-    }
+  }
+
+  private static CompoundTag saveValues(Map<BaseAttributeType, Double> values) {
+    CompoundTag valuesTag = new CompoundTag();
+    values.forEach(
+        (baseAttributeType, value) -> valuesTag.putDouble(baseAttributeType.getTagName(), value));
+    return valuesTag;
+  }
+
+  private static double getBaseValue(
+      LivingEntity livingEntity, Holder<Attribute> attribute, double defaultValue) {
+    AttributeInstance attributeInstance = livingEntity.getAttribute(attribute);
+    return attributeInstance != null ? attributeInstance.getBaseValue() : defaultValue;
   }
 
   public void load(final CompoundTag compoundTag) {
     if (!compoundTag.contains(BASE_ATTRIBUTES_TAG)) {
       return;
     }
+
     CompoundTag baseAttributesTag = compoundTag.getCompound(BASE_ATTRIBUTES_TAG);
     if (baseAttributesTag.contains(FOLLOW_RANGE_TAG)) {
       this.setFollowRange(baseAttributesTag.getDouble(FOLLOW_RANGE_TAG));
@@ -79,20 +109,34 @@ public class BaseAttributes {
     if (baseAttributesTag.contains(ATTACK_KNOCKBACK_TAG)) {
       this.setAttackKnockback(baseAttributesTag.getDouble(ATTACK_KNOCKBACK_TAG));
     }
+    loadValues(baseAttributesTag, MIN_VALUES_TAG, this.minValues);
+    loadValues(baseAttributesTag, MAX_VALUES_TAG, this.maxValues);
   }
 
   public CompoundTag save(CompoundTag compoundTag) {
     CompoundTag baseAttributesTag = new CompoundTag();
-    baseAttributesTag.putDouble(FOLLOW_RANGE_TAG, (float) this.getFollowRange());
-    baseAttributesTag.putDouble(KNOCKBACK_RESISTANCE_TAG, (float) this.getKnockbackResistance());
-    baseAttributesTag.putDouble(ATTACK_DAMAGE_TAG, (float) this.getAttackDamage());
-    baseAttributesTag.putDouble(ATTACK_KNOCKBACK_TAG, (float) this.getAttackKnockback());
+    baseAttributesTag.putDouble(FOLLOW_RANGE_TAG, this.getFollowRange());
+    baseAttributesTag.putDouble(KNOCKBACK_RESISTANCE_TAG, this.getKnockbackResistance());
+    baseAttributesTag.putDouble(ATTACK_DAMAGE_TAG, this.getAttackDamage());
+    baseAttributesTag.putDouble(ATTACK_KNOCKBACK_TAG, this.getAttackKnockback());
+    baseAttributesTag.put(MIN_VALUES_TAG, saveValues(this.minValues));
+    baseAttributesTag.put(MAX_VALUES_TAG, saveValues(this.maxValues));
     compoundTag.put(BASE_ATTRIBUTES_TAG, baseAttributesTag);
     return compoundTag;
   }
 
   public CompoundTag createTag() {
     return this.save(new CompoundTag());
+  }
+
+  public double getMinValue(BaseAttributeType baseAttributeType) {
+    Double minValue = this.minValues.get(baseAttributeType);
+    return minValue != null ? minValue : baseAttributeType.getMinValue();
+  }
+
+  public double getMaxValue(BaseAttributeType baseAttributeType) {
+    Double maxValue = this.maxValues.get(baseAttributeType);
+    return maxValue != null ? maxValue : baseAttributeType.getMaxValue();
   }
 
   public double getFollowRange() {

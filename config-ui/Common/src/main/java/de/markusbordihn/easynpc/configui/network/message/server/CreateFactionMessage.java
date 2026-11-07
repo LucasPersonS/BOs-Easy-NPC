@@ -42,7 +42,7 @@ public record CreateFactionMessage(UUID uuid, String factionName) implements Net
       StreamCodec.of((buffer, message) -> message.write(buffer), CreateFactionMessage::create);
 
   public static CreateFactionMessage create(final FriendlyByteBuf buffer) {
-    return new CreateFactionMessage(buffer.readUUID(), buffer.readUtf());
+    return new CreateFactionMessage(buffer.readUUID(), buffer.readUtf(MAX_NAME_LENGTH));
   }
 
   @Override
@@ -63,9 +63,9 @@ public record CreateFactionMessage(UUID uuid, String factionName) implements Net
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null || !FactionNameValidator.isValid(this.factionName)) {
-      log.error("Invalid data to create faction for {}: ", this);
+      log.warn("Invalid data to create faction for {}", this);
       return;
     }
 

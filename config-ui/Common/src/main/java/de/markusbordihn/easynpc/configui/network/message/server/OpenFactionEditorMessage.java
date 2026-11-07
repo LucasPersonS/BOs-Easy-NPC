@@ -46,7 +46,7 @@ public record OpenFactionEditorMessage(UUID uuid, String factionName)
       StreamCodec.of((buffer, message) -> message.write(buffer), OpenFactionEditorMessage::create);
 
   public static OpenFactionEditorMessage create(final FriendlyByteBuf buffer) {
-    return new OpenFactionEditorMessage(buffer.readUUID(), buffer.readUtf());
+    return new OpenFactionEditorMessage(buffer.readUUID(), buffer.readUtf(MAX_NAME_LENGTH));
   }
 
   @Override
@@ -67,9 +67,9 @@ public record OpenFactionEditorMessage(UUID uuid, String factionName)
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null || this.factionName == null || this.factionName.isEmpty()) {
-      log.error("Invalid data to open faction editor for {}: ", this);
+      log.warn("Invalid data to open faction editor for {}", this);
       return;
     }
 

@@ -995,8 +995,8 @@ public final class WorldDialogOverlay {
           (entry.hasConditions()
                   && !ClientConditionEvaluator.evaluateAll(
                       entry.conditions(), minecraft.player, easyNPC.getLivingEntity()))
-              || additionalData.isExecutionLimitReached(entry.id())
-              || additionalData.isDialogButtonLocked(entry.id());
+              || additionalData.isExecutionLimitReached(dialog.getId(), entry.id())
+              || additionalData.isDialogButtonLocked(dialog.getId(), entry.id());
       if (unavailable && options.buttonConditionMode() == DialogButtonConditionMode.HIDE) {
         continue;
       }

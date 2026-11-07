@@ -24,17 +24,19 @@ import de.markusbordihn.easynpc.data.action.ActionEventType;
 import de.markusbordihn.easynpc.data.condition.ConditionDataEntry;
 import de.markusbordihn.easynpc.data.condition.ConditionType;
 import de.markusbordihn.easynpc.data.dialog.DialogButtonEntry;
+import de.markusbordihn.easynpc.data.dialog.DialogButtonReference;
 import de.markusbordihn.easynpc.data.dialog.DialogDataEntry;
 import de.markusbordihn.easynpc.data.dialog.DialogDataSet;
 import de.markusbordihn.easynpc.data.dialog.DialogTextData;
 import de.markusbordihn.easynpc.data.scoreboard.ScoreboardData;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -63,17 +65,16 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
   private final CompoundTag data;
   private final DialogDataSet dialogDataSet;
   private final ScoreboardData scoreboardData;
-  private final Set<UUID> lockedDialogButtons;
-  private final Set<UUID> lockedExecutionLimitActions;
+  private final Set<DialogButtonReference> lockedDialogButtons;
+  private final Set<DialogButtonReference> lockedExecutionLimitButtons;
 
   public AdditionalScreenData(CompoundTag compoundTag) {
-    // Processing know data.
     this.actionEventSet = getActionEventSet(compoundTag);
     this.actionEventType = getActionEventType(compoundTag);
     this.dialogDataSet = getDialogDataSet(compoundTag);
     this.scoreboardData = getScoreboardData(compoundTag);
     this.lockedDialogButtons = getLockedDialogButtons(compoundTag);
-    this.lockedExecutionLimitActions = getLockedExecutionLimitActions(compoundTag);
+    this.lockedExecutionLimitButtons = getLockedExecutionLimitButtons(compoundTag);
 
     // Keep the remaining data in an own tag, so that the tag of the caller stays complete.
     this.data = new CompoundTag();
@@ -88,6 +89,7 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     if (compoundTag == null || actionEventType == null) {
       return;
     }
+
     compoundTag.putString(ACTION_EVENT_TYPE_TAG, actionEventType.name());
   }
 
@@ -95,6 +97,7 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     if (!hasActionEventType(compoundTag)) {
       return ActionEventType.NONE;
     }
+
     return ActionEventType.get(compoundTag.getString(ACTION_EVENT_TYPE_TAG));
   }
 
@@ -106,6 +109,7 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     if (compoundTag == null || easyNPC == null || easyNPC.getEasyNPCActionEventData() == null) {
       return;
     }
+
     compoundTag.put(
         ACTION_EVENT_DATA_TAG, easyNPC.getEasyNPCActionEventData().getActionEventSet().createTag());
   }
@@ -114,6 +118,7 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     if (!hasActionEventSet(compoundTag)) {
       return new ActionEventSet();
     }
+
     return new ActionEventSet(compoundTag.getCompound(ACTION_EVENT_DATA_TAG));
   }
 
@@ -125,6 +130,7 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     if (compoundTag == null || easyNPC == null || easyNPC.getEasyNPCDialogData() == null) {
       return;
     }
+
     compoundTag.put(DIALOG_DATA_TAG, easyNPC.getEasyNPCDialogData().getDialogDataSet().createTag());
   }
 
@@ -132,6 +138,7 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     if (!hasDialogDataSet(compoundTag)) {
       return new DialogDataSet();
     }
+
     return new DialogDataSet(compoundTag.getCompound(DIALOG_DATA_TAG));
   }
 
@@ -143,6 +150,7 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     if (compoundTag == null || scoreboardData == null) {
       return;
     }
+
     compoundTag.put(SCOREBOARD_DATA_TAG, scoreboardData.createTag());
   }
 
@@ -150,6 +158,7 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     if (!hasScoreboardData(compoundTag)) {
       return new ScoreboardData();
     }
+
     return new ScoreboardData(compoundTag.getCompound(SCOREBOARD_DATA_TAG));
   }
 
@@ -185,11 +194,10 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
       return;
     }
 
-    ListTag lockedButtons =
-        DialogLockSnapshot.collectLockedDialogButtons(dialogDataSet, serverPlayer, easyNPC);
-    if (!lockedButtons.isEmpty()) {
-      compoundTag.put(DIALOG_BUTTON_LOCK_DATA_TAG, lockedButtons);
-    }
+    putLockedButtons(
+        compoundTag,
+        DIALOG_BUTTON_LOCK_DATA_TAG,
+        DialogLockSnapshot.collectLockedDialogButtons(dialogDataSet, serverPlayer, easyNPC));
   }
 
   public static void addExecutionLimitData(
@@ -201,30 +209,43 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
       return;
     }
 
-    ListTag lockedActions =
-        DialogLockSnapshot.collectLockedExecutionLimits(dialogDataSet, serverPlayer, easyNPC);
-    if (!lockedActions.isEmpty()) {
-      compoundTag.put(EXECUTION_LIMIT_DATA_TAG, lockedActions);
+    putLockedButtons(
+        compoundTag,
+        EXECUTION_LIMIT_DATA_TAG,
+        DialogLockSnapshot.collectLockedExecutionLimits(dialogDataSet, serverPlayer, easyNPC));
+  }
+
+  public static Set<DialogButtonReference> getLockedExecutionLimitButtons(CompoundTag compoundTag) {
+    return getLockedButtons(compoundTag, EXECUTION_LIMIT_DATA_TAG);
+  }
+
+  public static Set<DialogButtonReference> getLockedDialogButtons(CompoundTag compoundTag) {
+    return getLockedButtons(compoundTag, DIALOG_BUTTON_LOCK_DATA_TAG);
+  }
+
+  private static void putLockedButtons(
+      CompoundTag compoundTag, String dataTag, List<DialogButtonReference> lockedButtons) {
+    if (lockedButtons.isEmpty()) {
+      return;
     }
+
+    DialogButtonReference.LIST_CODEC
+        .encodeStart(NbtOps.INSTANCE, lockedButtons)
+        .result()
+        .ifPresent(tag -> compoundTag.put(dataTag, tag));
   }
 
-  public static Set<UUID> getLockedExecutionLimitActions(CompoundTag compoundTag) {
-    return getLockedActions(compoundTag, EXECUTION_LIMIT_DATA_TAG);
-  }
-
-  public static Set<UUID> getLockedDialogButtons(CompoundTag compoundTag) {
-    return getLockedActions(compoundTag, DIALOG_BUTTON_LOCK_DATA_TAG);
-  }
-
-  private static Set<UUID> getLockedActions(CompoundTag compoundTag, String dataTag) {
-    Set<UUID> lockedActions = new HashSet<>();
-    if (compoundTag != null && compoundTag.contains(dataTag)) {
-      ListTag listTag = compoundTag.getList(dataTag, Tag.TAG_INT_ARRAY);
-      for (Tag tag : listTag) {
-        lockedActions.add(NbtUtils.loadUUID(tag));
-      }
+  private static Set<DialogButtonReference> getLockedButtons(
+      CompoundTag compoundTag, String dataTag) {
+    if (compoundTag == null || !compoundTag.contains(dataTag)) {
+      return Set.of();
     }
-    return lockedActions;
+
+    return DialogButtonReference.LIST_CODEC
+        .parse(NbtOps.INSTANCE, compoundTag.get(dataTag))
+        .result()
+        .map(Set::copyOf)
+        .orElse(Set.of());
   }
 
   private static Set<String> extractObjectiveNamesFromDialogDataSet(DialogDataSet dialogDataSet) {
@@ -237,6 +258,7 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
       if (dialogEntry == null) {
         continue;
       }
+
       if (dialogEntry.getDialogTexts() != null) {
         for (DialogTextData dialogTextData : dialogEntry.getDialogTexts()) {
           if (dialogTextData != null && dialogTextData.text() != null) {
@@ -248,6 +270,7 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
         if (buttonEntry == null || !buttonEntry.hasConditions()) {
           continue;
         }
+
         for (ConditionDataEntry condition : buttonEntry.conditions()) {
           if (condition != null
               && condition.conditionType() == ConditionType.SCOREBOARD
@@ -281,13 +304,15 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     if (this.data.contains(dataTag)) {
       return this.data.getCompound(dataTag);
     }
+
     return new CompoundTag();
   }
 
   public ListTag getList(String dataTag) {
     if (this.data.contains(dataTag)) {
-      return this.data.getList(dataTag, 10);
+      return this.data.getList(dataTag, Tag.TAG_COMPOUND);
     }
+
     return new ListTag();
   }
 
@@ -299,15 +324,13 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     return this.scoreboardData;
   }
 
-  public Set<UUID> getLockedExecutionLimitActions() {
-    return this.lockedExecutionLimitActions;
+  @Override
+  public boolean isDialogButtonLocked(UUID dialogId, UUID buttonId) {
+    return this.lockedDialogButtons.contains(new DialogButtonReference(dialogId, buttonId));
   }
 
-  public boolean isDialogButtonLocked(UUID buttonId) {
-    return buttonId != null && this.lockedDialogButtons.contains(buttonId);
-  }
-
-  public boolean isExecutionLimitReached(UUID actionId) {
-    return actionId != null && this.lockedExecutionLimitActions.contains(actionId);
+  @Override
+  public boolean isExecutionLimitReached(UUID dialogId, UUID buttonId) {
+    return this.lockedExecutionLimitButtons.contains(new DialogButtonReference(dialogId, buttonId));
   }
 }

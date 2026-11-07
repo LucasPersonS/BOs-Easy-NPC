@@ -19,21 +19,23 @@
 
 package de.markusbordihn.easynpc.configui.client.screen;
 
-import de.markusbordihn.easynpc.configui.Constants;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.actions.BasicActionConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.actions.DialogActionConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.actions.DistanceActionConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.actions.IntervalActionConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.AbilitiesAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.BaseAttributeConfigurationScreenWrapper;
+import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.BossBarAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.CombatAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.DisplayAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.MiscAttributeConfigurationScreenWrapper;
+import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.ProjectileAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.AdvancedDialogConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.BasicDialogConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.NoneDialogConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.YesNoDialogConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.equipment.EquipmentConfigurationContainerScreenWrapper;
+import de.markusbordihn.easynpc.configui.client.screen.configuration.inventory.InventoryConfigurationContainerScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.main.MainConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.model.CobblemonModelConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.model.CustomModelConfigurationScreenWrapper;
@@ -85,12 +87,8 @@ import de.markusbordihn.easynpc.configui.client.screen.editor.faction.FactionsEd
 import de.markusbordihn.easynpc.configui.client.screen.preset.PresetBrowserScreen;
 import de.markusbordihn.easynpc.configui.menu.ModMenuTypes;
 import net.minecraft.client.gui.screens.MenuScreens;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class ClientScreens {
-
-  protected static final Logger log = LogManager.getLogger(Constants.LOG_NAME);
 
   private ClientScreens() {}
 
@@ -145,6 +143,12 @@ public class ClientScreens {
     MenuScreens.register(
         ModMenuTypes.COMBAT_ATTRIBUTE_CONFIGURATION_MENU,
         CombatAttributeConfigurationScreenWrapper::new);
+    MenuScreens.register(
+        ModMenuTypes.PROJECTILE_ATTRIBUTE_CONFIGURATION_MENU,
+        ProjectileAttributeConfigurationScreenWrapper::new);
+    MenuScreens.register(
+        ModMenuTypes.BOSS_BAR_ATTRIBUTE_CONFIGURATION_MENU,
+        BossBarAttributeConfigurationScreenWrapper::new);
     MenuScreens.register(
         ModMenuTypes.COMBAT_SOUND_CONFIGURATION_MENU, CombatSoundConfigurationScreenWrapper::new);
     MenuScreens.register(
@@ -213,6 +217,9 @@ public class ClientScreens {
     MenuScreens.register(
         ModMenuTypes.EQUIPMENT_CONFIGURATION_MENU,
         EquipmentConfigurationContainerScreenWrapper::new);
+    MenuScreens.register(
+        ModMenuTypes.INVENTORY_CONFIGURATION_MENU,
+        InventoryConfigurationContainerScreenWrapper::new);
     MenuScreens.register(
         ModMenuTypes.FOLLOW_OBJECTIVE_CONFIGURATION_MENU,
         FollowObjectiveConfigurationScreenWrapper::new);

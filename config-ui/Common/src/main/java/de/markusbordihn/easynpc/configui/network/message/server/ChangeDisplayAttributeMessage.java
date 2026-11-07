@@ -49,6 +49,7 @@ public record ChangeDisplayAttributeMessage(
       STREAM_CODEC =
           StreamCodec.of(
               (buffer, message) -> message.write(buffer), ChangeDisplayAttributeMessage::create);
+  private static final int MAX_STRING_VALUE_LENGTH = 64;
 
   public ChangeDisplayAttributeMessage(
       final UUID uuid, final DisplayAttributeType attributeType, final Boolean value) {
@@ -60,14 +61,19 @@ public record ChangeDisplayAttributeMessage(
     this(uuid, attributeType, ValueType.INTEGER, false, value, "");
   }
 
+  public ChangeDisplayAttributeMessage(
+      final UUID uuid, final DisplayAttributeType attributeType, final String value) {
+    this(uuid, attributeType, ValueType.STRING, false, 0, value);
+  }
+
   public static ChangeDisplayAttributeMessage create(final FriendlyByteBuf buffer) {
     return new ChangeDisplayAttributeMessage(
         buffer.readUUID(),
-        buffer.readEnum(DisplayAttributeType.class),
-        buffer.readEnum(ValueType.class),
+        NetworkMessageRecord.readEnum(buffer, DisplayAttributeType.class),
+        NetworkMessageRecord.readEnum(buffer, ValueType.class),
         buffer.readBoolean(),
         buffer.readInt(),
-        buffer.readUtf());
+        buffer.readUtf(MAX_STRING_VALUE_LENGTH));
   }
 
   @Override
@@ -77,7 +83,7 @@ public record ChangeDisplayAttributeMessage(
     buffer.writeEnum(this.valueType);
     buffer.writeBoolean(this.booleanValue);
     buffer.writeInt(this.integerValue);
-    buffer.writeUtf(this.stringValue);
+    buffer.writeUtf(this.stringValue, MAX_STRING_VALUE_LENGTH);
   }
 
   @Override
@@ -92,12 +98,19 @@ public record ChangeDisplayAttributeMessage(
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }
 
-    switch (valueType) {
+    if (this.attributeType == null
+        || this.valueType == null
+        || this.valueType != this.attributeType.getValueType()) {
+      log.warn("Invalid display attribute for {} from {}", easyNPC, serverPlayer);
+      return;
+    }
+
+    switch (this.valueType) {
       case BOOLEAN ->
           AttributeHandler.setDisplayAttribute(easyNPC, this.attributeType, this.booleanValue);
       case INTEGER ->
@@ -105,7 +118,7 @@ public record ChangeDisplayAttributeMessage(
       case STRING ->
           AttributeHandler.setDisplayAttribute(easyNPC, this.attributeType, this.stringValue);
       default ->
-          log.error(
+          log.warn(
               "Invalid display value type {} for {} from {}",
               this.valueType,
               easyNPC,

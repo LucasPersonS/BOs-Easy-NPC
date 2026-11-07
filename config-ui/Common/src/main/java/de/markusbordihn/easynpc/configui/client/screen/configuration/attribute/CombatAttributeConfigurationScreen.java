@@ -19,6 +19,7 @@
 
 package de.markusbordihn.easynpc.configui.client.screen.configuration.attribute;
 
+import de.markusbordihn.easynpc.client.screen.components.TextButton;
 import de.markusbordihn.easynpc.configui.client.screen.components.Checkbox;
 import de.markusbordihn.easynpc.configui.client.screen.components.HelpIcon;
 import de.markusbordihn.easynpc.configui.menu.configuration.ConfigurationMenu;
@@ -26,6 +27,7 @@ import de.markusbordihn.easynpc.configui.network.NetworkMessageHandlerManager;
 import de.markusbordihn.easynpc.data.attribute.CombatAttributeType;
 import de.markusbordihn.easynpc.data.attribute.EntityAttributes;
 import de.markusbordihn.easynpc.data.attribute.InteractionAttributeType;
+import de.markusbordihn.easynpc.data.configuration.ConfigurationType;
 import de.markusbordihn.easynpc.entity.easynpc.data.AttributeDataCapable;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -42,13 +44,10 @@ public class CombatAttributeConfigurationScreen<T extends ConfigurationMenu>
   public void init() {
     super.init();
 
-    // Default button stats
     this.combatAttributeButton.active = false;
 
-    // Button rows
     int firstButtonRow = this.leftPos + 10;
 
-    // Attribute data
     AttributeDataCapable<?> attributeData = this.getEasyNPC().getEasyNPCAttributeData();
     EntityAttributes entityAttributes = attributeData.getEntityAttributes();
 
@@ -145,6 +144,17 @@ public class CombatAttributeConfigurationScreen<T extends ConfigurationMenu>
                         this.getEasyNPCUUID(),
                         CombatAttributeType.IS_EXPLOSION_RESISTANT,
                         checkbox.selected())));
+
+    this.addRenderableWidget(
+        new TextButton(
+            firstButtonRow,
+            this.buttonTopPos + 175,
+            140,
+            "projectile_settings",
+            onPress ->
+                NetworkMessageHandlerManager.getServerHandler()
+                    .openConfiguration(
+                        this.getEasyNPCUUID(), ConfigurationType.PROJECTILE_ATTRIBUTE)));
   }
 
   @Override

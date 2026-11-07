@@ -83,7 +83,7 @@ public class NetworkHandler implements NetworkHandlerInterface {
       final Class<M> networkMessage,
       final Function<FriendlyByteBuf, M> creator) {
     int registrationID = id++;
-    logRegisterClientNetworkMessageHandler(type, networkMessage, registrationID);
+    this.logRegisterClientNetworkMessageHandler(type, networkMessage, registrationID);
     INSTANCE
         .messageBuilder(networkMessage, registrationID, NetworkDirection.PLAY_TO_CLIENT)
         .encoder(M::write)
@@ -96,7 +96,13 @@ public class NetworkHandler implements NetworkHandlerInterface {
                       log.warn("Received null client message, ignoring packet");
                       return;
                     }
-                    DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> message::handleClient);
+
+                    NetworkMessageRecord.guardedHandler(
+                            type.id(),
+                            () ->
+                                DistExecutor.unsafeRunWhenOn(
+                                    Dist.CLIENT, () -> message::handleClient))
+                        .run();
                   });
               context.setPacketHandled(true);
             })
@@ -110,7 +116,7 @@ public class NetworkHandler implements NetworkHandlerInterface {
       final Class<M> networkMessage,
       final Function<FriendlyByteBuf, M> creator) {
     int registrationID = id++;
-    logRegisterServerNetworkMessageHandler(type, networkMessage, registrationID);
+    this.logRegisterServerNetworkMessageHandler(type, networkMessage, registrationID);
     INSTANCE
         .messageBuilder(networkMessage, registrationID, NetworkDirection.PLAY_TO_SERVER)
         .encoder(M::write)
@@ -123,12 +129,16 @@ public class NetworkHandler implements NetworkHandlerInterface {
                       log.warn("Received null message, ignoring packet");
                       return;
                     }
+
                     ServerPlayer sender = context.getSender();
-                    if (sender instanceof ServerPlayer) {
-                      message.handleServer(sender);
-                    } else {
+                    if (sender == null) {
                       log.error("Unable to get valid player for network message {}", message);
+                      return;
                     }
+
+                    NetworkMessageRecord.guardedHandler(
+                            type.id(), () -> message.handleServer(sender))
+                        .run();
                   });
               context.setPacketHandled(true);
             })
@@ -138,48 +148,48 @@ public class NetworkHandler implements NetworkHandlerInterface {
   @Override
   public <M extends NetworkMessageRecord> void addClientMessage(
       final CustomPacketPayload.Type<M> messageID, final Class<M> networkMessage) {
-    clientMessages.put(messageID, networkMessage);
+    this.clientMessages.put(messageID, networkMessage);
   }
 
   @Override
   public <M extends NetworkMessageRecord> void addServerMessage(
       final CustomPacketPayload.Type<M> messageID, final Class<M> networkMessage) {
-    serverMessages.put(messageID, networkMessage);
+    this.serverMessages.put(messageID, networkMessage);
   }
 
   @Override
   public Map<CustomPacketPayload.Type<?>, Class<? extends NetworkMessageRecord>>
       getClientMessages() {
-    return clientMessages;
+    return this.clientMessages;
   }
 
   @Override
   public Map<CustomPacketPayload.Type<?>, Class<? extends NetworkMessageRecord>>
       getServerMessages() {
-    return serverMessages;
+    return this.serverMessages;
   }
 
   @Override
   public <M extends NetworkMessageRecord> void addRegisteredClientMessage(
       final CustomPacketPayload.Type<M> messageID, final Class<M> networkMessage) {
-    registeredClientMessages.put(messageID, networkMessage);
+    this.registeredClientMessages.put(messageID, networkMessage);
   }
 
   @Override
   public <M extends NetworkMessageRecord> void addRegisteredServerMessage(
       final CustomPacketPayload.Type<M> messageID, final Class<M> networkMessage) {
-    registeredServerMessages.put(messageID, networkMessage);
+    this.registeredServerMessages.put(messageID, networkMessage);
   }
 
   @Override
   public Map<CustomPacketPayload.Type<?>, Class<? extends NetworkMessageRecord>>
       getRegisteredClientMessages() {
-    return registeredClientMessages;
+    return this.registeredClientMessages;
   }
 
   @Override
   public Map<CustomPacketPayload.Type<?>, Class<? extends NetworkMessageRecord>>
       getRegisteredServerMessages() {
-    return registeredServerMessages;
+    return this.registeredServerMessages;
   }
 }

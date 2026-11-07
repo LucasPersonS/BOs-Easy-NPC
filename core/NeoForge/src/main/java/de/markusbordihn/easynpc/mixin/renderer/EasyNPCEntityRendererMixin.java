@@ -24,7 +24,6 @@ import de.markusbordihn.easynpc.client.model.EasyNPCModel;
 import de.markusbordihn.easynpc.client.renderer.entity.EasyNPCRenderVisibility;
 import de.markusbordihn.easynpc.client.renderer.entity.NameTagRenderer;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
-import de.markusbordihn.easynpc.entity.easynpc.data.DisplayAttributeDataCapable;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -47,21 +46,19 @@ public class EasyNPCEntityRendererMixin<T extends Entity> {
       double x,
       double y,
       double z,
-      CallbackInfoReturnable<Boolean> cir) {
+      CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
     Boolean shouldRender = EasyNPCRenderVisibility.resolveShouldRenderOverride(entity);
     if (shouldRender != null) {
-      cir.setReturnValue(shouldRender);
+      callbackInfoReturnable.setReturnValue(shouldRender);
     }
   }
 
   @Inject(method = "getBlockLightLevel", at = @At("HEAD"), cancellable = true)
   private void onGetBlockLightLevel(
-      T entity, BlockPos blockPos, CallbackInfoReturnable<Integer> cir) {
-    if (entity instanceof EasyNPC<?> easyNPC
-        && easyNPC.getEasyNPCDisplayAttributeData() instanceof DisplayAttributeDataCapable<?>) {
-      cir.setReturnValue(
-          EasyNPCModel.getEntityLightLevel(
-              easyNPC, easyNPC.getEasyNPCDisplayAttributeData(), blockPos));
+      T entity, BlockPos blockPos, CallbackInfoReturnable<Integer> callbackInfoReturnable) {
+    if (entity instanceof EasyNPC<?> easyNPC) {
+      EasyNPCModel.getFixedEntityLightLevel(easyNPC.getEasyNPCDisplayAttributeData())
+          .ifPresent(callbackInfoReturnable::setReturnValue);
     }
   }
 
@@ -73,11 +70,11 @@ public class EasyNPCEntityRendererMixin<T extends Entity> {
       MultiBufferSource multiBufferSource,
       int packedLight,
       float partialTick,
-      CallbackInfo ci) {
+      CallbackInfo callbackInfo) {
     if (entity instanceof EasyNPC<?>) {
       NameTagRenderer.render(
           entity, displayName, poseStack, multiBufferSource, packedLight, partialTick);
-      ci.cancel();
+      callbackInfo.cancel();
     }
   }
 }

@@ -46,7 +46,9 @@ public record ChangeBasicTradingMessage(
 
   public static ChangeBasicTradingMessage create(final FriendlyByteBuf buffer) {
     return new ChangeBasicTradingMessage(
-        buffer.readUUID(), buffer.readEnum(TradingValueType.class), buffer.readInt());
+        buffer.readUUID(),
+        NetworkMessageRecord.readEnum(buffer, TradingValueType.class),
+        buffer.readInt());
   }
 
   @Override
@@ -68,7 +70,7 @@ public record ChangeBasicTradingMessage(
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }
@@ -111,11 +113,13 @@ public record ChangeBasicTradingMessage(
       case MAX_USES:
         log.debug("Set max uses to {} for {} from {}", this.tradingValue, easyNPC, serverPlayer);
         tradingData.getTradingDataSet().setMaxUses(this.tradingValue);
+        tradingData.updateTradingDataSet();
         TradingOfferHandler.updateBasicTradingOffers(tradingData);
         break;
       case REWARD_EXP:
         log.debug("Set reward exp to {} for {} from {}", this.tradingValue, easyNPC, serverPlayer);
         tradingData.getTradingDataSet().setRewardedXP(this.tradingValue);
+        tradingData.updateTradingDataSet();
         TradingOfferHandler.updateBasicTradingOffers(tradingData);
         break;
       case LAST_TRADING_RESET:

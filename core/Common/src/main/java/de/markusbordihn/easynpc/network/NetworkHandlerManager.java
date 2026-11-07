@@ -28,6 +28,7 @@ import de.markusbordihn.easynpc.network.message.client.SyncDataMessage;
 import de.markusbordihn.easynpc.network.message.client.WorldDialogStateMessage;
 import de.markusbordihn.easynpc.network.message.server.BeginWorldDialogMessage;
 import de.markusbordihn.easynpc.network.message.server.CloseWorldDialogMessage;
+import de.markusbordihn.easynpc.network.message.client.UpdateEasyNPCVisibilityMessage;
 import de.markusbordihn.easynpc.network.message.server.ExecuteActionEventMessage;
 import de.markusbordihn.easynpc.network.message.server.ExecuteDialogButtonActionMessage;
 import de.markusbordihn.easynpc.network.message.server.OpenMenuMessage;
@@ -124,6 +125,12 @@ public class NetworkHandlerManager {
         HighlightEasyNPCMessage.STREAM_CODEC,
         HighlightEasyNPCMessage.class,
         HighlightEasyNPCMessage::create);
+
+    networkHandler.registerClientNetworkMessage(
+        UpdateEasyNPCVisibilityMessage.PAYLOAD_TYPE,
+        UpdateEasyNPCVisibilityMessage.STREAM_CODEC,
+        UpdateEasyNPCVisibilityMessage.class,
+        UpdateEasyNPCVisibilityMessage::create);
 
     networkHandler.registerClientNetworkMessage(
         WorldDialogStateMessage.PAYLOAD_TYPE,

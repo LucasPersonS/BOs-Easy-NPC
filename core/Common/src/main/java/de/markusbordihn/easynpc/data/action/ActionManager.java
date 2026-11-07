@@ -36,17 +36,11 @@ public class ActionManager {
     if (mob == null || actionGroup == null || serverPlayer == null) {
       return;
     }
-    EnumMap<ActionGroup, HashSet<ServerPlayer>> actionGroupPlayer = actionGroupPlayerMap.get(mob);
-    if (actionGroupPlayer == null) {
-      actionGroupPlayer = new EnumMap<>(ActionGroup.class);
-    }
-    HashSet<ServerPlayer> playerList = actionGroupPlayer.get(actionGroup);
-    if (playerList == null) {
-      playerList = new HashSet<>();
-    }
-    playerList.add(serverPlayer);
-    actionGroupPlayer.put(actionGroup, playerList);
-    actionGroupPlayerMap.put(mob, actionGroupPlayer);
+
+    actionGroupPlayerMap
+        .computeIfAbsent(mob, absentMob -> new EnumMap<>(ActionGroup.class))
+        .computeIfAbsent(actionGroup, absentActionGroup -> new HashSet<>())
+        .add(serverPlayer);
   }
 
   public static boolean containsPlayer(
@@ -54,14 +48,17 @@ public class ActionManager {
     if (mob == null || actionGroup == null || serverPlayer == null) {
       return false;
     }
+
     EnumMap<ActionGroup, HashSet<ServerPlayer>> actionGroupPlayer = actionGroupPlayerMap.get(mob);
     if (actionGroupPlayer == null) {
       return false;
     }
+
     HashSet<ServerPlayer> playerList = actionGroupPlayer.get(actionGroup);
     if (playerList == null) {
       return false;
     }
+
     return playerList.contains(serverPlayer);
   }
 
@@ -69,28 +66,59 @@ public class ActionManager {
     if (mob == null || actionGroup == null || serverPlayer == null) {
       return;
     }
+
     EnumMap<ActionGroup, HashSet<ServerPlayer>> actionGroupPlayer = actionGroupPlayerMap.get(mob);
     if (actionGroupPlayer == null) {
       return;
     }
+
     HashSet<ServerPlayer> playerList = actionGroupPlayer.get(actionGroup);
-    if (playerList == null || !playerList.contains(serverPlayer)) {
+    if (playerList == null || !playerList.remove(serverPlayer)) {
       return;
     }
-    playerList.remove(serverPlayer);
-    actionGroupPlayer.put(actionGroup, playerList);
-    actionGroupPlayerMap.put(mob, actionGroupPlayer);
+
+    if (playerList.isEmpty()) {
+      actionGroupPlayer.remove(actionGroup);
+    }
+    if (actionGroupPlayer.isEmpty()) {
+      actionGroupPlayerMap.remove(mob);
+    }
   }
 
   public static void removeActionGroup(Mob mob, ActionGroup actionGroup) {
     if (mob == null || actionGroup == null) {
       return;
     }
+
     EnumMap<ActionGroup, HashSet<ServerPlayer>> actionGroupPlayer = actionGroupPlayerMap.get(mob);
-    if (actionGroupPlayer == null || !actionGroupPlayer.containsKey(actionGroup)) {
+    if (actionGroupPlayer == null || actionGroupPlayer.remove(actionGroup) == null) {
       return;
     }
-    actionGroupPlayer.remove(actionGroup);
-    actionGroupPlayerMap.put(mob, actionGroupPlayer);
+
+    if (actionGroupPlayer.isEmpty()) {
+      actionGroupPlayerMap.remove(mob);
+    }
+  }
+
+  public static void removeMob(Mob mob) {
+    if (mob != null) {
+      actionGroupPlayerMap.remove(mob);
+    }
+  }
+
+  public static void removeServerPlayer(ServerPlayer serverPlayer) {
+    if (serverPlayer == null) {
+      return;
+    }
+
+    actionGroupPlayerMap
+        .values()
+        .removeIf(
+            actionGroupPlayer -> {
+              actionGroupPlayer
+                  .values()
+                  .removeIf(playerList -> playerList.remove(serverPlayer) && playerList.isEmpty());
+              return actionGroupPlayer.isEmpty();
+            });
   }
 }

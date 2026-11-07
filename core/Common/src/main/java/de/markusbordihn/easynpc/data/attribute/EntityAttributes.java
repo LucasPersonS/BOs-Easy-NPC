@@ -40,9 +40,8 @@ public class EntityAttributes {
         @Override
         public void encode(
             RegistryFriendlyByteBuf registryFriendlyByteBuf, EntityAttributes value) {
-          registryFriendlyByteBuf.writeNbt(
-              EntityDataSerializersManager.validateAndGetNbt(
-                  value.createTag(), "EntityAttributes"));
+          EntityDataSerializersManager.writeSizeLimitedNbt(
+              registryFriendlyByteBuf, value.createTag(), "EntityAttributes");
         }
       };
   private final Map<EntityAttributeType, EntityAttributesInterface> attributeMap =
@@ -52,6 +51,7 @@ public class EntityAttributes {
     this.setAttribute(EntityAttributeType.COMBAT, new CombatAttributes());
     this.setAttribute(EntityAttributeType.ENVIRONMENTAL, new EnvironmentalAttributes());
     this.setAttribute(EntityAttributeType.INTERACTION, new InteractionAttributes());
+    this.setAttribute(EntityAttributeType.INVENTORY, InventoryAttributes.EMPTY);
     this.setAttribute(EntityAttributeType.MOVEMENT, new MovementAttributes());
   }
 
@@ -65,26 +65,29 @@ public class EntityAttributes {
         || compoundTag.getCompound(ENTITY_ATTRIBUTE_TAG).isEmpty()) {
       return;
     }
+
     CompoundTag entityAttributeTag = compoundTag.getCompound(ENTITY_ATTRIBUTE_TAG);
     this.setAttribute(EntityAttributeType.COMBAT, CombatAttributes.decode(entityAttributeTag));
     this.setAttribute(
         EntityAttributeType.ENVIRONMENTAL, EnvironmentalAttributes.decode(entityAttributeTag));
     this.setAttribute(
         EntityAttributeType.INTERACTION, InteractionAttributes.decode(entityAttributeTag));
+    this.setAttribute(
+        EntityAttributeType.INVENTORY, InventoryAttributes.decode(entityAttributeTag));
     this.setAttribute(EntityAttributeType.MOVEMENT, MovementAttributes.decode(entityAttributeTag));
   }
 
   public boolean hasAttribute(EntityAttributeType entityAttributeType) {
-    return attributeMap.containsKey(entityAttributeType);
+    return this.attributeMap.containsKey(entityAttributeType);
   }
 
   public EntityAttributesInterface getAttribute(EntityAttributeType entityAttributeType) {
-    return attributeMap.get(entityAttributeType);
+    return this.attributeMap.get(entityAttributeType);
   }
 
   public void setAttribute(
       EntityAttributeType entityAttributeType, EntityAttributesInterface attribute) {
-    attributeMap.put(entityAttributeType, attribute);
+    this.attributeMap.put(entityAttributeType, attribute);
   }
 
   public boolean hasCombatAttributes() {
@@ -123,6 +126,18 @@ public class EntityAttributes {
     this.setAttribute(EntityAttributeType.INTERACTION, interactionAttributes);
   }
 
+  public boolean hasInventoryAttributes() {
+    return this.hasAttribute(EntityAttributeType.INVENTORY);
+  }
+
+  public InventoryAttributes getInventoryAttributes() {
+    return (InventoryAttributes) this.getAttribute(EntityAttributeType.INVENTORY);
+  }
+
+  public void setInventoryAttributes(InventoryAttributes inventoryAttributes) {
+    this.setAttribute(EntityAttributeType.INVENTORY, inventoryAttributes);
+  }
+
   public boolean hasMovementAttributes() {
     return this.hasAttribute(EntityAttributeType.MOVEMENT);
   }
@@ -137,18 +152,11 @@ public class EntityAttributes {
 
   public CompoundTag save(CompoundTag compoundTag) {
     CompoundTag entityAttributeTag = new CompoundTag();
-    attributeMap.forEach(
-        (type, attribute) -> {
-          if (attribute instanceof CombatAttributes combatAttributes) {
-            combatAttributes.encode(entityAttributeTag);
-          } else if (attribute instanceof EnvironmentalAttributes environmentalAttributes) {
-            environmentalAttributes.encode(entityAttributeTag);
-          } else if (attribute instanceof InteractionAttributes interactionAttributes) {
-            interactionAttributes.encode(entityAttributeTag);
-          } else if (attribute instanceof MovementAttributes movementAttributes) {
-            movementAttributes.encode(entityAttributeTag);
-          }
-        });
+    for (EntityAttributesInterface attribute : this.attributeMap.values()) {
+      if (attribute != null) {
+        attribute.encode(entityAttributeTag);
+      }
+    }
     CompoundTagUtils.putIfNotEmpty(compoundTag, ENTITY_ATTRIBUTE_TAG, entityAttributeTag);
     return compoundTag;
   }

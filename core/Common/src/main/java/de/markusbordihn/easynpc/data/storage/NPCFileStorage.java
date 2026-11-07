@@ -20,16 +20,20 @@
 package de.markusbordihn.easynpc.data.storage;
 
 import de.markusbordihn.easynpc.Constants;
+import de.markusbordihn.easynpc.io.BackgroundFileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
@@ -43,30 +47,40 @@ public class NPCFileStorage {
   private static final String NPCS_FOLDER = "npcs";
   private static final String NPC_FILE_EXTENSION = ".npc.nbt";
   private static final long SLOW_FILE_WRITE_MILLISECONDS = 250;
+  private static final Duration SAVE_ALL_TIMEOUT = Duration.ofMinutes(2);
 
   private final Path storageFolder;
   private final Map<UUID, CompoundTag> cache = new ConcurrentHashMap<>();
   private final Map<UUID, CompoundTag> dirtyNPCs = new ConcurrentHashMap<>();
   private final Map<UUID, CompoundTag> lastSavedData = new ConcurrentHashMap<>();
+  private final Map<UUID, CompoundTag> queuedNPCs = new ConcurrentHashMap<>();
+  private final Set<UUID> pendingRelease = ConcurrentHashMap.newKeySet();
+  private final Set<UUID> pendingDeletes = ConcurrentHashMap.newKeySet();
+  private final AtomicLong filesWritten = new AtomicLong();
+  private final AtomicLong fileWriteMilliseconds = new AtomicLong();
+  private final AtomicLong fileWriteFailures = new AtomicLong();
+  private final AtomicLong filesRead = new AtomicLong();
+  private final AtomicLong serializations = new AtomicLong();
+  private final AtomicLong skippedUnchangedUnloads = new AtomicLong();
 
   public NPCFileStorage(Path worldPath) {
     this.storageFolder = worldPath.resolve(Constants.MOD_ID).resolve(NPCS_FOLDER);
-    ensureStorageFolderExists();
+    this.ensureStorageFolderExists();
   }
 
   private void ensureStorageFolderExists() {
     try {
-      if (!Files.exists(storageFolder)) {
-        Files.createDirectories(storageFolder);
-        log.info("Created NPC storage folder at {}", storageFolder);
+      if (!Files.exists(this.storageFolder)) {
+        Files.createDirectories(this.storageFolder);
+        log.info("Created NPC storage folder at {}", this.storageFolder);
       }
     } catch (IOException e) {
-      log.error("Failed to create NPC storage folder at {}", storageFolder, e);
+      log.error("Failed to create NPC storage folder at {}", this.storageFolder, e);
     }
   }
 
   public Path getNPCFilePath(UUID uuid) {
-    return storageFolder.resolve(uuid.toString() + NPC_FILE_EXTENSION);
+    return this.storageFolder.resolve(uuid.toString() + NPC_FILE_EXTENSION);
   }
 
   public boolean exists(UUID uuid) {
@@ -74,7 +88,11 @@ public class NPCFileStorage {
       return false;
     }
 
-    return this.dirtyNPCs.containsKey(uuid) || Files.exists(getNPCFilePath(uuid));
+    if (this.dirtyNPCs.containsKey(uuid)) {
+      return true;
+    }
+
+    return !this.pendingDeletes.contains(uuid) && Files.exists(this.getNPCFilePath(uuid));
   }
 
   public Optional<CompoundTag> load(UUID uuid) {
@@ -82,17 +100,21 @@ public class NPCFileStorage {
       return Optional.empty();
     }
 
-    CompoundTag pending = dirtyNPCs.get(uuid);
+    CompoundTag pending = this.dirtyNPCs.get(uuid);
     if (pending != null) {
       return Optional.of(pending);
     }
 
-    CompoundTag cached = cache.get(uuid);
+    CompoundTag cached = this.cache.get(uuid);
     if (cached != null) {
       return Optional.of(cached);
     }
 
-    Path npcFile = getNPCFilePath(uuid);
+    if (this.pendingDeletes.contains(uuid)) {
+      return Optional.empty();
+    }
+
+    Path npcFile = this.getNPCFilePath(uuid);
     if (!Files.exists(npcFile)) {
       log.debug("NPC file not found for UUID {}", uuid);
       return Optional.empty();
@@ -100,7 +122,8 @@ public class NPCFileStorage {
 
     try {
       CompoundTag data = NbtIo.readCompressed(npcFile, NbtAccounter.unlimitedHeap());
-      cache.put(uuid, data);
+      this.filesRead.incrementAndGet();
+      this.cache.put(uuid, data);
       this.lastSavedData.put(uuid, data);
       log.debug("Loaded NPC data for UUID {} from file {}", uuid, npcFile);
       return Optional.of(data);
@@ -110,17 +133,23 @@ public class NPCFileStorage {
     }
   }
 
-  public void markDirty(UUID uuid, CompoundTag data) {
+  public boolean markDirty(UUID uuid, CompoundTag data) {
     if (uuid == null || data == null) {
-      return;
+      return false;
     }
 
-    if (data.equals(this.lastSavedData.get(uuid))) {
+    this.serializations.incrementAndGet();
+    if (!this.queuedNPCs.containsKey(uuid) && data.equals(this.lastSavedData.get(uuid))) {
       this.dirtyNPCs.remove(uuid);
-      return;
+      return false;
     }
 
     this.dirtyNPCs.put(uuid, data);
+    return true;
+  }
+
+  public void recordSkippedUnchangedUnload() {
+    this.skippedUnchangedUnloads.incrementAndGet();
   }
 
   public boolean save(UUID uuid, CompoundTag data) {
@@ -129,11 +158,11 @@ public class NPCFileStorage {
       return false;
     }
 
-    return saveToFile(uuid, data);
+    return this.saveToFile(uuid, data);
   }
 
   private boolean saveToFile(UUID uuid, CompoundTag data) {
-    Path npcFile = getNPCFilePath(uuid);
+    Path npcFile = this.getNPCFilePath(uuid);
     long startTime = System.currentTimeMillis();
     try {
       Path tempFile = npcFile.getParent().resolve(uuid.toString() + ".tmp");
@@ -142,6 +171,8 @@ public class NPCFileStorage {
       this.lastSavedData.put(uuid, data);
 
       long duration = System.currentTimeMillis() - startTime;
+      this.filesWritten.incrementAndGet();
+      this.fileWriteMilliseconds.addAndGet(duration);
       if (duration >= SLOW_FILE_WRITE_MILLISECONDS) {
         log.warn(
             "Writing NPC file {} took {} ms, disk or scanner is slowing the save down!",
@@ -152,23 +183,75 @@ public class NPCFileStorage {
       }
       return true;
     } catch (IOException e) {
+      this.fileWriteFailures.incrementAndGet();
       log.error("Failed to save NPC file for UUID {}", uuid, e);
       return false;
     }
   }
 
+  public boolean queue(UUID uuid) {
+    if (uuid == null) {
+      return false;
+    }
+
+    CompoundTag data = this.dirtyNPCs.get(uuid);
+    return data != null && this.queue(uuid, data);
+  }
+
+  public int queueAllDirty() {
+    int queuedCount = 0;
+    for (Map.Entry<UUID, CompoundTag> entry : this.dirtyNPCs.entrySet()) {
+      if (this.queue(entry.getKey(), entry.getValue())) {
+        queuedCount++;
+      }
+    }
+    return queuedCount;
+  }
+
+  private boolean queue(UUID uuid, CompoundTag data) {
+    if (this.queuedNPCs.get(uuid) == data) {
+      return false;
+    }
+
+    this.queuedNPCs.put(uuid, data);
+    BackgroundFileWriter.submit(() -> this.writeQueued(uuid, data));
+    return true;
+  }
+
+  private void writeQueued(UUID uuid, CompoundTag data) {
+    try {
+      if (this.dirtyNPCs.get(uuid) != data) {
+        return;
+      }
+
+      if (this.saveToFile(uuid, data)
+          && this.dirtyNPCs.remove(uuid, data)
+          && this.pendingRelease.remove(uuid)) {
+        this.releaseCachedData(uuid);
+      }
+    } finally {
+      this.queuedNPCs.remove(uuid, data);
+    }
+  }
+
   public int saveAllDirty() {
-    // Snapshot to avoid ConcurrentModificationException - new entries during save are kept
     Map<UUID, CompoundTag> snapshot = new HashMap<>(this.dirtyNPCs);
     if (snapshot.isEmpty()) {
       return 0;
     }
 
     long startTime = System.currentTimeMillis();
+    this.queueAllDirty();
+    if (!BackgroundFileWriter.awaitPendingWrites(SAVE_ALL_TIMEOUT)) {
+      log.warn(
+          "Timed out after {} waiting for {} pending NPC file writes!",
+          SAVE_ALL_TIMEOUT,
+          BackgroundFileWriter.getPendingWriteCount());
+    }
+
     int savedCount = 0;
     for (Map.Entry<UUID, CompoundTag> entry : snapshot.entrySet()) {
-      if (saveToFile(entry.getKey(), entry.getValue())) {
-        this.dirtyNPCs.remove(entry.getKey(), entry.getValue());
+      if (this.dirtyNPCs.get(entry.getKey()) != entry.getValue()) {
         savedCount++;
       }
     }
@@ -183,52 +266,86 @@ public class NPCFileStorage {
   }
 
   public int getDirtyCount() {
-    return dirtyNPCs.size();
+    return this.dirtyNPCs.size();
   }
 
   public boolean isDirty(UUID uuid) {
-    return dirtyNPCs.containsKey(uuid);
+    return this.dirtyNPCs.containsKey(uuid);
   }
 
-  public boolean delete(UUID uuid) {
+  public void delete(UUID uuid) {
     if (uuid == null) {
-      return false;
+      return;
     }
 
-    cache.remove(uuid);
-    dirtyNPCs.remove(uuid);
+    this.cache.remove(uuid);
+    this.dirtyNPCs.remove(uuid);
     this.lastSavedData.remove(uuid);
+    this.pendingRelease.remove(uuid);
+    this.pendingDeletes.add(uuid);
+    BackgroundFileWriter.submit(() -> this.deleteFile(uuid));
+  }
 
-    Path npcFile = getNPCFilePath(uuid);
-    if (!Files.exists(npcFile)) {
-      return true;
-    }
-
+  private void deleteFile(UUID uuid) {
     try {
-      Files.delete(npcFile);
-      log.debug("Deleted NPC file for UUID {}", uuid);
-      return true;
+      if (Files.deleteIfExists(this.getNPCFilePath(uuid))) {
+        log.debug("Deleted NPC file for UUID {}", uuid);
+      }
+      this.lastSavedData.remove(uuid);
     } catch (IOException e) {
       log.error("Failed to delete NPC file for UUID {}", uuid, e);
-      return false;
+    } finally {
+      this.pendingDeletes.remove(uuid);
     }
   }
 
   public void clearCache() {
-    cache.clear();
+    this.cache.clear();
     log.debug("Cleared NPC file storage cache");
   }
 
   public void evictFromCache(UUID uuid) {
-    cache.remove(uuid);
+    this.cache.remove(uuid);
+  }
+
+  public void release(UUID uuid) {
+    if (uuid == null) {
+      return;
+    }
+
+    if (this.dirtyNPCs.containsKey(uuid)) {
+      this.pendingRelease.add(uuid);
+      if (this.dirtyNPCs.containsKey(uuid) || !this.pendingRelease.remove(uuid)) {
+        return;
+      }
+    }
+
+    this.releaseCachedData(uuid);
+  }
+
+  private void releaseCachedData(UUID uuid) {
+    this.cache.remove(uuid);
+    this.lastSavedData.remove(uuid);
   }
 
   public int getCacheSize() {
-    return cache.size();
+    return this.cache.size();
+  }
+
+  public NPCStorageStatistics getStatistics() {
+    return new NPCStorageStatistics(
+        this.filesWritten.get(),
+        this.fileWriteMilliseconds.get(),
+        this.fileWriteFailures.get(),
+        this.filesRead.get(),
+        this.serializations.get(),
+        this.skippedUnchangedUnloads.get(),
+        this.dirtyNPCs.size(),
+        this.cache.size());
   }
 
   public Stream<UUID> getAllStoredNPCUUIDs() {
-    try (Stream<Path> pathStream = Files.list(storageFolder)) {
+    try (Stream<Path> pathStream = Files.list(this.storageFolder)) {
       return pathStream
           .filter(Files::isRegularFile)
           .filter(path -> path.toString().endsWith(NPC_FILE_EXTENSION))
@@ -245,6 +362,7 @@ public class NPCFileStorage {
                 }
               })
           .filter(Objects::nonNull)
+          .filter(uuid -> !this.pendingDeletes.contains(uuid))
           .toList()
           .stream();
     } catch (IOException e) {

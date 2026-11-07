@@ -55,13 +55,13 @@ public class CustomOwnerHurtByTargetGoal<T extends EasyNPC<?>> extends TargetGoa
       return false;
     }
 
-    // Get entity that hurt the owner
     this.ownerLastHurtBy = owner.getLastHurtByMob();
     int lastHurtByTimestamp = owner.getLastHurtByMobTimestamp();
 
     return lastHurtByTimestamp != this.timestamp
         && this.canAttack(this.ownerLastHurtBy, TargetingConditions.DEFAULT)
-        && this.isRevengeTargetValid(this.ownerLastHurtBy);
+        && this.ownerLastHurtBy != owner
+        && !OwnerAllies.isAlly(this.mob, owner, this.ownerLastHurtBy);
   }
 
   @Override
@@ -73,19 +73,5 @@ public class CustomOwnerHurtByTargetGoal<T extends EasyNPC<?>> extends TargetGoa
     }
 
     super.start();
-  }
-
-  private boolean isRevengeTargetValid(LivingEntity target) {
-    if (target == null) {
-      return false;
-    }
-
-    // Don't attack the owner
-    if (target == this.ownerData.getOwner()) {
-      return false;
-    }
-
-    // Standard validity checks
-    return target.isAlive() && !target.isInvulnerable() && target != this.mob;
   }
 }

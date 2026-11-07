@@ -27,10 +27,15 @@ import de.markusbordihn.easynpc.client.renderer.entity.ModNPCEntityRenderer;
 import de.markusbordihn.easynpc.client.renderer.entity.ModRawEntityRenderer;
 import de.markusbordihn.easynpc.client.renderer.entity.cobblemon.CobblemonNPCRenderer;
 import de.markusbordihn.easynpc.client.renderer.entity.easymodelentities.EasyModelNPCRenderer;
+import de.markusbordihn.easynpc.client.renderer.entity.projectile.EasyNPCBulletRenderer;
+import de.markusbordihn.easynpc.client.renderer.entity.projectile.EasyNPCItemProjectileRenderer;
 import de.markusbordihn.easynpc.compat.CompatConstants;
 import de.markusbordihn.easynpc.entity.CobblemonEntityType;
 import de.markusbordihn.easynpc.entity.EasyModelEntitiesEntityType;
 import de.markusbordihn.easynpc.entity.ModEntityType;
+import de.markusbordihn.easynpc.entity.ModProjectileEntityType;
+import de.markusbordihn.easynpc.entity.projectile.EasyNPCBullet;
+import de.markusbordihn.easynpc.entity.projectile.EasyNPCItemProjectile;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,28 +49,31 @@ public class EntityRenderer {
   public static void register() {
     log.info("{} Entity Renders ...", Constants.LOG_REGISTER_PREFIX);
 
-    // Raw entities (for modding only)
     for (ModRawEntityRenderer renderer : ModRawEntityRenderer.values()) {
       EntityRendererRegistry.register(
           ModEntityType.getEntityType(renderer.getEntityType()),
           context -> renderer.getRenderer().apply(context));
     }
 
-    // Pre-defined NPCs
     for (ModNPCEntityRenderer renderer : ModNPCEntityRenderer.values()) {
       EntityRendererRegistry.register(
           ModEntityType.getEntityType(renderer.getEntityType()),
           context -> renderer.getRenderer().apply(context));
     }
 
-    // Custom NPCs
     for (ModCustomEntityRenderer renderer : ModCustomEntityRenderer.values()) {
       EntityRendererRegistry.register(
           ModEntityType.getEntityType(renderer.getEntityType()),
           context -> renderer.getRenderer().apply(context));
     }
 
-    // Epic Fight NPCs
+    EntityRendererRegistry.register(
+        ModEntityType.<EasyNPCBullet>getEntityType(ModProjectileEntityType.BULLET),
+        EasyNPCBulletRenderer::new);
+    EntityRendererRegistry.register(
+        ModEntityType.<EasyNPCItemProjectile>getEntityType(ModProjectileEntityType.ITEM_PROJECTILE),
+        EasyNPCItemProjectileRenderer::new);
+
     if (CompatConstants.MOD_EPIC_FIGHT_LOADED) {
       for (ModEpicFightEntityRenderer renderer : ModEpicFightEntityRenderer.values()) {
         EntityRendererRegistry.register(
@@ -74,14 +82,12 @@ public class EntityRenderer {
       }
     }
 
-    // Cobblemon NPCs
     if (CompatConstants.MOD_COBBLEMON_LOADED) {
       EntityRendererRegistry.register(
           ModEntityType.getEntityType(CobblemonEntityType.COBBLEMON_NPC),
           context -> new CobblemonNPCRenderer<>(context, ModModelLayers.DOPPLER));
     }
 
-    // Easy Model Entities NPCs
     if (CompatConstants.MOD_EASY_MODEL_ENTITIES_LOADED) {
       EntityRendererRegistry.register(
           ModEntityType.getEntityType(EasyModelEntitiesEntityType.EASY_MODEL_NPC),

@@ -22,11 +22,13 @@ package de.markusbordihn.easynpc.entity.easynpc.data;
 import de.markusbordihn.easynpc.data.attribute.EntityAttributes;
 import de.markusbordihn.easynpc.data.attribute.MovementAttributes;
 import de.markusbordihn.easynpc.data.attribute.NavigationType;
+import de.markusbordihn.easynpc.data.objective.ObjectiveDataEntry;
 import de.markusbordihn.easynpc.data.render.RenderDataEntry;
 import de.markusbordihn.easynpc.data.render.RenderType;
 import de.markusbordihn.easynpc.data.synched.SynchedDataIndex;
 import de.markusbordihn.easynpc.data.ticker.TickerType;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
+import de.markusbordihn.easynpc.entity.easynpc.ai.goal.CustomLookAtPlayerGoal;
 import de.markusbordihn.easynpc.utils.CompoundTagUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -53,6 +55,8 @@ public interface NavigationDataCapable<T extends Mob> extends EasyNPC<T> {
   String DATA_HOME_TAG = "Home";
   String DATA_NAVIGATION_TAG = "Navigation";
   int TRAVEL_EVENT_TICK = 20;
+  int IDLE_TRAVEL_PHYSICS_INTERVAL = 10;
+  double IDLE_MOVEMENT_THRESHOLD_SQUARED = 1.0E-6;
 
   private static boolean hasFlyingSpeedAttribute(EntityType<? extends Entity> entityType) {
     AttributeSupplier attributeSupplier =
@@ -79,11 +83,11 @@ public interface NavigationDataCapable<T extends Mob> extends EasyNPC<T> {
   }
 
   default BlockPos getHomePosition() {
-    return getSynchedEntityData(SynchedDataIndex.NAVIGATION_HOME_POSITION);
+    return this.getSynchedEntityData(SynchedDataIndex.NAVIGATION_HOME_POSITION);
   }
 
   default void setHomePosition(BlockPos blockPos) {
-    setSynchedEntityData(SynchedDataIndex.NAVIGATION_HOME_POSITION, blockPos);
+    this.setSynchedEntityData(SynchedDataIndex.NAVIGATION_HOME_POSITION, blockPos);
   }
 
   default void setHomePositionIfMissing(BlockPos blockPos) {
@@ -162,11 +166,12 @@ public interface NavigationDataCapable<T extends Mob> extends EasyNPC<T> {
         && mob.getNavigation() instanceof GroundPathNavigation groundPathNavigation) {
       return groundPathNavigation;
     }
+
     return null;
   }
 
   default void defineSynchedNavigationData(SynchedEntityData.Builder builder) {
-    defineSynchedEntityData(builder, SynchedDataIndex.NAVIGATION_HOME_POSITION, BlockPos.ZERO);
+    this.defineSynchedEntityData(builder, SynchedDataIndex.NAVIGATION_HOME_POSITION, BlockPos.ZERO);
   }
 
   default NavigationType defaultNavigationType() {
@@ -317,7 +322,7 @@ public interface NavigationDataCapable<T extends Mob> extends EasyNPC<T> {
   }
 
   default boolean isFlying() {
-    return canFly() && !this.getEntity().onGround();
+    return this.canFly() && !this.getEntity().onGround();
   }
 
   default boolean canJump() {
@@ -363,10 +368,30 @@ public interface NavigationDataCapable<T extends Mob> extends EasyNPC<T> {
     return true;
   }
 
+  default boolean canSkipIdleTravel(Vec3 travelVector) {
+    Mob mob = this.getMob();
+    if (mob.level().isClientSide()
+        || (mob.tickCount + mob.getId()) % IDLE_TRAVEL_PHYSICS_INTERVAL == 0
+        || !mob.onGround()
+        || travelVector.lengthSqr() > IDLE_MOVEMENT_THRESHOLD_SQUARED
+        || mob.isInWater()
+        || mob.isInLava()
+        || mob.isPassenger()
+        || mob.isVehicle()
+        || mob.hurtTime > 0
+        || !mob.getNavigation().isDone()) {
+      return false;
+    }
+
+    Vec3 deltaMovement = mob.getDeltaMovement();
+    return deltaMovement.y <= 0
+        && deltaMovement.horizontalDistanceSqr() <= IDLE_MOVEMENT_THRESHOLD_SQUARED
+        && !CustomLookAtPlayerGoal.hasPlayerInRange(mob, ObjectiveDataEntry.DEFAULT_LOOK_DISTANCE);
+  }
+
   default void handleNavigationTravelEvent(Vec3 vec3) {
     TickerDataCapable<?> tickerData = this.getEasyNPCTickerData();
 
-    // Update basic movement relevant data.
     if (tickerData.checkAndIncreaseTicker(TickerType.TRAVEL_EVENT, TRAVEL_EVENT_TICK)) {
 
       Mob mob = this.getMob();
@@ -378,7 +403,6 @@ public interface NavigationDataCapable<T extends Mob> extends EasyNPC<T> {
               && !blockState.is(Blocks.WHITE_CARPET)
               && !blockState.is(Blocks.RED_CARPET));
 
-      // Handle gravity and movement logic based on environmental attributes
       ObjectiveDataCapable<?> objectiveData = this.getEasyNPCObjectiveData();
       if (!objectiveData.hasTravelTargetObjectives()) {
         AttributeDataCapable<?> attributeData = this.getEasyNPCAttributeData();

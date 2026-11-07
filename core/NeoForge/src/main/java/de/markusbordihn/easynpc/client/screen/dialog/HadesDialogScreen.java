@@ -179,7 +179,9 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
     var data = getAdditionalScreenData();
     return (entry.hasConditions() && !ClientConditionEvaluator.evaluateAll(entry.conditions(),
         minecraft.player, getEasyNPC().getLivingEntity()))
-        || (data != null && (data.isExecutionLimitReached(entry.id()) || data.isDialogButtonLocked(entry.id())));
+        || (data != null
+            && (data.isExecutionLimitReached(getDialogUUID(), entry.id())
+                || data.isDialogButtonLocked(getDialogUUID(), entry.id())));
   }
 
   private int lastPage() { return HadesLayout.lastPage(lines.size(), linesPerPage); }

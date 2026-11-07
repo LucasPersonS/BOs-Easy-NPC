@@ -46,8 +46,8 @@ public record ExportPresetMessage(
   public static ExportPresetMessage create(final FriendlyByteBuf buffer) {
     return new ExportPresetMessage(
         buffer.readUUID(),
-        buffer.readUtf(),
-        buffer.readEnum(PresetExportFormat.class),
+        buffer.readUtf(MAX_NAME_LENGTH),
+        NetworkMessageRecord.readEnum(buffer, PresetExportFormat.class),
         PresetMetadata.fromCompoundTag(buffer.readNbt()));
   }
 
@@ -71,7 +71,7 @@ public record ExportPresetMessage(
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }
@@ -80,6 +80,7 @@ public record ExportPresetMessage(
       log.warn("Export preset name is empty for {}", easyNPC);
       return;
     }
+
     String fileName = PresetExportFormat.removePresetExtension(this.name);
     fileName = PresetExportFormat.normalizeFilename(fileName);
 

@@ -22,6 +22,8 @@ package de.markusbordihn.easynpc.commands.manager;
 import com.mojang.brigadier.CommandDispatcher;
 import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.server.commands.AnimationCommand;
+import de.markusbordihn.easynpc.server.commands.AttributeCommand;
+import de.markusbordihn.easynpc.server.commands.BossBarCommand;
 import de.markusbordihn.easynpc.server.commands.DebugCommand;
 import de.markusbordihn.easynpc.server.commands.DeleteCommand;
 import de.markusbordihn.easynpc.server.commands.DespawnCommand;
@@ -40,11 +42,14 @@ import de.markusbordihn.easynpc.server.commands.PoseCommand;
 import de.markusbordihn.easynpc.server.commands.PositionCommand;
 import de.markusbordihn.easynpc.server.commands.PresetCommand;
 import de.markusbordihn.easynpc.server.commands.ProgressionCommand;
+import de.markusbordihn.easynpc.server.commands.ProjectileCommand;
 import de.markusbordihn.easynpc.server.commands.ReloadCommand;
 import de.markusbordihn.easynpc.server.commands.RenderCommand;
 import de.markusbordihn.easynpc.server.commands.RespawnCommand;
+import de.markusbordihn.easynpc.server.commands.ReviveCommand;
 import de.markusbordihn.easynpc.server.commands.RotateCommand;
 import de.markusbordihn.easynpc.server.commands.ScaleCommand;
+import de.markusbordihn.easynpc.server.commands.ShoulderCommand;
 import de.markusbordihn.easynpc.server.commands.SkinCommand;
 import de.markusbordihn.easynpc.server.commands.SoundCommand;
 import de.markusbordihn.easynpc.server.commands.SpawnCommand;
@@ -75,6 +80,8 @@ public class CommandManager {
     commandDispatcher.register(
         Commands.literal(Constants.MOD_COMMAND)
             .then(AnimationCommand.register())
+            .then(AttributeCommand.register())
+            .then(BossBarCommand.register())
             .then(DebugCommand.register())
             .then(DeleteCommand.register())
             .then(DespawnCommand.register())
@@ -93,11 +100,14 @@ public class CommandManager {
             .then(PositionCommand.register())
             .then(PresetCommand.register())
             .then(ProgressionCommand.register())
+            .then(ProjectileCommand.register())
             .then(ReloadCommand.register())
             .then(RenderCommand.register())
             .then(RespawnCommand.register())
+            .then(ReviveCommand.register())
             .then(RotateCommand.register())
             .then(ScaleCommand.register())
+            .then(ShoulderCommand.register())
             .then(SkinCommand.register())
             .then(SoundCommand.register())
             .then(SpawnCommand.register())

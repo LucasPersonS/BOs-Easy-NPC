@@ -19,6 +19,7 @@
 
 package de.markusbordihn.easynpc.configui.network.message;
 
+import de.markusbordihn.easynpc.configui.Constants;
 import de.markusbordihn.easynpc.configui.network.NetworkHandlerManager;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeCombatAttributeMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeDisplayAttributeMessage;
@@ -26,14 +27,22 @@ import de.markusbordihn.easynpc.configui.network.message.server.ChangeEntityAttr
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeEntityBaseAttributeMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeEnvironmentalAttributeMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeInteractionAttributeMessage;
+import de.markusbordihn.easynpc.configui.network.message.server.ChangeInventoryAttributeMessage;
 import de.markusbordihn.easynpc.configui.network.message.server.ChangeMovementAttributeMessage;
+import de.markusbordihn.easynpc.configui.network.message.server.ChangeProjectileDataMessage;
+import de.markusbordihn.easynpc.configui.network.message.server.OpenVisibilityConditionEditorMessage;
+import de.markusbordihn.easynpc.configui.network.message.server.SaveVisibilityConditionsMessage;
+import de.markusbordihn.easynpc.data.attack.ProjectileData;
 import de.markusbordihn.easynpc.data.attribute.CombatAttributeType;
 import de.markusbordihn.easynpc.data.attribute.EntityAttribute;
 import de.markusbordihn.easynpc.data.attribute.EnvironmentalAttributeType;
 import de.markusbordihn.easynpc.data.attribute.InteractionAttributeType;
+import de.markusbordihn.easynpc.data.attribute.InventoryAttributeType;
 import de.markusbordihn.easynpc.data.attribute.MovementAttributeType;
 import de.markusbordihn.easynpc.data.attribute.NavigationType;
+import de.markusbordihn.easynpc.data.condition.ConditionDataEntry;
 import de.markusbordihn.easynpc.data.display.DisplayAttributeType;
+import de.markusbordihn.easynpc.data.visibility.VisibilityConditionSet;
 import java.util.UUID;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -54,6 +63,37 @@ public interface ServerAttributeNetworkMessageHandlerInterface {
     if (uuid != null && displayAttributeType != null && integerValue != null) {
       NetworkHandlerManager.sendMessageToServer(
           new ChangeDisplayAttributeMessage(uuid, displayAttributeType, integerValue));
+    }
+  }
+
+  default void changeDisplayAttribute(
+      UUID uuid, DisplayAttributeType displayAttributeType, String stringValue) {
+    if (uuid != null && displayAttributeType != null && stringValue != null) {
+      NetworkHandlerManager.sendMessageToServer(
+          new ChangeDisplayAttributeMessage(uuid, displayAttributeType, stringValue));
+    }
+  }
+
+  default void openVisibilityConditionEditor(UUID uuid) {
+    if (uuid != null) {
+      NetworkHandlerManager.sendMessageToServer(
+          new OpenVisibilityConditionEditorMessage(uuid, Constants.EMPTY_UUID));
+    }
+  }
+
+  default void openVisibilityConditionEntryEditor(
+      UUID uuid, ConditionDataEntry conditionDataEntry) {
+    if (uuid != null && conditionDataEntry != null) {
+      NetworkHandlerManager.sendMessageToServer(
+          new OpenVisibilityConditionEditorMessage(uuid, conditionDataEntry.getId()));
+    }
+  }
+
+  default void saveVisibilityConditions(
+      UUID uuid, VisibilityConditionSet visibilityConditionSet) {
+    if (uuid != null && visibilityConditionSet != null) {
+      NetworkHandlerManager.sendMessageToServer(
+          new SaveVisibilityConditionsMessage(uuid, visibilityConditionSet));
     }
   }
 
@@ -81,6 +121,13 @@ public interface ServerAttributeNetworkMessageHandlerInterface {
     }
   }
 
+  default void projectileDataChange(UUID uuid, ProjectileData projectileData) {
+    if (uuid != null && projectileData != null) {
+      NetworkHandlerManager.sendMessageToServer(
+          new ChangeProjectileDataMessage(uuid, projectileData));
+    }
+  }
+
   default void environmentalAttributeChange(
       UUID uuid, EnvironmentalAttributeType attributeType, Boolean booleanValue) {
     if (uuid != null && attributeType != null && booleanValue != null) {
@@ -94,6 +141,22 @@ public interface ServerAttributeNetworkMessageHandlerInterface {
     if (uuid != null && attributeType != null && booleanValue != null) {
       NetworkHandlerManager.sendMessageToServer(
           new ChangeInteractionAttributeMessage(uuid, attributeType, booleanValue));
+    }
+  }
+
+  default void interactionAttributeChange(
+      UUID uuid, InteractionAttributeType attributeType, Double doubleValue) {
+    if (uuid != null && attributeType != null && doubleValue != null) {
+      NetworkHandlerManager.sendMessageToServer(
+          new ChangeInteractionAttributeMessage(uuid, attributeType, doubleValue));
+    }
+  }
+
+  default void inventoryAttributeChange(
+      UUID uuid, InventoryAttributeType attributeType, Boolean booleanValue) {
+    if (uuid != null && attributeType != null && booleanValue != null) {
+      NetworkHandlerManager.sendMessageToServer(
+          new ChangeInventoryAttributeMessage(uuid, attributeType, booleanValue));
     }
   }
 

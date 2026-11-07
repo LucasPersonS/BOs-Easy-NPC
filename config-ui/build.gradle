@@ -1,3 +1,26 @@
+buildscript {
+  // The toolkit is only published to Maven Local, so its client test plugin stays optional and a
+  // machine without it still builds and runs the game tests.
+  String toolkitPluginModule = "client_runtime_interface_toolkit-gradle-plugin-${minecraft_version}"
+  String toolkitPluginVersion = '2.1.0'
+  File toolkitPluginDirectory = new File(
+      System.getProperty('maven.repo.local', "${System.getProperty('user.home')}/.m2/repository"),
+      "de/markusbordihn/clientruntimeinterfacetoolkit/${toolkitPluginModule}/${toolkitPluginVersion}")
+  ext.clientRuntimeTestPluginAvailable = toolkitPluginDirectory.isDirectory()
+  repositories {
+    mavenLocal {
+      content {
+        includeGroup 'de.markusbordihn.clientruntimeinterfacetoolkit'
+      }
+    }
+  }
+  dependencies {
+    if (clientRuntimeTestPluginAvailable) {
+      classpath "de.markusbordihn.clientruntimeinterfacetoolkit:${toolkitPluginModule}:${toolkitPluginVersion}"
+    }
+  }
+}
+
 plugins {
   id 'idea'
   id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.8"
@@ -50,10 +73,6 @@ subprojects {
     }
   }
 
-  tasks.register('wrapper', Wrapper) {
-    gradleVersion = '8.14.3'
-  }
-
   tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
   }
@@ -68,10 +87,15 @@ subprojects {
 
   tasks.register("prepareKotlinBuildScriptModel") {}
 
-  // Disable Development helper mods like JEI or Xaero's Minimap for game test run.
-  ext.isGameTestRun = gradle.startParameter.taskNames.any {
+  // Development helper mods like JEI or Xaero's Minimap are left out of game and client test runs,
+  // because they are not needed there and can crash the game test server.
+  ext.isTestRun = gradle.startParameter.taskNames.any {
     def taskName = it.toLowerCase()
-    return taskName.contains('gametest') || taskName.contains('fullcheck')
+    return ['gametest', 'clienttest', 'fullcheck'].any { testTask -> taskName.contains(testTask) }
+  }
+
+  ext.isClientTestRun = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains('clienttest')
   }
 
   // Local Easy Model Entities loader artifact (runtime); null falls back to Modrinth.
@@ -85,9 +109,39 @@ subprojects {
         file("${System.getProperty('user.home')}/.m2/repository/de/markusbordihn/easymodelentities/"
             + "easy_model_entities-${loader}-${mcVersion}/${version}/"
             + "easy_model_entities-${loader}-${mcVersion}-${version}.jar")
-    return jar.exists()
-        ? "de.markusbordihn.easymodelentities:easy_model_entities-${loader}-${mcVersion}:${version}"
-        : null
+    if (!jar.exists()) {
+      return null
+    }
+
+    // Fabric Loom keys its remap cache by coordinate and version only, so a jar republished to
+    // mavenLocal under the same version would keep resolving to the previous remap.
+    rootProject.file(".gradle/loom-cache/remapped_mods")
+        .listFiles()
+        ?.collectMany { mappingsDirectory ->
+          new File(mappingsDirectory, "de/markusbordihn/easymodelentities")
+              .listFiles()?.toList() ?: []
+        }
+        ?.findAll { artifactDirectory ->
+          artifactDirectory.name == "easy_model_entities-${loader}-${mcVersion}"
+              || artifactDirectory.name.startsWith("easy_model_entities-${loader}-${mcVersion}-")
+        }
+        ?.collect { artifactDirectory -> new File(artifactDirectory, version) }
+        ?.findAll { remappedVersion ->
+          remappedVersion.isDirectory() && remappedVersion.lastModified() < jar.lastModified()
+        }
+        ?.each { staleRemap ->
+          logger.lifecycle("Discarding stale Loom remap ${staleRemap}")
+          project.delete(staleRemap)
+        }
+    return "de.markusbordihn.easymodelentities:easy_model_entities-${loader}-${mcVersion}:${version}"
+  }
+
+  // The core game test sources are not part of the published core jar. Only these helpers are compiled
+  // in, because the remaining core tests need the core access widener.
+  ext.coreGameTestHelperSources = fileTree(rootProject.file('../core/Common/src/gameTest/java')) {
+    include 'de/markusbordihn/easynpc/gametest/GameTestHelpers.java'
+    include 'de/markusbordihn/easynpc/gametest/GameTestFunctions.java'
+    include 'de/markusbordihn/easynpc/gametest/EnabledIfModLoaded.java'
   }
 
   configurations.configureEach {
@@ -100,6 +154,10 @@ subprojects {
 
 apply from: "$rootDir/../gradle/tasks/updateModVersions.gradle"
 
+configure(subprojects.findAll { subproject -> subproject.name in ['Forge', 'Fabric', 'NeoForge'] }) {
+  apply from: "$rootDir/../gradle/releaseSmokeTestConfig.gradle"
+}
+
 tasks.register('allGameTests') {
   group = 'verification'
   description = 'Runs Fabric, Forge and NeoForge game tests.'
@@ -110,4 +168,11 @@ tasks.register('fullCheck') {
   group = 'verification'
   description = 'Runs check and game tests for all platforms (Common, Fabric, Forge, NeoForge).'
   dependsOn ':Common:check', ':Fabric:check', ':Forge:check', ':NeoForge:check', 'allGameTests'
+}
+
+if (clientRuntimeTestPluginAvailable) {
+  apply plugin: 'de.markusbordihn.clientruntimeinterfacetoolkit.client-test'
+  clientRuntimeTest {
+    errorLogMarkers = ['Easy NPC', 'easy_npc']
+  }
 }

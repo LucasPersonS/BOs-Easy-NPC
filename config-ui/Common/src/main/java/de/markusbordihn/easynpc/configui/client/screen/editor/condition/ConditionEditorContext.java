@@ -24,15 +24,17 @@ import de.markusbordihn.easynpc.configui.client.screen.EditorScreen;
 import de.markusbordihn.easynpc.configui.data.editor.EditorType;
 import de.markusbordihn.easynpc.configui.data.screen.AdditionalScreenData;
 import de.markusbordihn.easynpc.configui.network.NetworkMessageHandlerManager;
+import de.markusbordihn.easynpc.configui.network.message.server.ResetExecutionLimitMessage;
 import de.markusbordihn.easynpc.data.action.ActionDataEntry;
 import de.markusbordihn.easynpc.data.action.ActionDataSet;
 import de.markusbordihn.easynpc.data.action.ActionEventType;
 import de.markusbordihn.easynpc.data.condition.ConditionDataEntry;
 import de.markusbordihn.easynpc.data.condition.ConditionDataSet;
+import de.markusbordihn.easynpc.data.condition.ConditionType;
 import de.markusbordihn.easynpc.data.configuration.ConfigurationType;
 import de.markusbordihn.easynpc.data.dialog.DialogButtonEntry;
 import de.markusbordihn.easynpc.data.dialog.DialogDataEntry;
-import de.markusbordihn.easynpc.data.execution.ExecutionId;
+import de.markusbordihn.easynpc.data.visibility.VisibilityConditionSet;
 import java.util.UUID;
 
 public abstract class ConditionEditorContext {
@@ -54,6 +56,11 @@ public abstract class ConditionEditorContext {
       return new DialogButtonContext(screen);
     }
 
+    if (screen.getAdditionalScreenData().getConfigurationType()
+        == ConfigurationType.DISPLAY_ATTRIBUTE) {
+      return new VisibilityContext(screen);
+    }
+
     return new DialogContext(screen);
   }
 
@@ -71,10 +78,14 @@ public abstract class ConditionEditorContext {
 
   public abstract String helpTextKey();
 
-  public abstract ExecutionId executionLimitId();
+  public abstract ResetExecutionLimitMessage createResetExecutionLimitMessage(boolean allPlayers);
 
   public boolean isActionContext() {
     return false;
+  }
+
+  public boolean isSupportedConditionType(ConditionType conditionType) {
+    return true;
   }
 
   private static final class ActionContext extends ConditionEditorContext {
@@ -85,10 +96,11 @@ public abstract class ConditionEditorContext {
 
     private ActionDataEntry findActionDataEntry() {
       UUID actionDataEntryId = this.screen.getActionDataEntryUUID();
-      ActionDataSet actionDataSet = getActionDataSet();
+      ActionDataSet actionDataSet = this.getActionDataSet();
       if (actionDataEntryId == null || actionDataSet == null) {
         return null;
       }
+
       return actionDataSet.getEntryOrDefault(actionDataEntryId);
     }
 
@@ -106,22 +118,24 @@ public abstract class ConditionEditorContext {
       } else if (actionEventType != null && actionEventType != ActionEventType.NONE) {
         return screenData.getActionEventSet().getActionEvents(actionEventType);
       }
+
       return null;
     }
 
     @Override
     public ConditionDataSet loadConditionDataSet() {
-      ActionDataEntry entry = findActionDataEntry();
+      ActionDataEntry entry = this.findActionDataEntry();
       return entry != null ? entry.conditionDataSet() : new ConditionDataSet();
     }
 
     @Override
     public void saveConditionDataSet(ConditionDataSet conditionDataSet) {
-      ActionDataEntry currentEntry = findActionDataEntry();
+      ActionDataEntry currentEntry = this.findActionDataEntry();
       if (currentEntry == null) {
         return;
       }
-      ActionDataSet actionDataSet = getActionDataSet();
+
+      ActionDataSet actionDataSet = this.getActionDataSet();
       if (actionDataSet != null) {
         actionDataSet.put(
             this.screen.getActionDataEntryUUID(),
@@ -157,7 +171,7 @@ public abstract class ConditionEditorContext {
       EditorType formerEditorType = screenData.getEditorType();
       ActionEventType actionEventType = screenData.getActionEventType();
       ConfigurationType configurationType = screenData.getConfigurationType();
-      ActionDataEntry entry = findActionDataEntry();
+      ActionDataEntry entry = this.findActionDataEntry();
       ActionDataEntry actionDataEntry = entry != null ? entry : new ActionDataEntry();
 
       if (formerEditorType == EditorType.TRADING_OFFER_ACTION) {
@@ -224,8 +238,9 @@ public abstract class ConditionEditorContext {
     }
 
     @Override
-    public ExecutionId executionLimitId() {
-      return ExecutionId.action(this.screen.getEasyNPCUUID(), this.screen.getActionDataEntryUUID());
+    public ResetExecutionLimitMessage createResetExecutionLimitMessage(boolean allPlayers) {
+      return ResetExecutionLimitMessage.forAction(
+          this.screen.getEasyNPCUUID(), this.screen.getActionDataEntryUUID(), allPlayers);
     }
 
     @Override
@@ -254,6 +269,7 @@ public abstract class ConditionEditorContext {
       if (buttonData == null) {
         return;
       }
+
       NetworkMessageHandlerManager.getServerHandler()
           .saveDialogButton(
               this.screen.getEasyNPCUUID(),
@@ -302,11 +318,12 @@ public abstract class ConditionEditorContext {
     }
 
     @Override
-    public ExecutionId executionLimitId() {
-      return ExecutionId.dialogButton(
+    public ResetExecutionLimitMessage createResetExecutionLimitMessage(boolean allPlayers) {
+      return ResetExecutionLimitMessage.forDialogButton(
           this.screen.getEasyNPCUUID(),
           this.screen.getDialogUUID(),
-          this.screen.getDialogButtonUUID());
+          this.screen.getDialogButtonUUID(),
+          allPlayers);
     }
   }
 
@@ -330,6 +347,7 @@ public abstract class ConditionEditorContext {
       if (dialogData == null) {
         return;
       }
+
       dialogData.setConditions(conditionDataSet.getConditions());
       NetworkMessageHandlerManager.getServerHandler()
           .saveDialog(this.screen.getEasyNPCUUID(), this.screen.getDialogUUID(), dialogData);
@@ -366,8 +384,67 @@ public abstract class ConditionEditorContext {
     }
 
     @Override
-    public ExecutionId executionLimitId() {
-      return ExecutionId.dialog(this.screen.getEasyNPCUUID(), this.screen.getDialogUUID());
+    public ResetExecutionLimitMessage createResetExecutionLimitMessage(boolean allPlayers) {
+      return ResetExecutionLimitMessage.forDialog(
+          this.screen.getEasyNPCUUID(), this.screen.getDialogUUID(), allPlayers);
+    }
+  }
+
+  private static final class VisibilityContext extends ConditionEditorContext {
+
+    private VisibilityContext(EditorScreen<?> screen) {
+      super(screen);
+    }
+
+    @Override
+    public ConditionDataSet loadConditionDataSet() {
+      return this.screen.getAdditionalScreenData().getVisibilityConditionSet().toConditionDataSet();
+    }
+
+    @Override
+    public void saveConditionDataSet(ConditionDataSet conditionDataSet) {
+      NetworkMessageHandlerManager.getServerHandler()
+          .saveVisibilityConditions(
+              this.screen.getEasyNPCUUID(),
+              VisibilityConditionSet.fromConditionDataSet(conditionDataSet));
+    }
+
+    @Override
+    public void openParentEditor() {
+      NetworkMessageHandlerManager.getServerHandler()
+          .openConfiguration(this.screen.getEasyNPCUUID(), ConfigurationType.DISPLAY_ATTRIBUTE);
+    }
+
+    @Override
+    public void openConditionListEditor() {
+      NetworkMessageHandlerManager.getServerHandler()
+          .openVisibilityConditionEditor(this.screen.getEasyNPCUUID());
+    }
+
+    @Override
+    public void openConditionEntryEditor(ConditionDataEntry conditionDataEntry) {
+      NetworkMessageHandlerManager.getServerHandler()
+          .openVisibilityConditionEntryEditor(this.screen.getEasyNPCUUID(), conditionDataEntry);
+    }
+
+    @Override
+    public String breadcrumbLabel() {
+      return "Display";
+    }
+
+    @Override
+    public String helpTextKey() {
+      return "condition.help_text.visibility";
+    }
+
+    @Override
+    public ResetExecutionLimitMessage createResetExecutionLimitMessage(boolean allPlayers) {
+      return null;
+    }
+
+    @Override
+    public boolean isSupportedConditionType(ConditionType conditionType) {
+      return !VisibilityConditionSet.UNSUPPORTED_CONDITION_TYPES.contains(conditionType);
     }
   }
 }

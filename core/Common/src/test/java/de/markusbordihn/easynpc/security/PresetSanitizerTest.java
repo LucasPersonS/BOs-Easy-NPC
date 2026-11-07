@@ -22,11 +22,14 @@ package de.markusbordihn.easynpc.security;
 import static org.junit.jupiter.api.Assertions.*;
 
 import de.markusbordihn.easynpc.data.action.ActionDataEntry;
+import de.markusbordihn.easynpc.data.attack.ProjectileData;
 import de.markusbordihn.easynpc.entity.easynpc.data.ActionEventDataCapable;
+import de.markusbordihn.easynpc.entity.easynpc.data.AttackDataCapable;
 import de.markusbordihn.easynpc.entity.easynpc.data.OwnerDataCapable;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.Entity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,8 +74,7 @@ class PresetSanitizerTest {
     CompoundTag sanitizedTag = result.sanitizedTag();
     CompoundTag actionDataTag =
         sanitizedTag.getCompound(ActionEventDataCapable.DATA_ACTION_DATA_TAG);
-    CompoundTag actionEntryTag =
-        actionDataTag.getList("Entries", net.minecraft.nbt.Tag.TAG_COMPOUND).getCompound(0);
+    CompoundTag actionEntryTag = actionDataTag.getList("Entries", Tag.TAG_COMPOUND).getCompound(0);
 
     assertTrue(result.changed());
     assertEquals(trustedOwner, sanitizedTag.getUUID(OwnerDataCapable.DATA_OWNER_TAG));
@@ -99,8 +101,7 @@ class PresetSanitizerTest {
     CompoundTag sanitizedTag = PresetSanitizer.sanitizeForExport(presetData);
     CompoundTag actionDataTag =
         sanitizedTag.getCompound(ActionEventDataCapable.DATA_ACTION_DATA_TAG);
-    CompoundTag actionEntryTag =
-        actionDataTag.getList("Entries", net.minecraft.nbt.Tag.TAG_COMPOUND).getCompound(0);
+    CompoundTag actionEntryTag = actionDataTag.getList("Entries", Tag.TAG_COMPOUND).getCompound(0);
 
     assertTrue(sanitizedTag.contains(Entity.UUID_TAG));
     assertFalse(sanitizedTag.contains(OwnerDataCapable.DATA_OWNER_TAG));
@@ -110,5 +111,38 @@ class PresetSanitizerTest {
     assertEquals(
         CommandPermissionLevel.ADMINS.minecraftLevel(),
         actionEntryTag.getInt(ActionDataEntry.DATA_PERMISSION_LEVEL_TAG));
+  }
+
+  @Test
+  @DisplayName("Should remove projectile data only without combat attribute permission")
+  void testProjectileDataSanitization() {
+    CompoundTag presetData = createPresetData(CommandPermissionLevel.ALL);
+    presetData.put(
+        AttackDataCapable.DATA_PROJECTILE_DATA_TAG,
+        ProjectileData.DEFAULT.withEnabled(true).createTag());
+    UUID owner = UUID.randomUUID();
+
+    PresetSanitizationResult normalPlayerResult =
+        PresetSanitizer.sanitize(
+            presetData,
+            new PresetAuthority(
+                owner,
+                CommandPermissionLevel.ALL,
+                PresetTrustLevel.UNTRUSTED_PLAYER,
+                NpcSecurityRole.NORMAL_PLAYER));
+    PresetSanitizationResult creativePlayerResult =
+        PresetSanitizer.sanitize(
+            presetData,
+            new PresetAuthority(
+                owner,
+                CommandPermissionLevel.ALL,
+                PresetTrustLevel.UNTRUSTED_PLAYER,
+                NpcSecurityRole.CREATIVE_PLAYER));
+
+    assertFalse(
+        normalPlayerResult.sanitizedTag().contains(AttackDataCapable.DATA_PROJECTILE_DATA_TAG));
+    assertTrue(normalPlayerResult.notices().contains(PresetSanitizationNotice.ATTRIBUTE_REMOVED));
+    assertTrue(
+        creativePlayerResult.sanitizedTag().contains(AttackDataCapable.DATA_PROJECTILE_DATA_TAG));
   }
 }

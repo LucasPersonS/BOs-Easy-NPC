@@ -49,7 +49,7 @@ public record ChangeActionEventMessage(
   public static ChangeActionEventMessage create(final FriendlyByteBuf buffer) {
     return new ChangeActionEventMessage(
         buffer.readUUID(),
-        buffer.readEnum(ActionEventType.class),
+        NetworkMessageRecord.readEnum(buffer, ActionEventType.class),
         new ActionDataSet(buffer.readNbt()));
   }
 
@@ -72,18 +72,21 @@ public record ChangeActionEventMessage(
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
-    if (easyNPC == null
-        || this.actionEventType == null
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    if (easyNPC == null) {
+      return;
+    }
+
+    if (this.actionEventType == null
         || this.actionEventType == ActionEventType.NONE
         || this.actionDataSet == null) {
-      log.error("Failed to change action event for {}: Invalid data", easyNPC);
+      log.warn("Invalid data to change action event for {}", this);
       return;
     }
 
     ActionEventDataCapable<?> actionEventData = easyNPC.getEasyNPCActionEventData();
     CommandPermissionLevel permissionLevel =
-        SecurityManager.applyActionAuthority(easyNPC, serverPlayer);
+        SecurityManager.getActionAuthority(easyNPC, serverPlayer);
     log.debug(
         "Set action owner permission level {} for {} from {}",
         permissionLevel,
@@ -96,7 +99,7 @@ public record ChangeActionEventMessage(
     if (sanitizedDataSet == null) {
       log.warn(
           "Blocked action event {} change for {} from {} because it contains an action type blocked by security.cfg feature settings",
-          actionEventType,
+          this.actionEventType,
           easyNPC,
           serverPlayer);
       return;
@@ -104,12 +107,13 @@ public record ChangeActionEventMessage(
 
     log.debug(
         "Set action event {} with {} for {} from {} with owner permission level {}.",
-        actionEventType,
+        this.actionEventType,
         sanitizedDataSet,
         easyNPC,
         serverPlayer,
         permissionLevel);
-    actionEventData.getActionEventSet().setActionEvent(actionEventType, sanitizedDataSet);
+    SecurityManager.applyActionAuthority(easyNPC, permissionLevel);
+    actionEventData.getActionEventSet().setActionEvent(this.actionEventType, sanitizedDataSet);
 
     PendingActionHandler<?> pendingActionHandler = easyNPC.getEasyNPCPendingActionHandler();
     if (pendingActionHandler != null) {

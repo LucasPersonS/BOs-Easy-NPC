@@ -50,7 +50,7 @@ public record ChangeModelPositionMessage(
   public static ChangeModelPositionMessage create(final FriendlyByteBuf buffer) {
     return new ChangeModelPositionMessage(
         buffer.readUUID(),
-        buffer.readEnum(ModelPartType.class),
+        NetworkMessageRecord.readEnum(buffer, ModelPartType.class),
         new CustomPosition(buffer.readFloat(), buffer.readFloat(), buffer.readFloat()));
   }
 
@@ -75,7 +75,7 @@ public record ChangeModelPositionMessage(
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }
@@ -97,19 +97,17 @@ public record ChangeModelPositionMessage(
     }
 
     log.debug(
-        "Change {} position to {}° for {} from {}",
-        modelPartType,
+        "Change {} position to {} for {} from {}",
+        this.modelPartType,
         this.position,
         easyNPC,
         serverPlayer);
 
-    // Set common properties for all cases except ROOT.
     if (this.modelPartType != ModelPartType.ROOT) {
       easyNPC.getEntity().setPose(Pose.STANDING);
       modelData.setModelPose(ModelPose.CUSTOM);
     }
 
-    // Apply position change based on the model part.
     modelData.setModelPartPosition(this.modelPartType, this.position);
 
     if (!modelData.hasChangedModel()) {

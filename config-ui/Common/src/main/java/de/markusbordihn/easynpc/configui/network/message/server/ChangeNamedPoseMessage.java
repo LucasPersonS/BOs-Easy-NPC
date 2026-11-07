@@ -40,7 +40,7 @@ public record ChangeNamedPoseMessage(UUID uuid, String poseId) implements Networ
       StreamCodec.of((buffer, message) -> message.write(buffer), ChangeNamedPoseMessage::create);
 
   public static ChangeNamedPoseMessage create(final FriendlyByteBuf buffer) {
-    return new ChangeNamedPoseMessage(buffer.readUUID(), buffer.readUtf());
+    return new ChangeNamedPoseMessage(buffer.readUUID(), buffer.readUtf(MAX_NAME_LENGTH));
   }
 
   @Override
@@ -61,7 +61,7 @@ public record ChangeNamedPoseMessage(UUID uuid, String poseId) implements Networ
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }

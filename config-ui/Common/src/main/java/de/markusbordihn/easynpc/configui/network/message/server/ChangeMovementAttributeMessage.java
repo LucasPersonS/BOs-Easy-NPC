@@ -68,11 +68,11 @@ public record ChangeMovementAttributeMessage(
   public static ChangeMovementAttributeMessage create(final FriendlyByteBuf buffer) {
     return new ChangeMovementAttributeMessage(
         buffer.readUUID(),
-        buffer.readEnum(MovementAttributeType.class),
+        NetworkMessageRecord.readEnum(buffer, MovementAttributeType.class),
         buffer.readBoolean(),
         buffer.readDouble(),
         buffer.readInt(),
-        buffer.readEnum(NavigationType.class));
+        NetworkMessageRecord.readEnum(buffer, NavigationType.class));
   }
 
   @Override
@@ -97,7 +97,7 @@ public record ChangeMovementAttributeMessage(
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }
@@ -120,6 +120,7 @@ public record ChangeMovementAttributeMessage(
         log.error("Invalid value for {} for {} from {}", this.attributeType, easyNPC, serverPlayer);
         return;
       }
+
       AttributeHandler.setMovementAttribute(easyNPC, this.attributeType, this.doubleValue);
       return;
     }
@@ -128,6 +129,7 @@ public record ChangeMovementAttributeMessage(
       log.error("Invalid value for {} for {} from {}", this.attributeType, easyNPC, serverPlayer);
       return;
     }
+
     AttributeHandler.setMovementAttribute(easyNPC, this.attributeType, this.booleanValue);
   }
 }

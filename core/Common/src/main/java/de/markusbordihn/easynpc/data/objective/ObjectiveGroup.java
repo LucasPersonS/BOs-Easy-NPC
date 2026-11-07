@@ -30,12 +30,14 @@ public class ObjectiveGroup {
           ObjectiveType.ZOMBIE_ATTACK,
           ObjectiveType.CROSSBOW_ATTACK,
           ObjectiveType.BOW_ATTACK,
-          ObjectiveType.GUN_ATTACK);
+          ObjectiveType.GUN_ATTACK,
+          ObjectiveType.PROJECTILE_ATTACK);
 
   public static final Set<ObjectiveType> FOLLOW =
       EnumSet.of(
           ObjectiveType.FOLLOW_ENTITY_BY_UUID,
           ObjectiveType.FOLLOW_OWNER,
+          ObjectiveType.FOLLOW_NEAREST_PLAYER,
           ObjectiveType.FOLLOW_PLAYER);
 
   public static final Set<ObjectiveType> OWNER_TARGET =

@@ -29,6 +29,8 @@ import de.markusbordihn.easynpc.data.attribute.EnvironmentalAttributeType;
 import de.markusbordihn.easynpc.data.attribute.EnvironmentalAttributes;
 import de.markusbordihn.easynpc.data.attribute.InteractionAttributeType;
 import de.markusbordihn.easynpc.data.attribute.InteractionAttributes;
+import de.markusbordihn.easynpc.data.attribute.InventoryAttributeType;
+import de.markusbordihn.easynpc.data.attribute.InventoryAttributes;
 import de.markusbordihn.easynpc.data.attribute.MovementAttributeType;
 import de.markusbordihn.easynpc.data.attribute.MovementAttributes;
 import de.markusbordihn.easynpc.data.attribute.NavigationType;
@@ -39,8 +41,10 @@ import de.markusbordihn.easynpc.entity.easynpc.data.AttributeDataCapable;
 import de.markusbordihn.easynpc.entity.easynpc.data.DisplayAttributeDataCapable;
 import de.markusbordihn.easynpc.entity.easynpc.data.NavigationDataCapable;
 import de.markusbordihn.easynpc.entity.easynpc.data.ObjectiveDataCapable;
+import java.util.Arrays;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -61,6 +65,7 @@ public class AttributeHandler {
     } else if (valueType == ValueType.DOUBLE && value instanceof Double doubleValue) {
       return setCombatAttribute(easyNPC, attributeType, doubleValue);
     }
+
     return false;
   }
 
@@ -69,10 +74,12 @@ public class AttributeHandler {
     if (easyNPC == null || attributeType == null) {
       return false;
     }
+
     AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
     if (attributeData == null || attributeData.getEntityAttributes() == null) {
       return false;
     }
+
     EntityAttributes entityAttributes = attributeData.getEntityAttributes();
     CombatAttributes attributes = entityAttributes.getCombatAttributes();
     log.debug("Changing combat attribute {}={} for {}", attributeType, value, easyNPC);
@@ -103,10 +110,12 @@ public class AttributeHandler {
     if (easyNPC == null || attributeType == null) {
       return false;
     }
+
     AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
     if (attributeData == null || attributeData.getEntityAttributes() == null) {
       return false;
     }
+
     EntityAttributes entityAttributes = attributeData.getEntityAttributes();
     CombatAttributes attributes = entityAttributes.getCombatAttributes();
     log.debug("Changing combat attribute {}={} for {}", attributeType, value, easyNPC);
@@ -127,14 +136,48 @@ public class AttributeHandler {
     if (easyNPC == null || attributeType == null) {
       return false;
     }
+
     DisplayAttributeDataCapable<?> attributeData = easyNPC.getEasyNPCDisplayAttributeData();
     if (attributeData == null) {
       return false;
     }
+
+    if (!isValidDisplayAttributeValue(attributeType, value)) {
+      log.warn("Invalid display attribute value {}={} for {}", attributeType, value, easyNPC);
+      return false;
+    }
+
     log.debug("Changing display attribute {}={} for {}", attributeType, value, easyNPC);
     ValueType valueType = attributeType.getValueType();
     attributeData.setDisplayAttribute(attributeType, valueType, value);
     return true;
+  }
+
+  private static boolean isValidDisplayAttributeValue(
+      DisplayAttributeType attributeType, Object value) {
+    return switch (attributeType) {
+      case BOSS_BAR_COLOR ->
+          value instanceof String colorName
+              && Arrays.stream(BossEvent.BossBarColor.values())
+                  .anyMatch(color -> color.name().equals(colorName));
+      case BOSS_BAR_STYLE ->
+          value instanceof String styleName
+              && Arrays.stream(BossEvent.BossBarOverlay.values())
+                  .anyMatch(style -> style.name().equals(styleName));
+      case BOSS_BAR_RANGE ->
+          value instanceof Integer range
+              && range >= DisplayAttributeType.MIN_BOSS_BAR_RANGE
+              && range <= DisplayAttributeType.MAX_BOSS_BAR_RANGE;
+      case BOSS_BAR_AUTO_HIDE ->
+          value instanceof Integer seconds
+              && seconds >= DisplayAttributeType.MIN_BOSS_BAR_AUTO_HIDE_SECONDS
+              && seconds <= DisplayAttributeType.MAX_BOSS_BAR_AUTO_HIDE_SECONDS;
+      case LIGHT_LEVEL ->
+          value instanceof Integer lightLevel
+              && lightLevel >= DisplayAttributeType.MIN_LIGHT_LEVEL
+              && lightLevel <= DisplayAttributeType.MAX_LIGHT_LEVEL;
+      default -> true;
+    };
   }
 
   public static int getOpacity(EasyNPC<?> easyNPC) {
@@ -162,10 +205,12 @@ public class AttributeHandler {
     if (easyNPC == null || attributeType == null) {
       return false;
     }
+
     AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
     if (attributeData == null || attributeData.getEntityAttributes() == null) {
       return false;
     }
+
     EntityAttributes entityAttributes = attributeData.getEntityAttributes();
     EnvironmentalAttributes attributes = entityAttributes.getEnvironmentalAttributes();
     ObjectiveDataCapable<?> objectiveData = easyNPC.getEasyNPCObjectiveData();
@@ -210,10 +255,12 @@ public class AttributeHandler {
     if (easyNPC == null || attributeType == null) {
       return false;
     }
+
     AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
     if (attributeData == null || attributeData.getEntityAttributes() == null) {
       return false;
     }
+
     EntityAttributes entityAttributes = attributeData.getEntityAttributes();
     InteractionAttributes attributes = entityAttributes.getInteractionAttributes();
     log.debug("Changing interaction attribute {}={} for {}", attributeType, value, easyNPC);
@@ -228,10 +275,93 @@ public class AttributeHandler {
           entityAttributes.setInteractionAttributes(attributes.withPushEntities(value));
       case BLOCK_VEHICLE_MOUNTING ->
           entityAttributes.setInteractionAttributes(attributes.withBlockVehicleMounting(value));
+      case CAN_SIT_ON_SHOULDER -> {
+        entityAttributes.setInteractionAttributes(attributes.withCanSitOnShoulder(value));
+        ObjectiveDataCapable<?> objectiveData = easyNPC.getEasyNPCObjectiveData();
+        if (objectiveData != null) {
+          objectiveData.registerAttributeBasedObjectives();
+        }
+      }
       default -> {
         log.error("Unimplemented interaction attribute {} for {}", attributeType, easyNPC);
         return false;
       }
+    }
+    attributeData.refreshEntityAttributes();
+    return true;
+  }
+
+  public static boolean setInteractionAttribute(
+      EasyNPC<?> easyNPC, InteractionAttributeType attributeType, double value) {
+    if (easyNPC == null || attributeType == null) {
+      return false;
+    }
+
+    AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
+    if (attributeData == null || attributeData.getEntityAttributes() == null) {
+      return false;
+    }
+
+    EntityAttributes entityAttributes = attributeData.getEntityAttributes();
+    InteractionAttributes attributes = entityAttributes.getInteractionAttributes();
+    log.debug("Changing interaction attribute {}={} for {}", attributeType, value, easyNPC);
+    switch (attributeType) {
+      case SHOULDER_OFFSET_X ->
+          entityAttributes.setInteractionAttributes(attributes.withShoulderOffsetX(value));
+      case SHOULDER_OFFSET_Y ->
+          entityAttributes.setInteractionAttributes(attributes.withShoulderOffsetY(value));
+      case SHOULDER_OFFSET_Z ->
+          entityAttributes.setInteractionAttributes(attributes.withShoulderOffsetZ(value));
+      default -> {
+        log.error("Unimplemented interaction attribute {} for {}", attributeType, easyNPC);
+        return false;
+      }
+    }
+    attributeData.refreshEntityAttributes();
+    return true;
+  }
+
+  public static boolean setShoulderOffset(EasyNPC<?> easyNPC, Vec3 shoulderOffset) {
+    if (easyNPC == null || shoulderOffset == null) {
+      return false;
+    }
+
+    AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
+    if (attributeData == null || attributeData.getEntityAttributes() == null) {
+      return false;
+    }
+
+    EntityAttributes entityAttributes = attributeData.getEntityAttributes();
+    log.debug("Changing shoulder offset to {} for {}", shoulderOffset, easyNPC);
+    entityAttributes.setInteractionAttributes(
+        entityAttributes
+            .getInteractionAttributes()
+            .withShoulderOffsetX(shoulderOffset.x())
+            .withShoulderOffsetY(shoulderOffset.y())
+            .withShoulderOffsetZ(shoulderOffset.z()));
+    attributeData.refreshEntityAttributes();
+    return true;
+  }
+
+  public static boolean setInventoryAttribute(
+      EasyNPC<?> easyNPC, InventoryAttributeType attributeType, boolean value) {
+    if (easyNPC == null || attributeType == null) {
+      return false;
+    }
+
+    AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
+    if (attributeData == null || attributeData.getEntityAttributes() == null) {
+      return false;
+    }
+
+    EntityAttributes entityAttributes = attributeData.getEntityAttributes();
+    InventoryAttributes attributes = entityAttributes.getInventoryAttributes();
+    log.debug("Changing inventory attribute {}={} for {}", attributeType, value, easyNPC);
+    switch (attributeType) {
+      case DROP_ON_DEATH ->
+          entityAttributes.setInventoryAttributes(attributes.withDropOnDeath(value));
+      case PICK_UP_ITEMS ->
+          entityAttributes.setInventoryAttributes(attributes.withPickUpItems(value));
     }
     attributeData.refreshEntityAttributes();
     return true;
@@ -242,10 +372,12 @@ public class AttributeHandler {
     if (easyNPC == null || attributeType == null) {
       return false;
     }
+
     AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
     if (attributeData == null || attributeData.getEntityAttributes() == null) {
       return false;
     }
+
     EntityAttributes entityAttributes = attributeData.getEntityAttributes();
     MovementAttributes attributes = entityAttributes.getMovementAttributes();
     ObjectiveDataCapable<?> objectiveData = easyNPC.getEasyNPCObjectiveData();
@@ -254,6 +386,7 @@ public class AttributeHandler {
     switch (attributeType) {
       case CAN_CLOSE_DOOR ->
           entityAttributes.setMovementAttributes(attributes.withCanCloseDoor(value));
+      case CAN_JUMP -> entityAttributes.setMovementAttributes(attributes.withCanJump(value));
       case CAN_OPEN_DOOR ->
           entityAttributes.setMovementAttributes(attributes.withCanOpenDoor(value));
       case CAN_PASS_DOOR ->
@@ -272,7 +405,6 @@ public class AttributeHandler {
       }
     }
 
-    // Refresh objectives and navigation data if available.
     attributeData.refreshEntityAttributes();
     if (objectiveData != null) {
       objectiveData.registerAttributeBasedObjectives();
@@ -288,10 +420,12 @@ public class AttributeHandler {
     if (easyNPC == null || attributeType == null) {
       return false;
     }
+
     AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
     if (attributeData == null || attributeData.getEntityAttributes() == null) {
       return false;
     }
+
     EntityAttributes entityAttributes = attributeData.getEntityAttributes();
     MovementAttributes attributes = entityAttributes.getMovementAttributes();
     log.debug("Changing moving attribute {}={} for {}", attributeType, value, easyNPC);
@@ -318,10 +452,12 @@ public class AttributeHandler {
     if (easyNPC == null || navigationType == null) {
       return false;
     }
+
     AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
     if (attributeData == null || attributeData.getEntityAttributes() == null) {
       return false;
     }
+
     EntityAttributes entityAttributes = attributeData.getEntityAttributes();
     MovementAttributes attributes = entityAttributes.getMovementAttributes();
     log.debug("Changing navigation type to {} for {}", navigationType, easyNPC);
@@ -344,10 +480,9 @@ public class AttributeHandler {
     if (easyNPC == null || entityAttribute == null) {
       return false;
     }
+
     AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
     if (attributeData != null) {
-      ObjectiveDataCapable<?> objectiveData = easyNPC.getEasyNPCObjectiveData();
-      NavigationDataCapable<?> navigationData = easyNPC.getEasyNPCNavigationData();
       switch (entityAttribute) {
         case SILENT:
           log.debug("Change silent={} for {}", value, easyNPC);
@@ -359,6 +494,7 @@ public class AttributeHandler {
       }
       return true;
     }
+
     return false;
   }
 
@@ -367,6 +503,7 @@ public class AttributeHandler {
     if (easyNPC == null || attribute == null || value == null) {
       return false;
     }
+
     AttributeDataCapable<?> attributeData = easyNPC.getEasyNPCAttributeData();
     if (attributeData == null) {
       return false;
@@ -375,6 +512,17 @@ public class AttributeHandler {
     BaseAttributeType baseAttributeType = BaseAttributeType.fromResourceLocation(attribute);
     if (baseAttributeType == null) {
       log.error("Unimplemented base attribute {} for {}", attribute, easyNPC);
+      return false;
+    }
+
+    if (!baseAttributeType.isValidValue(value)) {
+      log.error(
+          "Invalid value {} for base attribute {} for {}, allowed range is {} to {}",
+          value,
+          attribute,
+          easyNPC,
+          baseAttributeType.getMinValue(),
+          baseAttributeType.getMaxValue());
       return false;
     }
 
@@ -393,7 +541,6 @@ public class AttributeHandler {
       return;
     }
 
-    // Ensure that the default attributes are set.
     if (mob.getAttribute(Attributes.SPAWN_REINFORCEMENTS_CHANCE) != null) {
       mob.getAttribute(Attributes.SPAWN_REINFORCEMENTS_CHANCE).setBaseValue(0.0D);
     }

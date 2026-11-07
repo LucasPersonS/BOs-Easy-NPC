@@ -123,29 +123,27 @@ public class UrlValidator {
   }
 
   public static boolean isValidUrl(String url) {
-    // Basic URL validation.
     if (url == null
         || url.isEmpty()
         || (!url.startsWith("http://") && !url.startsWith("https://"))) {
       if (url != null && !url.isEmpty()) {
-        log.error("Invalid URL: {}", url);
+        log.debug("Invalid URL: {}", url);
       }
       return false;
     }
 
-    // Check for forbidden extensions, to prevent downloading of malicious files.
     for (String extension : FORBIDDEN_EXTENSIONS) {
       if (url.endsWith(extension)) {
-        log.error("Forbidden extension found in URL: {}", url);
+        log.debug("Forbidden extension found in URL: {}", url);
         return false;
       }
     }
 
-    // Check for valid URL format according to RFC 2396.
+    // RFC 2396
     try {
       new URL(url).toURI();
     } catch (MalformedURLException | URISyntaxException e) {
-      log.error("Invalid URL format: {}", url);
+      log.debug("Invalid URL format: {}", url);
       return false;
     }
     return true;

@@ -50,9 +50,9 @@ public record ChangeRendererMessage(
   public static ChangeRendererMessage create(final FriendlyByteBuf buffer) {
     return new ChangeRendererMessage(
         buffer.readUUID(),
-        buffer.readOptional(buf -> buf.readEnum(RenderType.class)),
-        EntityType.byString(buffer.readUtf()),
-        Optional.of(buffer.readUtf()).filter(s -> !s.isEmpty()));
+        NetworkMessageRecord.readOptionalEnum(buffer, RenderType.class),
+        EntityType.byString(buffer.readUtf(MAX_NAME_LENGTH)),
+        Optional.of(buffer.readUtf(MAX_NAME_LENGTH)).filter(modelName -> !modelName.isEmpty()));
   }
 
   @Override
@@ -78,7 +78,7 @@ public record ChangeRendererMessage(
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }

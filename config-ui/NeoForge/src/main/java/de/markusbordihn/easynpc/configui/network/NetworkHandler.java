@@ -79,11 +79,18 @@ public class NetworkHandler implements NetworkHandlerInterface {
       final StreamCodec<RegistryFriendlyByteBuf, M> codec,
       final Class<M> networkMessage,
       final Function<FriendlyByteBuf, M> creator) {
-    logRegisterClientNetworkMessageHandler(type, networkMessage);
+    this.logRegisterClientNetworkMessageHandler(type, networkMessage);
     payloadRegistrar.playToClient(
         type,
         codec,
-        (customPacketPayload, playPayloadContext) -> customPacketPayload.handleClient());
+        (customPacketPayload, playPayloadContext) -> {
+          if (customPacketPayload == null) {
+            log.warn("Received null client payload, ignoring packet");
+            return;
+          }
+
+          NetworkMessageRecord.guardedHandler(type.id(), customPacketPayload::handleClient).run();
+        });
   }
 
   @Override
@@ -92,60 +99,68 @@ public class NetworkHandler implements NetworkHandlerInterface {
       final StreamCodec<RegistryFriendlyByteBuf, M> codec,
       Class<M> networkMessage,
       Function<FriendlyByteBuf, M> creator) {
-    logRegisterServerNetworkMessageHandler(type, networkMessage);
+    this.logRegisterServerNetworkMessageHandler(type, networkMessage);
     payloadRegistrar.playToServer(
         type,
         codec,
         (customPacketPayload, playPayloadContext) -> {
-          if (playPayloadContext.player() instanceof ServerPlayer serverPlayer) {
-            customPacketPayload.handleServer(serverPlayer);
-          } else {
-            log.error("Unable to get valid player for network message {}", customPacketPayload);
+          if (customPacketPayload == null) {
+            log.warn("Received null server payload, ignoring packet");
+            return;
           }
+
+          if (!(playPayloadContext.player() instanceof ServerPlayer serverPlayer)) {
+            log.error("Unable to get valid player for network message {}", customPacketPayload);
+            return;
+          }
+
+          NetworkMessageRecord.guardedHandler(
+                  type.id(), () -> customPacketPayload.handleServer(serverPlayer))
+              .run();
         });
   }
 
   @Override
   public <M extends NetworkMessageRecord> void addClientMessage(
       final Type<M> messageID, final Class<M> networkMessage) {
-    clientMessages.put(messageID, networkMessage);
+    this.clientMessages.put(messageID, networkMessage);
   }
 
   @Override
   public <M extends NetworkMessageRecord> void addServerMessage(
       final Type<M> messageID, final Class<M> networkMessage) {
-    serverMessages.put(messageID, networkMessage);
+    this.serverMessages.put(messageID, networkMessage);
   }
 
   @Override
   public Map<Type<?>, Class<? extends NetworkMessageRecord>> getClientMessages() {
-    return clientMessages;
+    return this.clientMessages;
   }
 
   @Override
   public Map<Type<?>, Class<? extends NetworkMessageRecord>> getServerMessages() {
-    return serverMessages;
+    return this.serverMessages;
   }
 
   @Override
   public <M extends NetworkMessageRecord> void addRegisteredClientMessage(
       final Type<M> messageID, final Class<M> networkMessage) {
-    registeredClientMessages.put(messageID, networkMessage);
+    this.registeredClientMessages.put(messageID, networkMessage);
   }
 
   @Override
   public <M extends NetworkMessageRecord> void addRegisteredServerMessage(
       final Type<M> messageID, final Class<M> networkMessage) {
-    registeredServerMessages.put(messageID, networkMessage);
+    this.registeredServerMessages.put(messageID, networkMessage);
   }
 
   @Override
   public Map<Type<?>, Class<? extends NetworkMessageRecord>> getRegisteredClientMessages() {
-    return registeredClientMessages;
+    return this.registeredClientMessages;
   }
 
   @Override
   public Map<Type<?>, Class<? extends NetworkMessageRecord>> getRegisteredServerMessages() {
-    return registeredServerMessages;
+    return this.registeredServerMessages;
   }
 }

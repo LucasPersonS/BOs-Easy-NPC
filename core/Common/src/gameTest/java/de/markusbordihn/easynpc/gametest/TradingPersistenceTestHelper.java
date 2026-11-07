@@ -1,0 +1,209 @@
+/*
+ * Copyright 2026 Markus Bordihn
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package de.markusbordihn.easynpc.gametest;
+
+import de.markusbordihn.easynpc.data.trading.TradingType;
+import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
+import de.markusbordihn.easynpc.entity.easynpc.data.TradingDataCapable;
+import de.markusbordihn.easynpc.handler.TradingOfferHandler;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.trading.ItemCost;
+import net.minecraft.world.item.trading.MerchantOffer;
+import net.minecraft.world.item.trading.MerchantOffers;
+import net.minecraft.world.phys.Vec3;
+
+public class TradingPersistenceTestHelper {
+
+  private TradingPersistenceTestHelper() {}
+
+  public static void assertTradeUsePersistence(GameTestHelper helper, EntityType<?> entityType) {
+    EasyNPC<?> npc = GameTestHelpers.mockEasyNPC(helper, entityType, new Vec3(1, 2, 1));
+
+    TradingDataCapable<?> tradingData = npc.getEasyNPCTradingData();
+    if (tradingData == null) {
+      helper.fail("NPC has no TradingDataCapable");
+      return;
+    }
+
+    MerchantOffers offers = new MerchantOffers();
+    offers.add(
+        new MerchantOffer(new ItemCost(Items.DIAMOND), new ItemStack(Items.EMERALD), 1, 0, 1.0f));
+    tradingData.getTradingDataSet().setType(TradingType.BASIC);
+    tradingData.setTradingOffers(offers);
+
+    MerchantOffers currentOffers = tradingData.getMerchantTradingOffers();
+    if (currentOffers == null || currentOffers.isEmpty()) {
+      helper.fail("No offers available after setup");
+      return;
+    }
+
+    tradingData.notifyTrade(currentOffers.get(0));
+
+    MerchantOffers syncedOffers = tradingData.getTradingOffers();
+    if (syncedOffers == null || syncedOffers.isEmpty()) {
+      helper.fail("Synced offers null after notifyTrade");
+      return;
+    }
+
+    if (syncedOffers.get(0).getUses() != 1) {
+      helper.fail(
+          "Expected uses=1 in synced data after trade, got " + syncedOffers.get(0).getUses());
+      return;
+    }
+
+    CompoundTag savedTag = new CompoundTag();
+    tradingData.addAdditionalTradingData(savedTag, helper.getLevel().registryAccess());
+    tradingData.readAdditionalTradingData(savedTag, helper.getLevel().registryAccess());
+
+    MerchantOffers reloadedOffers = tradingData.getTradingOffers();
+    if (reloadedOffers == null || reloadedOffers.isEmpty()) {
+      helper.fail("Offers null after NBT round-trip");
+      return;
+    }
+
+    if (reloadedOffers.get(0).getUses() != 1) {
+      helper.fail(
+          "Trade uses reset after NBT round-trip: expected 1, got "
+              + reloadedOffers.get(0).getUses());
+    }
+  }
+
+  public static void assertAdvancedMaxUsesPreservesCurrentUses(
+      GameTestHelper helper, EntityType<?> entityType) {
+    EasyNPC<?> npc = GameTestHelpers.mockEasyNPC(helper, entityType, new Vec3(1, 2, 1));
+
+    TradingDataCapable<?> tradingData = npc.getEasyNPCTradingData();
+    if (tradingData == null) {
+      helper.fail("NPC has no TradingDataCapable");
+      return;
+    }
+
+    MerchantOffers offers = new MerchantOffers();
+    offers.add(
+        new MerchantOffer(new ItemCost(Items.DIAMOND), new ItemStack(Items.EMERALD), 10, 5, 1.0f));
+    tradingData.getTradingDataSet().setType(TradingType.ADVANCED);
+    tradingData.setTradingOffers(offers);
+
+    tradingData.notifyTrade(tradingData.getMerchantTradingOffers().get(0));
+
+    if (tradingData.getTradingOffers().get(0).getUses() != 1) {
+      helper.fail("Setup: expected uses=1 after trade");
+      return;
+    }
+
+    TradingOfferHandler.setAdvancedTradingMaxUses(tradingData, 0, 5);
+
+    MerchantOffer updated = tradingData.getTradingOffers().get(0);
+    if (updated.getUses() != 1) {
+      helper.fail("setAdvancedTradingMaxUses reset uses to " + updated.getUses() + ", expected 1");
+      return;
+    }
+
+    if (updated.getMaxUses() != 5) {
+      helper.fail(
+          "setAdvancedTradingMaxUses did not update maxUses: expected 5, got "
+              + updated.getMaxUses());
+    }
+  }
+
+  public static void assertBasicTradingOffersUpdateAppliesCorrectFields(
+      GameTestHelper helper, EntityType<?> entityType) {
+    EasyNPC<?> npc = GameTestHelpers.mockEasyNPC(helper, entityType, new Vec3(1, 2, 1));
+
+    TradingDataCapable<?> tradingData = npc.getEasyNPCTradingData();
+    if (tradingData == null) {
+      helper.fail("NPC has no TradingDataCapable");
+      return;
+    }
+
+    MerchantOffers offers = new MerchantOffers();
+    offers.add(
+        new MerchantOffer(new ItemCost(Items.DIAMOND), new ItemStack(Items.EMERALD), 10, 0, 1.0f));
+    tradingData.getTradingDataSet().setType(TradingType.BASIC);
+    tradingData.getTradingDataSet().setMaxUses(10);
+    tradingData.getTradingDataSet().setRewardedXP(0);
+    tradingData.setTradingOffers(offers);
+
+    tradingData.notifyTrade(tradingData.getMerchantTradingOffers().get(0));
+
+    tradingData.getTradingDataSet().setMaxUses(3);
+    tradingData.getTradingDataSet().setRewardedXP(7);
+    TradingOfferHandler.updateBasicTradingOffers(tradingData);
+
+    MerchantOffer updated = tradingData.getTradingOffers().get(0);
+
+    if (updated.getMaxUses() != 3) {
+      helper.fail("updateBasicTradingOffers maxUses expected 3, got " + updated.getMaxUses());
+      return;
+    }
+
+    if (updated.getXp() != 7) {
+      helper.fail("updateBasicTradingOffers xp expected 7, got " + updated.getXp());
+      return;
+    }
+
+    if (updated.getUses() != 1) {
+      helper.fail(
+          "updateBasicTradingOffers must preserve uses (expected 1), got " + updated.getUses());
+    }
+  }
+
+  public static void assertTimedTradingResetRestoresUses(
+      GameTestHelper helper, EntityType<?> entityType) {
+    EasyNPC<?> npc = GameTestHelpers.mockEasyNPC(helper, entityType, new Vec3(1, 2, 1));
+
+    TradingDataCapable<?> tradingData = npc.getEasyNPCTradingData();
+    if (tradingData == null) {
+      helper.fail("NPC has no TradingDataCapable");
+      return;
+    }
+
+    MerchantOffers offers = new MerchantOffers();
+    offers.add(
+        new MerchantOffer(new ItemCost(Items.DIAMOND), new ItemStack(Items.EMERALD), 1, 0, 1.0f));
+    tradingData.getTradingDataSet().setType(TradingType.BASIC);
+    tradingData.getTradingDataSet().setResetsEveryMin(1);
+    tradingData.getTradingDataSet().setLastReset(System.currentTimeMillis());
+    tradingData.setTradingOffers(offers);
+
+    tradingData.notifyTrade(tradingData.getMerchantTradingOffers().get(0));
+
+    if (tradingData.getTradingOffers().get(0).getUses() != 1) {
+      helper.fail("Setup: expected exhausted trade with uses=1");
+      return;
+    }
+
+    tradingData.getTradingDataSet().setLastReset(System.currentTimeMillis() - (2L * 60L * 1000L));
+
+    if (!tradingData.resetExpiredTradingOffers()) {
+      helper.fail("Expected expired trading offers to reset");
+      return;
+    }
+
+    MerchantOffer resetOffer = tradingData.getTradingOffers().get(0);
+    if (resetOffer.getUses() != 0) {
+      helper.fail("Timed reset expected uses=0, got " + resetOffer.getUses());
+    }
+  }
+}

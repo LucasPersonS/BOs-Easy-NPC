@@ -39,6 +39,7 @@ public record ModelAnimationRequest(
           ModelAnimationTransition.DEFAULT,
           0,
           0L);
+  private static final int MAX_ANIMATION_NAME_LENGTH = 256;
 
   public ModelAnimationRequest {
     operation = Objects.requireNonNull(operation, "operation");
@@ -50,10 +51,11 @@ public record ModelAnimationRequest(
   public static ModelAnimationRequest decode(FriendlyByteBuf buffer) {
     return new ModelAnimationRequest(
         buffer.readEnum(ModelAnimationOperation.class),
-        buffer.readUtf(256),
+        buffer.readUtf(MAX_ANIMATION_NAME_LENGTH),
         new ModelAnimationPlayback(
             buffer.readEnum(ModelAnimationPlaybackMode.class),
             buffer.readVarInt(),
+            buffer.readFloat(),
             buffer.readFloat()),
         new ModelAnimationTransition(
             buffer.readEnum(ModelAnimationSwitchTiming.class), buffer.readFloat()),
@@ -63,10 +65,11 @@ public record ModelAnimationRequest(
 
   public void encode(FriendlyByteBuf buffer) {
     buffer.writeEnum(this.operation);
-    buffer.writeUtf(this.animationName, 256);
+    buffer.writeUtf(this.animationName, MAX_ANIMATION_NAME_LENGTH);
     buffer.writeEnum(this.playback.mode());
     buffer.writeVarInt(this.playback.repeatCount());
     buffer.writeFloat(this.playback.durationTicks());
+    buffer.writeFloat(this.playback.speed());
     buffer.writeEnum(this.transition.timing());
     buffer.writeFloat(this.transition.blendDurationTicks());
     buffer.writeVarInt(this.sequence);

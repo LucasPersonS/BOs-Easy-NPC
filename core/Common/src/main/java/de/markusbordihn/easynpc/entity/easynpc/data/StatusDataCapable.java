@@ -20,9 +20,12 @@
 package de.markusbordihn.easynpc.entity.easynpc.data;
 
 import de.markusbordihn.easynpc.data.status.StatusDataType;
+import de.markusbordihn.easynpc.data.synched.SynchedDataIndex;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
+import de.markusbordihn.easynpc.handler.PauseManager;
 import java.util.EnumMap;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.Mob;
 
 public interface StatusDataCapable<T extends Mob> extends EasyNPC<T> {
@@ -38,58 +41,95 @@ public interface StatusDataCapable<T extends Mob> extends EasyNPC<T> {
   EnumMap<StatusDataType, Long> getStatusDataTimestamps();
 
   default boolean getStatusDataFlag(StatusDataType key) {
-    return getStatusDataFlags().getOrDefault(key, false);
+    return this.getStatusDataFlags().getOrDefault(key, false);
   }
 
   default void setStatusDataFlag(StatusDataType key, boolean value) {
-    getStatusDataFlags().put(key, value);
+    this.getStatusDataFlags().put(key, value);
+    if (key == StatusDataType.PAUSED) {
+      this.setSynchedEntityData(SynchedDataIndex.PAUSED, value);
+    }
+  }
+
+  default boolean isNPCPaused() {
+    if (this.isClientSideInstance()) {
+      return this.getSynchedEntityData(SynchedDataIndex.PAUSED);
+    }
+
+    return this.getStatusDataFlag(StatusDataType.PAUSED);
+  }
+
+  default void defineSynchedStatusData(SynchedEntityData.Builder builder) {
+    this.defineSynchedEntityData(builder, SynchedDataIndex.PAUSED, false);
   }
 
   default long getStatusDataTimestamp(StatusDataType key) {
-    return getStatusDataTimestamps().getOrDefault(key, 0L);
+    return this.getStatusDataTimestamps().getOrDefault(key, 0L);
   }
 
   default void setStatusDataTimestamp(StatusDataType key, long timestamp) {
-    getStatusDataTimestamps().put(key, timestamp);
+    this.getStatusDataTimestamps().put(key, timestamp);
   }
 
   default boolean hasUnsavedNPCData() {
-    return getStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_UPDATE)
+    return this.getStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_UPDATE)
         > getStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_SAVED);
   }
 
   default void markNPCDataUpdated() {
-    setStatusDataTimestamp(
+    this.markNPCDataUpdated("unspecified");
+  }
+
+  default void markNPCDataUpdated(Object changeSource) {
+    if (log.isDebugEnabled() && !this.hasUnsavedNPCData() && this.getEntity().tickCount > 0) {
+      log.debug("{} marked as changed by {}", this, changeSource);
+    }
+    this.setStatusDataTimestamp(
         StatusDataType.NPC_DATA_LAST_UPDATE,
-        currentTimeAfter(getStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_SAVED)));
+        currentTimeAfter(this.getStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_SAVED)));
   }
 
   default void markNPCDataSaved() {
-    long lastUpdate = getStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_UPDATE);
-    if (lastUpdate <= getStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_SAVED)) {
+    long lastUpdate = this.getStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_UPDATE);
+    if (lastUpdate <= this.getStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_SAVED)) {
       return;
     }
 
-    setStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_SAVED, lastUpdate);
+    this.setStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_SAVED, lastUpdate);
+  }
+
+  default void trackLoadedNPCData(CompoundTag compoundTag, boolean replacesRunningNPCData) {
+    if (replacesRunningNPCData || this.isLegacyNPCData()) {
+      this.markNPCDataUpdated("load");
+      return;
+    }
+
+    // PersistentEntitySectionManager#storeChunkSections saves the chunk before the unload event.
+    long storedLastUpdate =
+        compoundTag
+            .getCompound(DATA_STATUS_DATA_TAG)
+            .getLong(StatusDataType.NPC_DATA_LAST_UPDATE.getTagName());
+    this.setStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_UPDATE, storedLastUpdate);
+    this.setStatusDataTimestamp(
+        StatusDataType.NPC_DATA_LAST_SAVED,
+        Math.max(storedLastUpdate, this.getStatusDataTimestamp(StatusDataType.NPC_DATA_LAST_SAVED)));
   }
 
   default void addAdditionalStatusData(CompoundTag compoundTag) {
     CompoundTag statusTag = new CompoundTag();
 
-    // Set status flags, if not already set.
-    if (!getStatusDataFlag(StatusDataType.FINALIZED)) {
-      setStatusDataFlag(StatusDataType.FINALIZED, true);
+    if (!this.getStatusDataFlag(StatusDataType.FINALIZED)) {
+      this.setStatusDataFlag(StatusDataType.FINALIZED, true);
     }
 
-    // Add all status data (both flags and timestamps) to the status tag.
     for (StatusDataType statusDataType : StatusDataType.values()) {
       if (statusDataType.isBoolean()) {
-        Boolean value = getStatusDataFlags().get(statusDataType);
+        Boolean value = this.getStatusDataFlags().get(statusDataType);
         if (value != null) {
           statusTag.putBoolean(statusDataType.getTagName(), value);
         }
       } else if (statusDataType.isTimestamp()) {
-        Long value = getStatusDataTimestamps().get(statusDataType);
+        Long value = this.getStatusDataTimestamps().get(statusDataType);
         if (value != null && value > 0) {
           statusTag.putLong(statusDataType.getTagName(), value);
         }
@@ -97,6 +137,7 @@ public interface StatusDataCapable<T extends Mob> extends EasyNPC<T> {
     }
 
     compoundTag.put(DATA_STATUS_DATA_TAG, statusTag);
+    PauseManager.removeGlobalPauseFromSaveData(this, compoundTag);
   }
 
   default void readAdditionalStatusData(CompoundTag compoundTag) {
@@ -112,9 +153,9 @@ public interface StatusDataCapable<T extends Mob> extends EasyNPC<T> {
       }
 
       if (statusDataType.isBoolean()) {
-        setStatusDataFlag(statusDataType, statusTag.getBoolean(key));
+        this.setStatusDataFlag(statusDataType, statusTag.getBoolean(key));
       } else if (statusDataType.isTimestamp()) {
-        setStatusDataTimestamp(statusDataType, statusTag.getLong(key));
+        this.setStatusDataTimestamp(statusDataType, statusTag.getLong(key));
       }
     }
   }

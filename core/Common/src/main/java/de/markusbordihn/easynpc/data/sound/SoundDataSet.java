@@ -48,9 +48,8 @@ public class SoundDataSet {
         @Override
         public void encode(
             RegistryFriendlyByteBuf registryFriendlyByteBuf, SoundDataSet soundDataSet) {
-          registryFriendlyByteBuf.writeNbt(
-              EntityDataSerializersManager.validateAndGetNbt(
-                  soundDataSet.createTag(), "SoundDataSet"));
+          EntityDataSerializersManager.writeSizeLimitedNbt(
+              registryFriendlyByteBuf, soundDataSet.createTag(), "SoundDataSet");
         }
       };
 
@@ -75,8 +74,29 @@ public class SoundDataSet {
         && soundDataEntry.isEnabled() == otherEntry.isEnabled();
   }
 
+  private static List<SoundDataEntry> readSoundEntries(CompoundTag compoundTag, String tagName) {
+    List<SoundDataEntry> soundDataEntries = new ArrayList<>();
+    ListTag soundListTag = compoundTag.getList(tagName, Tag.TAG_COMPOUND);
+    for (int i = 0; i < soundListTag.size(); i++) {
+      SoundDataEntry soundDataEntry = new SoundDataEntry(soundListTag.getCompound(i));
+      if (soundDataEntry.getType() != null && soundDataEntry.getSoundEvent() != null) {
+        soundDataEntries.add(soundDataEntry);
+      }
+    }
+    return soundDataEntries;
+  }
+
+  private static void writeSoundEntries(
+      CompoundTag compoundTag, String tagName, Map<SoundType, SoundDataEntry> soundEntries) {
+    ListTag soundListTag = new ListTag();
+    for (SoundDataEntry soundDataEntry : soundEntries.values()) {
+      soundListTag.add(soundDataEntry.createTag());
+    }
+    CompoundTagUtils.putIfNotEmpty(compoundTag, tagName, soundListTag);
+  }
+
   public boolean hasSound(SoundType type) {
-    return defaultSounds.containsKey(type) || overrideSounds.containsKey(type);
+    return this.defaultSounds.containsKey(type) || this.overrideSounds.containsKey(type);
   }
 
   public void addSound(SoundType type, SoundEvent soundEvent) {
@@ -120,36 +140,20 @@ public class SoundDataSet {
     if (soundEvent == null || soundEvent.getLocation().toString().isEmpty()) {
       return;
     }
-    defaultSounds.put(type, new SoundDataEntry(type, soundEvent.getLocation()));
+
+    this.defaultSounds.put(type, new SoundDataEntry(type, soundEvent.getLocation()));
   }
 
   public boolean isEmpty() {
-    return defaultSounds.isEmpty() && overrideSounds.isEmpty();
+    return this.defaultSounds.isEmpty() && this.overrideSounds.isEmpty();
   }
 
   public SoundDataEntry getSound(SoundType type) {
-    return overrideSounds.containsKey(type) ? overrideSounds.get(type) : defaultSounds.get(type);
-  }
-
-  private static List<SoundDataEntry> readSoundEntries(CompoundTag compoundTag, String tagName) {
-    List<SoundDataEntry> soundDataEntries = new ArrayList<>();
-    ListTag soundListTag = compoundTag.getList(tagName, Tag.TAG_COMPOUND);
-    for (int i = 0; i < soundListTag.size(); i++) {
-      SoundDataEntry soundDataEntry = new SoundDataEntry(soundListTag.getCompound(i));
-      if (soundDataEntry.getType() != null && soundDataEntry.getSoundEvent() != null) {
-        soundDataEntries.add(soundDataEntry);
-      }
+    if (this.overrideSounds.containsKey(type)) {
+      return this.overrideSounds.get(type);
     }
-    return soundDataEntries;
-  }
 
-  private static void writeSoundEntries(
-      CompoundTag compoundTag, String tagName, Map<SoundType, SoundDataEntry> soundEntries) {
-    ListTag soundListTag = new ListTag();
-    for (SoundDataEntry soundDataEntry : soundEntries.values()) {
-      soundListTag.add(soundDataEntry.createTag());
-    }
-    CompoundTagUtils.putIfNotEmpty(compoundTag, tagName, soundListTag);
+    return this.defaultSounds.get(type);
   }
 
   public void load(CompoundTag compoundTag) {

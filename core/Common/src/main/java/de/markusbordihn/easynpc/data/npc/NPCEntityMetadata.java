@@ -32,10 +32,12 @@ public record NPCEntityMetadata(
     UUID presetUUID,
     ResourceLocation customIdentifier,
     NPCRemovalReason removalReason,
-    boolean restoreOnOwnerLogin) {
+    boolean restoreOnOwnerLogin,
+    long removalTimestamp,
+    long npcDataHash) {
 
   public static final NPCEntityMetadata DEFAULT =
-      new NPCEntityMetadata(null, null, null, null, null, NPCRemovalReason.NONE, false);
+      new NPCEntityMetadata(null, null, null, null, null, NPCRemovalReason.NONE, false, 0L, 0L);
 
   public static final String TAG_DIMENSION = "Dimension";
   public static final String TAG_OWNER = "Owner";
@@ -44,6 +46,8 @@ public record NPCEntityMetadata(
   public static final String TAG_CUSTOM_IDENTIFIER = "CustomIdentifier";
   public static final String TAG_REMOVAL_REASON = "RemovalReason";
   public static final String TAG_RESTORE_ON_OWNER_LOGIN = "RestoreOnOwnerLogin";
+  public static final String TAG_REMOVAL_TIMESTAMP = "RemovalTimestamp";
+  public static final String TAG_NPC_DATA_HASH = "NPCDataHash";
 
   public static <T extends Mob> NPCEntityMetadata fromEasyNPC(EasyNPC<T> easyNPC) {
     if (easyNPC == null || easyNPC.getEntity() == null) {
@@ -77,7 +81,9 @@ public record NPCEntityMetadata(
         customIdentifier,
         NPCRemovalReason.NONE,
         easyNPC.getEasyNPCPresetData() != null
-            && easyNPC.getEasyNPCPresetData().getRestoreOnOwnerLogin());
+            && easyNPC.getEasyNPCPresetData().getRestoreOnOwnerLogin(),
+        0L,
+        0L);
   }
 
   public static NPCEntityMetadata fromCompoundTag(CompoundTag tag) {
@@ -90,20 +96,23 @@ public record NPCEntityMetadata(
     String dimension = tag.contains(TAG_DIMENSION) ? tag.getString(TAG_DIMENSION) : null;
     UUID presetUUID = tag.contains(TAG_PRESET_UUID) ? tag.getUUID(TAG_PRESET_UUID) : null;
 
-    ResourceLocation customIdentifier = null;
-    if (tag.contains(TAG_CUSTOM_IDENTIFIER)) {
-      try {
-        customIdentifier = ResourceLocation.parse(tag.getString(TAG_CUSTOM_IDENTIFIER));
-      } catch (IllegalArgumentException e) {
-        // Invalid resource location format
-      }
-    }
+    ResourceLocation customIdentifier =
+        tag.contains(TAG_CUSTOM_IDENTIFIER)
+            ? ResourceLocation.tryParse(tag.getString(TAG_CUSTOM_IDENTIFIER))
+            : null;
 
     NPCRemovalReason removalReason =
         tag.contains(TAG_REMOVAL_REASON)
             ? NPCRemovalReason.fromString(tag.getString(TAG_REMOVAL_REASON))
             : NPCRemovalReason.NONE;
 
+    long removalTimestamp = 0L;
+    if (tag.contains(TAG_REMOVAL_TIMESTAMP)) {
+      removalTimestamp = tag.getLong(TAG_REMOVAL_TIMESTAMP);
+    } else if (removalReason != NPCRemovalReason.NONE) {
+      removalTimestamp = System.currentTimeMillis();
+    }
+
     return new NPCEntityMetadata(
         ownerUUID,
         entityType,
@@ -111,89 +120,128 @@ public record NPCEntityMetadata(
         presetUUID,
         customIdentifier,
         removalReason,
-        tag.getBoolean(TAG_RESTORE_ON_OWNER_LOGIN));
+        tag.getBoolean(TAG_RESTORE_ON_OWNER_LOGIN),
+        removalTimestamp,
+        tag.getLong(TAG_NPC_DATA_HASH));
   }
 
   public CompoundTag toCompoundTag() {
     CompoundTag tag = new CompoundTag();
-    if (ownerUUID != null) {
-      tag.putUUID(TAG_OWNER, ownerUUID);
+    if (this.ownerUUID != null) {
+      tag.putUUID(TAG_OWNER, this.ownerUUID);
     }
-    if (entityType != null && !entityType.isEmpty()) {
-      tag.putString(TAG_ENTITY_TYPE, entityType);
+    if (this.entityType != null && !this.entityType.isEmpty()) {
+      tag.putString(TAG_ENTITY_TYPE, this.entityType);
     }
-    if (dimension != null && !dimension.isEmpty()) {
-      tag.putString(TAG_DIMENSION, dimension);
+    if (this.dimension != null && !this.dimension.isEmpty()) {
+      tag.putString(TAG_DIMENSION, this.dimension);
     }
-    if (presetUUID != null) {
-      tag.putUUID(TAG_PRESET_UUID, presetUUID);
+    if (this.presetUUID != null) {
+      tag.putUUID(TAG_PRESET_UUID, this.presetUUID);
     }
-    if (customIdentifier != null) {
-      tag.putString(TAG_CUSTOM_IDENTIFIER, customIdentifier.toString());
+    if (this.customIdentifier != null) {
+      tag.putString(TAG_CUSTOM_IDENTIFIER, this.customIdentifier.toString());
     }
-    if (removalReason != null && removalReason != NPCRemovalReason.NONE) {
-      tag.putString(TAG_REMOVAL_REASON, removalReason.name());
+    if (this.removalReason != null && this.removalReason != NPCRemovalReason.NONE) {
+      tag.putString(TAG_REMOVAL_REASON, this.removalReason.name());
     }
-    if (restoreOnOwnerLogin) {
+    if (this.restoreOnOwnerLogin) {
       tag.putBoolean(TAG_RESTORE_ON_OWNER_LOGIN, true);
     }
+    if (this.removalTimestamp > 0L) {
+      tag.putLong(TAG_REMOVAL_TIMESTAMP, this.removalTimestamp);
+    }
+    if (this.npcDataHash != 0L) {
+      tag.putLong(TAG_NPC_DATA_HASH, this.npcDataHash);
+    }
+
     return tag;
   }
 
   public NPCEntityMetadata withOwnerUUID(UUID newOwnerUUID) {
     return new NPCEntityMetadata(
         newOwnerUUID,
-        entityType,
-        dimension,
-        presetUUID,
-        customIdentifier,
-        removalReason,
-        restoreOnOwnerLogin);
+        this.entityType,
+        this.dimension,
+        this.presetUUID,
+        this.customIdentifier,
+        this.removalReason,
+        this.restoreOnOwnerLogin,
+        this.removalTimestamp,
+        this.npcDataHash);
   }
 
   public NPCEntityMetadata withDimension(String newDimension) {
     return new NPCEntityMetadata(
-        ownerUUID,
-        entityType,
+        this.ownerUUID,
+        this.entityType,
         newDimension,
-        presetUUID,
-        customIdentifier,
-        removalReason,
-        restoreOnOwnerLogin);
+        this.presetUUID,
+        this.customIdentifier,
+        this.removalReason,
+        this.restoreOnOwnerLogin,
+        this.removalTimestamp,
+        this.npcDataHash);
   }
 
   public NPCEntityMetadata withRemovalReason(NPCRemovalReason newRemovalReason) {
+    long newRemovalTimestamp = 0L;
+    if (newRemovalReason == this.removalReason) {
+      newRemovalTimestamp = this.removalTimestamp;
+    } else if (newRemovalReason != null && newRemovalReason != NPCRemovalReason.NONE) {
+      newRemovalTimestamp = System.currentTimeMillis();
+    }
+
     return new NPCEntityMetadata(
-        ownerUUID,
-        entityType,
-        dimension,
-        presetUUID,
-        customIdentifier,
+        this.ownerUUID,
+        this.entityType,
+        this.dimension,
+        this.presetUUID,
+        this.customIdentifier,
         newRemovalReason,
-        restoreOnOwnerLogin);
+        this.restoreOnOwnerLogin,
+        newRemovalTimestamp,
+        this.npcDataHash);
+  }
+
+  public NPCEntityMetadata withNPCDataHash(long newNPCDataHash) {
+    return new NPCEntityMetadata(
+        this.ownerUUID,
+        this.entityType,
+        this.dimension,
+        this.presetUUID,
+        this.customIdentifier,
+        this.removalReason,
+        this.restoreOnOwnerLogin,
+        this.removalTimestamp,
+        newNPCDataHash);
   }
 
   public boolean hasOwner() {
-    return ownerUUID != null;
+    return this.ownerUUID != null;
   }
 
   public boolean hasEntityType() {
-    return entityType != null && !entityType.isEmpty();
+    return this.entityType != null && !this.entityType.isEmpty();
   }
 
   public boolean hasDimension() {
-    return dimension != null && !dimension.isEmpty();
+    return this.dimension != null && !this.dimension.isEmpty();
   }
 
   public boolean hasPreset() {
-    return presetUUID != null;
+    return this.presetUUID != null;
   }
 
   public boolean hasCustomIdentifier() {
-    return customIdentifier != null;
+    return this.customIdentifier != null;
   }
 
   public boolean hasRemovalReason() {
-    return removalReason != null && removalReason != NPCRemovalReason.NONE;
+    return this.removalReason != null && this.removalReason != NPCRemovalReason.NONE;
+  }
+
+  public boolean isRemovedLongerThan(long maxAgeMilliseconds, long now) {
+    return this.removalTimestamp > 0L && now - this.removalTimestamp > maxAgeMilliseconds;
   }
 }

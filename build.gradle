@@ -4,19 +4,12 @@ import org.gradle.tooling.GradleConnector
 def ghostRefScript = file(findProperty('ghostRefIndex') ?: '')
 if (ghostRefScript.exists()) apply from: ghostRefScript
 
-subprojects {
+apply from: 'gradle/releaseSmokeTestConfig.gradle'
 
-  tasks.register('wrapper', Wrapper) {
-    gradleVersion = '8.14.5'
-  }
-
-  tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-  }
-
+tasks.named('releaseSmokeTest') {
+  mustRunAfter 'cleanBuild'
 }
 
-// Build all modules
 tasks.named('build') {
   description = 'Builds all modules (core, config-ui, bundle)'
 
@@ -47,7 +40,6 @@ tasks.named('build') {
   }
 }
 
-// Clean all modules
 tasks.named('clean') {
   description = 'Cleans all modules (core, config-ui, bundle)'
 
@@ -78,7 +70,6 @@ tasks.named('clean') {
   }
 }
 
-// Clean Maven Local artifacts (current version only)
 tasks.register('cleanMavenLocal') {
   description = 'Deletes this project\'s artifacts from Maven Local (current version)'
   group = "build"
@@ -130,7 +121,6 @@ tasks.register('cleanMavenLocal') {
   }
 }
 
-// Clean Loom Cache for Easy NPC artifacts
 tasks.register('cleanLoomCache') {
   description = 'Deletes Easy NPC artifacts from Fabric Loom cache'
   group = "build"
@@ -168,19 +158,15 @@ tasks.register('cleanLoomCache') {
   }
 }
 
-// Clean Maven Local and build all modules sequentially
 tasks.register('cleanBuild') {
-  description = 'Cleans Maven Local and builds all modules sequentially (core -> config-ui -> bundle)'
+  description = 'Cleans Maven Local and builds all modules without tests (core -> config-ui -> bundle)'
   group = "build"
 
   doLast {
-    // First clean Maven Local
     tasks.cleanMavenLocal.actions.each { it.execute(tasks.cleanMavenLocal) }
 
-    // Clean Loom Cache
     tasks.cleanLoomCache.actions.each { it.execute(tasks.cleanLoomCache) }
 
-    // Build modules in correct order: core first, then config-ui (needs core), then bundle (needs both)
     def modules = ['core', 'config-ui', 'bundle']
 
     modules.each { moduleName ->
@@ -194,6 +180,7 @@ tasks.register('cleanBuild') {
       try {
         def buildLauncher = connection.newBuild()
         buildLauncher.forTasks('build')
+        buildLauncher.withArguments('-x', 'check')
         buildLauncher.setStandardOutput(System.out)
         buildLauncher.setStandardError(System.err)
         buildLauncher.run()
@@ -207,12 +194,11 @@ tasks.register('cleanBuild') {
   }
 }
 
-// Full verification: clean build, then check + game tests for all modules
 tasks.register('fullCheck') {
   description = 'Clean build, then check and game tests for all modules (core -> config-ui -> bundle)'
   group = "verification"
 
-  dependsOn 'cleanBuild'
+  dependsOn 'cleanBuild', 'releaseSmokeTest'
 
   doLast {
     def modules = ['core', 'config-ui', 'bundle']
@@ -241,12 +227,12 @@ tasks.register('fullCheck') {
   }
 }
 
-// Publish all modules to Modrinth and CurseForge
-tasks.register('publish') {
-  description = 'Builds and publishes all modules (core, config-ui, bundle)'
+tasks.register('publishMods') {
+  description = 'Runs fullCheck, then publishes core, config-ui and bundle to Modrinth and CurseForge'
   group = "publishing"
 
-  dependsOn 'cleanBuild'
+  // A failed upload below only logs a warning and continues, so all jars are checked before the first upload.
+  dependsOn 'fullCheck'
 
   doLast {
     def modules = ['core', 'config-ui', 'bundle']

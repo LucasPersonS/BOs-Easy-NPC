@@ -69,6 +69,11 @@ public class MenuHandler implements MenuHandlerInterface {
     configurationMenuMap.put(
         ConfigurationType.COMBAT_ATTRIBUTE, ModMenuTypes.COMBAT_ATTRIBUTE_CONFIGURATION_MENU);
     configurationMenuMap.put(
+        ConfigurationType.PROJECTILE_ATTRIBUTE,
+        ModMenuTypes.PROJECTILE_ATTRIBUTE_CONFIGURATION_MENU);
+    configurationMenuMap.put(
+        ConfigurationType.BOSS_BAR_ATTRIBUTE, ModMenuTypes.BOSS_BAR_ATTRIBUTE_CONFIGURATION_MENU);
+    configurationMenuMap.put(
         ConfigurationType.COMBAT_SOUND, ModMenuTypes.COMBAT_SOUND_CONFIGURATION_MENU);
     configurationMenuMap.put(
         ConfigurationType.CUSTOM_POSE, ModMenuTypes.CUSTOM_POSE_CONFIGURATION_MENU);
@@ -118,6 +123,8 @@ public class MenuHandler implements MenuHandlerInterface {
         ConfigurationType.INTERVAL_ACTION, ModMenuTypes.INTERVAL_ACTION_CONFIGURATION_MENU);
     configurationMenuMap.put(
         ConfigurationType.EQUIPMENT, ModMenuTypes.EQUIPMENT_CONFIGURATION_MENU);
+    configurationMenuMap.put(
+        ConfigurationType.INVENTORY, ModMenuTypes.INVENTORY_CONFIGURATION_MENU);
     configurationMenuMap.put(
         ConfigurationType.FOLLOW_OBJECTIVE, ModMenuTypes.FOLLOW_OBJECTIVE_CONFIGURATION_MENU);
     configurationMenuMap.put(

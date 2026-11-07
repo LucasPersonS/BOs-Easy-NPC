@@ -77,7 +77,8 @@ class ObjectiveGroupTest {
             ObjectiveType.ZOMBIE_ATTACK,
             ObjectiveType.CROSSBOW_ATTACK,
             ObjectiveType.BOW_ATTACK,
-            ObjectiveType.GUN_ATTACK),
+            ObjectiveType.GUN_ATTACK,
+            ObjectiveType.PROJECTILE_ATTACK),
         ObjectiveGroup.ATTACK_TYPE);
   }
 
@@ -88,6 +89,7 @@ class ObjectiveGroupTest {
         EnumSet.of(
             ObjectiveType.FOLLOW_ENTITY_BY_UUID,
             ObjectiveType.FOLLOW_OWNER,
+            ObjectiveType.FOLLOW_NEAREST_PLAYER,
             ObjectiveType.FOLLOW_PLAYER),
         ObjectiveGroup.FOLLOW);
   }

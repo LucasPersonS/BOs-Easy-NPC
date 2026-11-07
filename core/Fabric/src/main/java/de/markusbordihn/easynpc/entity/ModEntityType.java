@@ -41,6 +41,8 @@ public class ModEntityType {
       new EnumMap<>(ModNPCEntityType.class);
   public static final Map<ModCustomEntityType, EntityType<?>> CUSTOM_TYPE =
       new EnumMap<>(ModCustomEntityType.class);
+  public static final Map<ModProjectileEntityType, EntityType<?>> PROJECTILE_TYPE =
+      new EnumMap<>(ModProjectileEntityType.class);
   public static final Map<EpicFightEntityType, EntityType<?>> EPIC_FIGHT_TYPE = new HashMap<>();
   public static final Map<CobblemonEntityType, EntityType<?>> COBBLEMON_TYPE = new HashMap<>();
   public static final Map<EasyModelEntitiesEntityType, EntityType<?>> EASY_MODEL_ENTITIES_TYPE =
@@ -48,7 +50,6 @@ public class ModEntityType {
   private static final Logger log = LogManager.getLogger(Constants.LOG_NAME);
 
   static {
-    // Raw entities (for modding only)
     for (ModRawEntityType type : ModRawEntityType.values()) {
       log.debug("Registering raw entity type {}", type.getResourceKey());
       RAW_TYPE.put(
@@ -60,7 +61,6 @@ public class ModEntityType {
     }
     log.info("Registered {} raw entity types.", RAW_TYPE.size());
 
-    // Pre-defined NPCs
     for (ModNPCEntityType type : ModNPCEntityType.values()) {
       log.debug("Registering NPC entity type {}", type.getResourceKey());
       NPC_TYPE.put(
@@ -72,7 +72,6 @@ public class ModEntityType {
     }
     log.info("Registered {} NPC entity types.", NPC_TYPE.size());
 
-    // Custom NPCs
     for (ModCustomEntityType type : ModCustomEntityType.values()) {
       log.debug("Registering custom entity type {}", type.getResourceKey());
       CUSTOM_TYPE.put(
@@ -83,6 +82,17 @@ public class ModEntityType {
               type.getBuilder().build(type.getResourceKey().toString())));
     }
     log.info("Registered {} custom entity types.", CUSTOM_TYPE.size());
+
+    for (ModProjectileEntityType type : ModProjectileEntityType.values()) {
+      log.debug("Registering projectile entity type {}", type.getResourceKey());
+      PROJECTILE_TYPE.put(
+          type,
+          Registry.register(
+              BuiltInRegistries.ENTITY_TYPE,
+              Constants.MOD_PREFIX_ID + type.getId(),
+              type.getBuilder().build(type.getResourceKey().toString())));
+    }
+    log.info("Registered {} projectile entity types.", PROJECTILE_TYPE.size());
 
     if (CompatConstants.MOD_EPIC_FIGHT_LOADED) {
       for (EpicFightEntityType type : EpicFightEntityType.values()) {
@@ -150,9 +160,19 @@ public class ModEntityType {
     return (EntityType<T>) CUSTOM_TYPE.get(type);
   }
 
+  public static <T extends Entity> EntityType<T> getEntityType(ModProjectileEntityType type) {
+    if (!PROJECTILE_TYPE.containsKey(type)) {
+      throw new IllegalArgumentException(
+          "Invalid projectile entity type '"
+              + type
+              + "'! Supported types are "
+              + PROJECTILE_TYPE.keySet());
+    }
+    return (EntityType<T>) PROJECTILE_TYPE.get(type);
+  }
+
   public static void registerEntityAttributes() {
 
-    // Raw entities (for modding only)
     for (ModRawEntityType type : ModRawEntityType.values()) {
       if (type.getAttributes() != null) {
         FabricDefaultAttributeRegistry.register(
@@ -163,7 +183,6 @@ public class ModEntityType {
       }
     }
 
-    // Pre-defined NPCs
     for (ModNPCEntityType type : ModNPCEntityType.values()) {
       if (type.getAttributes() != null) {
         FabricDefaultAttributeRegistry.register(
@@ -174,7 +193,6 @@ public class ModEntityType {
       }
     }
 
-    // Custom NPCs
     for (ModCustomEntityType type : ModCustomEntityType.values()) {
       if (type.getAttributes() != null) {
         FabricDefaultAttributeRegistry.register(

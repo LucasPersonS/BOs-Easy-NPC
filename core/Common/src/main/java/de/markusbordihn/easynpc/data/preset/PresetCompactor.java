@@ -94,6 +94,19 @@ public class PresetCompactor {
     return expandedData;
   }
 
+  public static void removeEntityTypeDefaultAttributes(CompoundTag entityData) {
+    if (!entityData.contains(ATTRIBUTES_TAG, Tag.TAG_LIST)) {
+      return;
+    }
+
+    AttributeSupplier entityTypeDefaults = getEntityTypeDefaults(entityData);
+    entityData
+        .getList(ATTRIBUTES_TAG, Tag.TAG_COMPOUND)
+        .removeIf(
+            attributeTag ->
+                isEntityTypeDefault(entityTypeDefaults, (CompoundTag) attributeTag));
+  }
+
   private static void removeEqualTags(
       CompoundTag entityData, CompoundTag referenceData, boolean isRootLevel) {
     for (String key : Set.copyOf(entityData.getAllKeys())) {
@@ -139,9 +152,7 @@ public class PresetCompactor {
       CompoundTag attributeTag = attributeList.getCompound(index);
       CompoundTag referenceAttributeTag =
           findAttribute(referenceAttributeList, attributeTag.getString(ATTRIBUTE_NAME_TAG));
-      if (referenceAttributeTag != null
-          ? attributeTag.equals(referenceAttributeTag)
-          : isEntityTypeDefault(entityTypeDefaults, attributeTag)) {
+      if (isUnchangedAttribute(attributeTag, referenceAttributeTag, entityTypeDefaults)) {
         continue;
       }
 
@@ -153,6 +164,17 @@ public class PresetCompactor {
     } else {
       entityData.put(ATTRIBUTES_TAG, changedAttributeList);
     }
+  }
+
+  private static boolean isUnchangedAttribute(
+      CompoundTag attributeTag,
+      CompoundTag referenceAttributeTag,
+      AttributeSupplier entityTypeDefaults) {
+    if (referenceAttributeTag != null) {
+      return attributeTag.equals(referenceAttributeTag);
+    }
+
+    return isEntityTypeDefault(entityTypeDefaults, attributeTag);
   }
 
   private static AttributeSupplier getEntityTypeDefaults(CompoundTag entityData) {

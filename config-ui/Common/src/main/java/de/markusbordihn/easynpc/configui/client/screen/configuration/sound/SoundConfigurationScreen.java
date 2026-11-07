@@ -48,7 +48,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -75,14 +74,12 @@ public class SoundConfigurationScreen<T extends ConfigurationMenu> extends Confi
   private static final float MIN_PITCH = 0.5f;
   private static final float MAX_PITCH = 2.0f;
   private static final float SOUND_STEP_SIZE = 0.05f;
-
+  private final Map<SoundType, SoundEntryRow> soundEntryRows = new LinkedHashMap<>();
   protected Button basicSoundButton = null;
   protected Button combatSoundButton = null;
   protected Button interactionSoundButton = null;
   protected Button tradeSoundButton = null;
   protected SoundDataSet soundDataSet = new SoundDataSet();
-
-  private final Map<SoundType, SoundEntryRow> soundEntryRows = new LinkedHashMap<>();
 
   public SoundConfigurationScreen(T menu, Inventory inventory, Component component) {
     super(menu, inventory, component);
@@ -94,14 +91,11 @@ public class SoundConfigurationScreen<T extends ConfigurationMenu> extends Confi
       return;
     }
 
-    SoundEvent soundEvent = BuiltInRegistries.SOUND_EVENT.get(soundLocation);
-    if (soundEvent == null) {
-      return;
-    }
-
     Minecraft.getInstance()
         .getSoundManager()
-        .play(SimpleSoundInstance.forUI(soundEvent, pitch, volume));
+        .play(
+            SimpleSoundInstance.forUI(
+                SoundEvent.createVariableRangeEvent(soundLocation), pitch, volume));
   }
 
   private static List<SelectOption<String>> getSoundOptions(String soundName) {
@@ -120,6 +114,22 @@ public class SoundConfigurationScreen<T extends ConfigurationMenu> extends Confi
     return soundLocation != null && !SoundEventManager.isKnownSoundEvent(soundName)
         ? SelectOption.of(soundName, soundName)
         : null;
+  }
+
+  private static void updateSoundTooltip(SelectBox<String> soundSelectBox) {
+    String soundName = soundSelectBox.getSelectedValue();
+    if (soundName == null || soundName.isEmpty()) {
+      soundSelectBox.setTooltip(null);
+      return;
+    }
+
+    MutableComponent tooltip = TextComponent.getText(soundName);
+    if (!SoundEventManager.isKnownSoundEvent(soundName)) {
+      tooltip
+          .append(TextComponent.getText("\n"))
+          .append(TextComponent.getTranslatedConfigText("sound_select.unknown"));
+    }
+    soundSelectBox.setTooltip(Tooltip.create(tooltip));
   }
 
   protected void addSoundEntries(ConfigurationType configurationType, List<SoundType> soundTypes) {
@@ -238,22 +248,6 @@ public class SoundConfigurationScreen<T extends ConfigurationMenu> extends Confi
             soundType, top, soundSelectBox, volumeSlider, pitchSlider, enabledCheckbox));
   }
 
-  private static void updateSoundTooltip(SelectBox<String> soundSelectBox) {
-    String soundName = soundSelectBox.getSelectedValue();
-    if (soundName == null || soundName.isEmpty()) {
-      soundSelectBox.setTooltip(null);
-      return;
-    }
-
-    MutableComponent tooltip = TextComponent.getText(soundName);
-    if (!SoundEventManager.isKnownSoundEvent(soundName)) {
-      tooltip
-          .append(TextComponent.getText("\n"))
-          .append(TextComponent.getTranslatedConfigText("sound_select.unknown"));
-    }
-    soundSelectBox.setTooltip(Tooltip.create(tooltip));
-  }
-
   private void onSoundSelected(SoundType soundType) {
     SoundEntryRow soundEntryRow = this.soundEntryRows.get(soundType);
     if (soundEntryRow == null) {
@@ -331,6 +325,7 @@ public class SoundConfigurationScreen<T extends ConfigurationMenu> extends Confi
       this.soundDataSet = additionalScreenData.getSoundDataSet();
     }
     this.soundEntryRows.clear();
+    SoundEventManager.refreshSoundEventOptions();
 
     this.basicSoundButton =
         this.addRenderableWidget(

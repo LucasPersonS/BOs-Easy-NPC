@@ -45,9 +45,9 @@ public record ChangeNameMessage(
   public static ChangeNameMessage create(final FriendlyByteBuf buffer) {
     return new ChangeNameMessage(
         buffer.readUUID(),
-        buffer.readUtf(),
+        buffer.readUtf(MAX_NAME_LENGTH),
         buffer.readInt(),
-        buffer.readEnum(NameVisibilityType.class));
+        NetworkMessageRecord.readEnum(buffer, NameVisibilityType.class));
   }
 
   @Override
@@ -70,7 +70,7 @@ public record ChangeNameMessage(
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }

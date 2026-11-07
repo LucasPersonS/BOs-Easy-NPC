@@ -43,7 +43,8 @@ public record ChangeTradingTypeMessage(UUID uuid, TradingType tradingType)
       StreamCodec.of((buffer, message) -> message.write(buffer), ChangeTradingTypeMessage::create);
 
   public static ChangeTradingTypeMessage create(final FriendlyByteBuf buffer) {
-    return new ChangeTradingTypeMessage(buffer.readUUID(), buffer.readEnum(TradingType.class));
+    return new ChangeTradingTypeMessage(
+        buffer.readUUID(), NetworkMessageRecord.readEnum(buffer, TradingType.class));
   }
 
   @Override
@@ -64,7 +65,7 @@ public record ChangeTradingTypeMessage(UUID uuid, TradingType tradingType)
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }

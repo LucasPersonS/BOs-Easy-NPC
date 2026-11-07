@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc.data.action;
 
 import de.markusbordihn.easynpc.utils.CompoundTagUtils;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -28,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 
 public final class ActionDataSet {
 
@@ -84,6 +86,7 @@ public final class ActionDataSet {
     if (actionDataEntry == null) {
       return;
     }
+
     int position = this.getPosition(actionDataEntry);
     if (position <= 0) {
       return;
@@ -97,6 +100,7 @@ public final class ActionDataSet {
     if (actionDataEntry == null) {
       return;
     }
+
     int position = this.getPosition(actionDataEntry);
     if (position < 0 || position >= this.actionDataEntries.size() - 1) {
       return;
@@ -113,6 +117,7 @@ public final class ActionDataSet {
     if (this.actionDataEntries.isEmpty()) {
       return false;
     }
+
     for (ActionDataEntry action : this.actionDataEntries) {
       if (action.isValidAndNotEmpty()) {
         return true;
@@ -147,6 +152,7 @@ public final class ActionDataSet {
     if (actionDataEntryId == null) {
       return null;
     }
+
     for (ActionDataEntry actionDataEntry : this.actionDataEntries) {
       if (actionDataEntry.id().equals(actionDataEntryId)) {
         return actionDataEntry;
@@ -177,6 +183,27 @@ public final class ActionDataSet {
     return -1;
   }
 
+  public ActionDataSet withUniqueIds(Set<UUID> usedActionIds, String scope) {
+    ActionDataSet uniqueActionDataSet = new ActionDataSet();
+    boolean hasReassignedIds = false;
+    for (ActionDataEntry actionDataEntry : this.actionDataEntries) {
+      UUID uniqueId = actionDataEntry.id();
+      for (int attempt = 1; !usedActionIds.add(uniqueId); attempt++) {
+        uniqueId =
+            UUID.nameUUIDFromBytes(
+                (scope + ":" + attempt + ":" + actionDataEntry.id())
+                    .getBytes(StandardCharsets.UTF_8));
+      }
+      if (uniqueId.equals(actionDataEntry.id())) {
+        uniqueActionDataSet.actionDataEntries.add(actionDataEntry);
+      } else {
+        uniqueActionDataSet.actionDataEntries.add(actionDataEntry.withId(uniqueId));
+        hasReassignedIds = true;
+      }
+    }
+    return hasReassignedIds ? uniqueActionDataSet : this;
+  }
+
   @SuppressWarnings("unused")
   public ActionDataEntry getEntryOrDefault(UUID actionDataEntryId) {
     ActionDataEntry actionDataEntry = this.getEntry(actionDataEntryId);
@@ -188,16 +215,17 @@ public final class ActionDataSet {
         || listName == null
         || listName.isEmpty()
         || !compoundTag.contains(listName)) {
-      return new ActionDataSet();
+      return this;
     }
-    ListTag actionDataList = compoundTag.getList(listName, 10);
-    return this.load(actionDataList);
+
+    return this.load(compoundTag.getList(listName, Tag.TAG_COMPOUND));
   }
 
   public ActionDataSet load(ListTag actionDataList) {
     if (actionDataList == null || actionDataList.isEmpty()) {
-      return new ActionDataSet();
+      return this;
     }
+
     this.actionDataEntries.clear();
     for (int i = 0; i < actionDataList.size(); i++) {
       CompoundTag actionDataEntryTag = actionDataList.getCompound(i);
@@ -217,6 +245,7 @@ public final class ActionDataSet {
     if (actionDataList == null) {
       return;
     }
+
     for (ActionDataEntry actionDataEntry : this.actionDataEntries) {
       if (actionDataEntry == null || !actionDataEntry.isValidAndNotEmpty()) {
         continue;
@@ -236,9 +265,11 @@ public final class ActionDataSet {
     if (this == object) {
       return true;
     }
-    if (object == null || getClass() != object.getClass()) {
+
+    if (object == null || this.getClass() != object.getClass()) {
       return false;
     }
+
     ActionDataSet other = (ActionDataSet) object;
     return this.actionDataEntries.equals(other.actionDataEntries);
   }

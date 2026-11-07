@@ -41,7 +41,7 @@ public record ChangeFactionMessage(UUID uuid, String factionName) implements Net
       StreamCodec.of((buffer, message) -> message.write(buffer), ChangeFactionMessage::create);
 
   public static ChangeFactionMessage create(final FriendlyByteBuf buffer) {
-    return new ChangeFactionMessage(buffer.readUUID(), buffer.readUtf());
+    return new ChangeFactionMessage(buffer.readUUID(), buffer.readUtf(MAX_NAME_LENGTH));
   }
 
   @Override
@@ -62,15 +62,15 @@ public record ChangeFactionMessage(UUID uuid, String factionName) implements Net
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
 
     if (easyNPC == null || this.factionName == null) {
-      log.error("Invalid data to change faction for {}: ", this);
+      log.warn("Invalid data to change faction for {}", this);
       return;
     }
 
     if (!MessageSecurity.checkFeatureAccess(
-        serverPlayer, easyNPC, NpcFeature.OBJECTIVE, "faction change")) {
+        serverPlayer, easyNPC, NpcFeature.FACTION_MANAGEMENT, "faction change")) {
       return;
     }
 

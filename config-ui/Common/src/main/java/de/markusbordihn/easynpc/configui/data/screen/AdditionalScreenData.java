@@ -19,11 +19,13 @@
 
 package de.markusbordihn.easynpc.configui.data.screen;
 
+import de.markusbordihn.easynpc.config.NPCBaseConfig;
 import de.markusbordihn.easynpc.configui.data.editor.EditorType;
 import de.markusbordihn.easynpc.data.action.ActionDataSet;
 import de.markusbordihn.easynpc.data.action.ActionDataType;
 import de.markusbordihn.easynpc.data.action.ActionEventSet;
 import de.markusbordihn.easynpc.data.action.ActionEventType;
+import de.markusbordihn.easynpc.data.attack.ProjectileData;
 import de.markusbordihn.easynpc.data.attribute.BaseAttributes;
 import de.markusbordihn.easynpc.data.condition.ConditionDataEntry;
 import de.markusbordihn.easynpc.data.condition.ConditionType;
@@ -38,6 +40,7 @@ import de.markusbordihn.easynpc.data.saveddata.FactionData;
 import de.markusbordihn.easynpc.data.scoreboard.ScoreboardData;
 import de.markusbordihn.easynpc.data.screen.AdditionalScreenDataInterface;
 import de.markusbordihn.easynpc.data.sound.SoundDataSet;
+import de.markusbordihn.easynpc.data.visibility.VisibilityConditionSet;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import de.markusbordihn.easynpc.entity.easynpc.data.SoundDataCapable;
 import java.util.HashSet;
@@ -59,12 +62,16 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
   private static final String DIALOG_DATA_TAG = "DialogData";
   private static final String EDITOR_TYPE_TAG = "EditorType";
   private static final String OBJECTIVE_DATA_TAG = "ObjectiveData";
+  private static final String PROJECTILE_DATA_TAG = "ProjectileData";
+  private static final String PROJECTILE_MAXIMUM_EXPLOSION_POWER_TAG =
+      "ProjectileMaximumExplosionPower";
   private static final String BLOCKED_CONFIGURATIONS_TAG = "BlockedConfigurations";
   private static final String BLOCKED_ACTION_TYPES_TAG = "BlockedActionTypes";
   private static final String FACTION_REGISTRY_TAG = "FactionRegistry";
   private static final String SCOREBOARD_DATA_TAG = "ScoreboardData";
   private static final String SOUND_DATA_TAG = "SoundData";
   private static final String TRADING_OFFER_ACTION_DATA_TAG = "TradingOfferActionData";
+  private static final String VISIBILITY_CONDITION_DATA_TAG = "VisibilityConditionData";
 
   private final ActionEventSet actionEventSet;
   private final ActionEventType actionEventType;
@@ -78,18 +85,16 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
   private final SoundDataSet soundDataSet;
 
   public AdditionalScreenData(CompoundTag compoundTag) {
-    // Processing know data.
-    this.actionEventSet = getActionEventSet(compoundTag);
-    this.actionEventType = getActionEventType(compoundTag);
-    this.baseAttributes = getBaseAttributes(compoundTag);
-    this.configurationType = getConfigurationType(compoundTag);
-    this.dialogDataSet = getDialogDataSet(compoundTag);
-    this.editorType = getEditorType(compoundTag);
-    this.objectiveDataSet = getObjectiveDataSet(compoundTag);
-    this.scoreboardData = getScoreboardData(compoundTag);
-    this.soundDataSet = getSoundDataSet(compoundTag);
+    this.actionEventSet = this.getActionEventSet(compoundTag);
+    this.actionEventType = this.getActionEventType(compoundTag);
+    this.baseAttributes = this.getBaseAttributes(compoundTag);
+    this.configurationType = this.getConfigurationType(compoundTag);
+    this.dialogDataSet = this.getDialogDataSet(compoundTag);
+    this.editorType = this.getEditorType(compoundTag);
+    this.objectiveDataSet = this.getObjectiveDataSet(compoundTag);
+    this.scoreboardData = this.getScoreboardData(compoundTag);
+    this.soundDataSet = this.getSoundDataSet(compoundTag);
 
-    // Store remaining data and remove already processed data.
     this.data = compoundTag;
     this.data.remove(ACTION_EVENT_DATA_TAG);
     this.data.remove(ACTION_EVENT_TYPE_TAG);
@@ -154,6 +159,29 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     if (offerActionDataSet != null && !offerActionDataSet.isEmpty()) {
       compoundTag.put(TRADING_OFFER_ACTION_DATA_TAG, offerActionDataSet.createTag());
     }
+  }
+
+  public static void addVisibilityConditionSet(CompoundTag compoundTag, EasyNPC<?> easyNPC) {
+    if (compoundTag == null
+        || easyNPC == null
+        || easyNPC.getEasyNPCDisplayAttributeData() == null) {
+      return;
+    }
+
+    compoundTag.put(
+        VISIBILITY_CONDITION_DATA_TAG,
+        easyNPC.getEasyNPCDisplayAttributeData().getVisibilityConditionSet().createTag());
+  }
+
+  public static void addProjectileData(CompoundTag compoundTag, EasyNPC<?> easyNPC) {
+    if (compoundTag == null || easyNPC == null || easyNPC.getEasyNPCAttackData() == null) {
+      return;
+    }
+
+    compoundTag.put(
+        PROJECTILE_DATA_TAG, easyNPC.getEasyNPCAttackData().getProjectileData().createTag());
+    compoundTag.putInt(
+        PROJECTILE_MAXIMUM_EXPLOSION_POWER_TAG, NPCBaseConfig.PROJECTILE_MAXIMUM_EXPLOSION_POWER);
   }
 
   public static void addBaseAttributes(CompoundTag compoundTag, EasyNPC<?> easyNPC) {
@@ -481,7 +509,7 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
   }
 
   @Override
-  public boolean isExecutionLimitReached(UUID actionId) {
+  public boolean isExecutionLimitReached(UUID dialogId, UUID buttonId) {
     // Execution limits are intentionally not enforced inside the editor/preview.
     return false;
   }
@@ -490,6 +518,27 @@ public class AdditionalScreenData implements AdditionalScreenDataInterface {
     if (!this.data.contains(TRADING_OFFER_ACTION_DATA_TAG)) {
       return new ActionDataSet();
     }
+
     return new ActionDataSet(this.data.getCompound(TRADING_OFFER_ACTION_DATA_TAG));
+  }
+
+  public VisibilityConditionSet getVisibilityConditionSet() {
+    if (!this.data.contains(VISIBILITY_CONDITION_DATA_TAG)) {
+      return VisibilityConditionSet.EMPTY;
+    }
+
+    return VisibilityConditionSet.fromTag(this.data.getCompound(VISIBILITY_CONDITION_DATA_TAG));
+  }
+
+  public ProjectileData getProjectileData() {
+    if (!this.data.contains(PROJECTILE_DATA_TAG)) {
+      return ProjectileData.DEFAULT;
+    }
+
+    return ProjectileData.fromTag(this.data.getCompound(PROJECTILE_DATA_TAG));
+  }
+
+  public int getProjectileMaximumExplosionPower() {
+    return this.data.getInt(PROJECTILE_MAXIMUM_EXPLOSION_POWER_TAG);
   }
 }

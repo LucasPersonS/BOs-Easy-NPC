@@ -23,9 +23,9 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import de.markusbordihn.easynpc.api.handler.EasyNPCEntityHandler;
 import de.markusbordihn.easynpc.data.npc.NPCEntityMetadata;
 import de.markusbordihn.easynpc.data.saveddata.NPCEntityData;
-import de.markusbordihn.easynpc.entity.LivingEntityManager;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -46,19 +46,41 @@ public class DespawnedNPCSuggestions {
 
     Stream<String> uuids =
         npcData.getAllUUIDs().stream()
-            .filter(uuid -> LivingEntityManager.getServerEasyNPCEntityByUUID(uuid) == null)
+            .filter(uuid -> !npcData.isDeleted(uuid) && !EasyNPCEntityHandler.isLoaded(uuid))
             .filter(
                 uuid -> {
-                  if (serverPlayer.isCreative()) {
-                    return true;
-                  }
-                  Optional<NPCEntityMetadata> meta = npcData.getMetadata(uuid);
-                  return meta.isPresent()
-                      && meta.get().hasOwner()
-                      && meta.get().ownerUUID().equals(serverPlayer.getUUID());
+                  Optional<NPCEntityMetadata> metadata = npcData.getMetadata(uuid);
+                  return metadata.isPresent()
+                      && metadata.get().removalReason().isRestorableReason()
+                      && canAccess(serverPlayer, metadata.get());
                 })
             .map(UUID::toString);
 
     return SharedSuggestionProvider.suggest(uuids, builder);
+  }
+
+  public static CompletableFuture<Suggestions> suggestRevivable(
+      CommandContext<CommandSourceStack> context, SuggestionsBuilder builder)
+      throws CommandSyntaxException {
+    NPCEntityData npcData = NPCEntityData.get();
+    ServerPlayer serverPlayer = context.getSource().getPlayerOrException();
+
+    Stream<String> uuids =
+        npcData.getAllUUIDs().stream()
+            .filter(uuid -> EasyNPCEntityHandler.getReviveRejection(uuid).isEmpty())
+            .filter(
+                uuid ->
+                    npcData
+                        .getMetadata(uuid)
+                        .map(metadata -> canAccess(serverPlayer, metadata))
+                        .orElse(false))
+            .map(UUID::toString);
+
+    return SharedSuggestionProvider.suggest(uuids, builder);
+  }
+
+  private static boolean canAccess(ServerPlayer serverPlayer, NPCEntityMetadata metadata) {
+    return serverPlayer.isCreative()
+        || (metadata.hasOwner() && metadata.ownerUUID().equals(serverPlayer.getUUID()));
   }
 }

@@ -32,13 +32,15 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
-public record ChangePositionMessage(UUID uuid, Vec3 pos) implements NetworkMessageRecord {
+public record ChangePositionMessage(UUID uuid, Vec3 position) implements NetworkMessageRecord {
 
   public static final ResourceLocation MESSAGE_ID =
       ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "change_position");
   public static final Type<ChangePositionMessage> PAYLOAD_TYPE = new Type<>(MESSAGE_ID);
   public static final StreamCodec<RegistryFriendlyByteBuf, ChangePositionMessage> STREAM_CODEC =
       StreamCodec.of((buffer, message) -> message.write(buffer), ChangePositionMessage::create);
+
+  public static final double MAXIMUM_COORDINATE = 3.0E7;
 
   public static ChangePositionMessage create(final FriendlyByteBuf buffer) {
     return new ChangePositionMessage(
@@ -48,9 +50,9 @@ public record ChangePositionMessage(UUID uuid, Vec3 pos) implements NetworkMessa
   @Override
   public void write(final FriendlyByteBuf buffer) {
     buffer.writeUUID(this.uuid);
-    buffer.writeDouble(this.pos.x);
-    buffer.writeDouble(this.pos.y);
-    buffer.writeDouble(this.pos.z);
+    buffer.writeDouble(this.position.x);
+    buffer.writeDouble(this.position.y);
+    buffer.writeDouble(this.position.z);
   }
 
   @Override
@@ -65,7 +67,7 @@ public record ChangePositionMessage(UUID uuid, Vec3 pos) implements NetworkMessa
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }
@@ -75,12 +77,16 @@ public record ChangePositionMessage(UUID uuid, Vec3 pos) implements NetworkMessa
       return;
     }
 
-    if (this.pos == null) {
-      log.error("Invalid pos for {} from {}", easyNPC, serverPlayer);
+    if (this.position == null
+        || !NetworkMessageRecord.isInRange(this.position.x, -MAXIMUM_COORDINATE, MAXIMUM_COORDINATE)
+        || !NetworkMessageRecord.isInRange(this.position.y, -MAXIMUM_COORDINATE, MAXIMUM_COORDINATE)
+        || !NetworkMessageRecord.isInRange(
+            this.position.z, -MAXIMUM_COORDINATE, MAXIMUM_COORDINATE)) {
+      log.error("Invalid position {} for {} from {}", this.position, easyNPC, serverPlayer);
       return;
     }
 
-    log.debug("Change pos {} for {} from {}", this.pos, easyNPC, serverPlayer);
-    easyNPC.getEntity().setPos(this.pos);
+    log.debug("Change position {} for {} from {}", this.position, easyNPC, serverPlayer);
+    easyNPC.getEntity().setPos(this.position);
   }
 }

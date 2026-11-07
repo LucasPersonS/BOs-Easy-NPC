@@ -20,12 +20,6 @@
     ],
     "client": [
       "de.markusbordihn.easynpc.configui.ConfigUIClient"
-    ],
-    "fabric-gametest": [
-      "de.markusbordihn.easynpc.configui.gametest.SmokeTest",
-      "de.markusbordihn.easynpc.configui.gametest.ConfigurationScreenTest",
-      "de.markusbordihn.easynpc.configui.gametest.EditorScreenTest",
-      "de.markusbordihn.easynpc.configui.gametest.MenuManagerTest"
     ]
   },
   "mixins": [],
@@ -39,9 +33,9 @@
   },
   "suggests": {
     "tooltipfix": "*",
-    "easy_model_entities": ">=2.4.0 <3.0.0"
+    "easy_model_entities": ">=2.6.0 <3.0.0"
   },
   "breaks": {
-    "easy_model_entities": "<2.4.0 || >=3.0.0"
+    "easy_model_entities": "<2.6.0 || >=3.0.0"
   }
 }

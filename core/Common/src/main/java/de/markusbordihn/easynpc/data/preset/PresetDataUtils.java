@@ -23,9 +23,12 @@ import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.component.DataComponents;
 import de.markusbordihn.easynpc.data.attribute.LegacyAttributeConverter;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
+import de.markusbordihn.easynpc.entity.easynpc.data.InventoryDataCapable;
 import de.markusbordihn.easynpc.entity.easynpc.data.NavigationDataCapable;
+import de.markusbordihn.easynpc.entity.easynpc.data.PresetDataCapable;
 import de.markusbordihn.easynpc.security.SecurityManager;
 import java.util.Optional;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -33,6 +36,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -92,6 +96,15 @@ public class PresetDataUtils {
     return entityData;
   }
 
+  // Every NPC spawned from the same preset would otherwise receive its own copy of the items.
+  public static CompoundTag removeInventoryContents(CompoundTag entityData) {
+    if (entityData != null) {
+      entityData.remove(InventoryDataCapable.DATA_INVENTORY_TAG);
+    }
+
+    return entityData;
+  }
+
   public static SpawnData toSpawnData(PresetData presetData) {
     if (presetData == null || !presetData.hasValidData()) {
       return new SpawnData();
@@ -99,7 +112,7 @@ public class PresetDataUtils {
 
     CompoundTag dataCopy = presetData.data().copy();
     if (!dataCopy.hasUUID(ENTITY_UUID_TAG)) {
-      dataCopy.putUUID(ENTITY_UUID_TAG, java.util.UUID.randomUUID());
+      dataCopy.putUUID(ENTITY_UUID_TAG, UUID.randomUUID());
       log.debug("Generated missing Entity UUID in toSpawnData");
     }
 
@@ -130,6 +143,19 @@ public class PresetDataUtils {
     return new PresetData(entityType, entityData.copy());
   }
 
+  public static ItemStack toItemStack(EasyNPC<?> easyNPC) {
+    PresetDataCapable<?> presetData = easyNPC.getEasyNPCPresetData();
+    if (presetData == null) {
+      log.error("Can't export preset data from {}", easyNPC);
+      return ItemStack.EMPTY;
+    }
+
+    EntityType<?> entityType = easyNPC.getLivingEntity().getType();
+    ItemStack itemStack = toItemStack(new PresetData(entityType, presetData.serializePresetData()));
+    log.debug("Captured NPC preset from {} to {}", entityType, itemStack);
+    return itemStack;
+  }
+
   public static ItemStack toItemStack(PresetData presetData) {
     if (presetData == null || !presetData.hasValidData()) {
       log.warn("Cannot create item stack from invalid preset data");
@@ -146,11 +172,13 @@ public class PresetDataUtils {
     }
 
     ItemStack itemStack = new ItemStack(item);
+    CompoundTag cleanedData = cleanupEntityData(presetData.data().copy(), CleanupMode.FULL);
     itemStack.set(
         DataComponents.PRESET_DATA,
         new PresetData(
             presetData.entityType(),
-            removeEntityUUID(cleanupEntityData(presetData.data().copy(), CleanupMode.FULL))));
+            removeInventoryContents(
+                removeEntityUUID(SecurityManager.sanitizePresetExport(cleanedData)))));
 
     return itemStack;
   }
@@ -183,7 +211,8 @@ public class PresetDataUtils {
       return false;
     }
 
-    CompoundTag entityData = removeEntityUUID(sanitizedPresetData.data().copy());
+    CompoundTag entityData =
+        removeInventoryContents(removeEntityUUID(sanitizedPresetData.data().copy()));
 
     // Convert legacy (pre-1.21) attribute NBT from imported presets to the 1.21 format.
     LegacyAttributeConverter.convertLegacyAttributes(entityData);
@@ -203,10 +232,11 @@ public class PresetDataUtils {
     }
 
     if (entity instanceof LivingEntity livingEntity) {
-      float maxHealth =
-          livingEntity.getAttribute(Attributes.MAX_HEALTH) != null
-              ? (float) livingEntity.getAttribute(Attributes.MAX_HEALTH).getValue()
-              : 20.0f;
+      AttributeInstance maxHealthAttribute = livingEntity.getAttribute(Attributes.MAX_HEALTH);
+      float maxHealth = 20.0f;
+      if (maxHealthAttribute != null) {
+        maxHealth = (float) maxHealthAttribute.getValue();
+      }
       livingEntity.setHealth(maxHealth);
       livingEntity.deathTime = 0;
       livingEntity.hurtTime = 0;

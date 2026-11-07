@@ -26,7 +26,6 @@ import de.markusbordihn.easynpc.configui.Constants;
 import de.markusbordihn.easynpc.configui.client.screen.components.ReloadButton;
 import de.markusbordihn.easynpc.configui.client.screen.editor.condition.ConditionDataEntryEditorContainerScreen;
 import de.markusbordihn.easynpc.configui.network.NetworkHandlerManager;
-import de.markusbordihn.easynpc.configui.network.message.server.ResetExecutionLimitMessage;
 import de.markusbordihn.easynpc.data.condition.ConditionDataEntry;
 import de.markusbordihn.easynpc.data.condition.ConditionDataSet;
 import de.markusbordihn.easynpc.data.condition.ConditionOperationType;
@@ -53,7 +52,7 @@ public class ExecutionLimitConditionEntry extends ConditionEntryWidget {
 
   @Override
   public void init(int editorLeft, int editorTop) {
-    boolean hasConditionData = hasConditionData(ConditionType.EXECUTION_LIMIT);
+    boolean hasConditionData = this.hasConditionData(ConditionType.EXECUTION_LIMIT);
     this.maxExecutionsTextField =
         this.screen.addConditionEntryWidget(
             new TextField(
@@ -73,8 +72,8 @@ public class ExecutionLimitConditionEntry extends ConditionEntryWidget {
     this.durationTypeButton =
         this.screen.addConditionEntryWidget(
             new SpinButton<>(
-                maxExecutionsTextField.getX() + maxExecutionsTextField.getWidth() + 5,
-                maxExecutionsTextField.getY(),
+                this.maxExecutionsTextField.getX() + this.maxExecutionsTextField.getWidth() + 5,
+                this.maxExecutionsTextField.getY(),
                 150,
                 16,
                 Arrays.stream(DurationType.values())
@@ -97,7 +96,7 @@ public class ExecutionLimitConditionEntry extends ConditionEntryWidget {
                 "condition.execution_limit.reset_current_player",
                 onPress ->
                     NetworkHandlerManager.sendMessageToServer(
-                        new ResetExecutionLimitMessage(this.screen.getExecutionLimitId(), false))));
+                        this.screen.createResetExecutionLimitMessage(false))));
 
     ReloadButton resetAllPlayersButton =
         this.screen.addConditionEntryWidget(
@@ -109,7 +108,7 @@ public class ExecutionLimitConditionEntry extends ConditionEntryWidget {
                 "condition.execution_limit.reset_all_players",
                 onPress ->
                     NetworkHandlerManager.sendMessageToServer(
-                        new ResetExecutionLimitMessage(this.screen.getExecutionLimitId(), true))));
+                        this.screen.createResetExecutionLimitMessage(true))));
 
     boolean isExisting = !this.screen.isNewEntry();
     resetCurrentPlayerButton.active = isExisting;

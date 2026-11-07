@@ -30,13 +30,13 @@ import de.markusbordihn.easynpc.data.condition.ConditionDataSet;
 import de.markusbordihn.easynpc.data.condition.ConditionOperationType;
 import de.markusbordihn.easynpc.data.condition.ConditionType;
 import de.markusbordihn.easynpc.data.condition.HandItemType;
+import de.markusbordihn.easynpc.network.components.TextComponent;
 import java.lang.reflect.Method;
 import java.util.LinkedHashSet;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Tooltip;
 
 public class HasItemConditionEntry extends ConditionEntryWidget {
-
-  private static final int HINT_WIDTH = 285;
 
   private final ConditionType conditionType;
   private TextField itemNameTextField;
@@ -58,9 +58,9 @@ public class HasItemConditionEntry extends ConditionEntryWidget {
 
   @Override
   public void init(int editorLeft, int editorTop) {
-    boolean hasData = hasConditionData(this.conditionType);
+    boolean hasData = this.hasConditionData(this.conditionType);
 
-    if (!isItemCondition()) {
+    if (!this.isItemCondition()) {
       this.itemNameTextField =
           this.screen.addConditionEntryWidget(
               new TextField(
@@ -68,7 +68,7 @@ public class HasItemConditionEntry extends ConditionEntryWidget {
                   editorLeft + 110,
                   editorTop,
                   180,
-                  hasData ? this.conditionDataEntry.name() : getExampleValue(),
+                  hasData ? this.conditionDataEntry.name() : this.getExampleValue(),
                   128));
       return;
     }
@@ -105,7 +105,7 @@ public class HasItemConditionEntry extends ConditionEntryWidget {
                 editorLeft + 130,
                 editorTop + 40,
                 155,
-                hasData ? getStoredCustomDataComponent() : "",
+                hasData ? this.getStoredCustomDataComponent() : "",
                 128));
 
     this.customDataTextField =
@@ -115,13 +115,21 @@ public class HasItemConditionEntry extends ConditionEntryWidget {
                 editorLeft + 130,
                 editorTop + 60,
                 155,
-                hasData ? getStoredCustomData() : "",
+                hasData ? this.getStoredCustomData() : "",
                 1024));
+    this.customDataTextField.setTooltip(
+        Tooltip.create(
+            TextComponent.getTranslatedConfigText("condition.has_item.custom_data_hint")));
 
     this.quantityTextField =
         this.screen.addConditionEntryWidget(
             new TextField(
-                this.font, editorLeft + 130, editorTop + 80, 60, getQuantityValue(hasData), 10));
+                this.font,
+                editorLeft + 130,
+                editorTop + 80,
+                60,
+                this.getQuantityValue(hasData),
+                10));
 
     if (this.conditionType == ConditionType.HAS_ITEM_IN_HAND) {
       boolean mainHandSelected = true;
@@ -138,14 +146,14 @@ public class HasItemConditionEntry extends ConditionEntryWidget {
               new Checkbox(
                   editorLeft,
                   editorTop + 104,
-                  "config.condition.has_item_in_hand.main_hand",
+                  "condition.has_item_in_hand.main_hand",
                   mainHandSelected));
       this.offHandCheckbox =
           this.screen.addConditionEntryWidget(
               new Checkbox(
                   editorLeft + 155,
                   editorTop + 104,
-                  "config.condition.has_item_in_hand.off_hand",
+                  "condition.has_item_in_hand.off_hand",
                   offHandSelected));
     }
   }
@@ -179,7 +187,7 @@ public class HasItemConditionEntry extends ConditionEntryWidget {
     Text.drawConfigString(
         guiGraphics, this.font, labelKey, editorLeft, editorTop + 4, Constants.FONT_COLOR_BLACK);
 
-    if (isItemCondition()) {
+    if (this.isItemCondition()) {
       Text.drawConfigString(
           guiGraphics,
           this.font,
@@ -201,40 +209,34 @@ public class HasItemConditionEntry extends ConditionEntryWidget {
           editorLeft,
           editorTop + 44,
           Constants.FONT_COLOR_BLACK);
-      int hintTop = this.conditionType == ConditionType.HAS_ITEM_IN_HAND ? 124 : 104;
-      Text.drawConfigStringWrapped(
-          guiGraphics,
-          this.font,
-          "condition.has_item.custom_data_hint",
-          editorLeft,
-          editorTop + hintTop,
-          HINT_WIDTH,
-          Constants.FONT_COLOR_DEFAULT);
     }
   }
 
   @Override
   public ConditionDataEntry getConditionDataEntry() {
     if (this.conditionType == ConditionType.HAS_ITEM_IN_HAND) {
-      return withCustomDataComponent(
+      return this.withCustomDataComponent(
           new ConditionDataEntry(
                   this.conditionType,
-                  getHandItemType(),
-                  getOperationType(),
-                  getItemName(),
-                  getQuantity())
-              .withCustomData(getCustomData()));
+                  this.getHandItemType(),
+                  this.getOperationType(),
+                  this.getItemName(),
+                  this.getQuantity())
+              .withCustomData(this.getCustomData()));
     }
 
     if (this.conditionType == ConditionType.HAS_ITEM_IN_INVENTORY) {
-      return withCustomDataComponent(
+      return this.withCustomDataComponent(
           new ConditionDataEntry(
-                  this.conditionType, getOperationType(), getItemName(), getQuantity())
-              .withCustomData(getCustomData()));
+                  this.conditionType,
+                  this.getOperationType(),
+                  this.getItemName(),
+                  this.getQuantity())
+              .withCustomData(this.getCustomData()));
     }
 
     return new ConditionDataEntry(
-        this.conditionType, ConditionOperationType.NONE, getItemName(), 0);
+        this.conditionType, ConditionOperationType.NONE, this.getItemName(), 0);
   }
 
   private ConditionOperationType getOperationType() {
@@ -253,6 +255,7 @@ public class HasItemConditionEntry extends ConditionEntryWidget {
     } else if (offSelected) {
       return HandItemType.OFF_HAND;
     }
+
     return HandItemType.BOTH;
   }
 
@@ -264,12 +267,14 @@ public class HasItemConditionEntry extends ConditionEntryWidget {
     if (this.quantityTextField == null) {
       return 0;
     }
+
     int quantity;
     try {
       quantity = Integer.parseInt(this.quantityTextField.getValue().trim());
     } catch (NumberFormatException ignored) {
       return 0;
     }
+
     return quantity > 1 ? quantity : 0;
   }
 

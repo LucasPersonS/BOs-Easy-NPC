@@ -70,7 +70,7 @@ public class PoseConfigurationScreen<T extends ConfigurationMenu> extends Config
         new SpinButton<>(
             x,
             y,
-            80,
+            78,
             16,
             values,
             this.modelData.getModelAnimationBehavior(),
@@ -199,9 +199,9 @@ public class PoseConfigurationScreen<T extends ConfigurationMenu> extends Config
       double[] axisValues,
       AxisValueSetter axisValueSetter,
       Runnable resetAction) {
-    int sliderWidth = 34;
+    int sliderWidth = 33;
     int sliderHeight = 16;
-    int sliderLeftPosition = left + 10;
+    int sliderLeftPosition = left + 12;
     RangeSliderButton[] axisSliders = new RangeSliderButton[axisValues.length];
 
     for (int axis = 0; axis < axisValues.length; axis++) {
@@ -222,12 +222,11 @@ public class PoseConfigurationScreen<T extends ConfigurationMenu> extends Config
       sliderLeftPosition = axisSlider.getX() + axisSlider.getWidth();
     }
 
-    // Slider Edit / Done Button
     this.addRenderableWidget(
         new TextButton(
             left,
             top,
-            10,
+            12,
             RangeSliderButton.EDIT_TEXT,
             button -> {
               boolean showTextField = button.getMessage() == RangeSliderButton.EDIT_TEXT;
@@ -242,7 +241,6 @@ public class PoseConfigurationScreen<T extends ConfigurationMenu> extends Config
                   showTextField ? RangeSliderButton.DONE_TEXT : RangeSliderButton.EDIT_TEXT);
             }));
 
-    // Slider reset button
     this.addRenderableWidget(
         new TextButton(
             sliderLeftPosition,
@@ -263,7 +261,6 @@ public class PoseConfigurationScreen<T extends ConfigurationMenu> extends Config
   public void init() {
     super.init();
 
-    // Pose Types
     int poseButtonWidth = 74;
     this.defaultPoseButton =
         this.addRenderableWidget(
@@ -290,9 +287,9 @@ public class PoseConfigurationScreen<T extends ConfigurationMenu> extends Config
     this.advancedPoseButton =
         this.addRenderableWidget(
             new TextButton(
-                basicPoseButton.getX() + basicPoseButton.getWidth(),
+                this.basicPoseButton.getX() + this.basicPoseButton.getWidth(),
                 this.buttonTopPos,
-                poseButtonWidth + 10,
+                poseButtonWidth + 9,
                 "advanced",
                 button ->
                     NetworkMessageHandlerManager.getServerHandler()
@@ -302,9 +299,9 @@ public class PoseConfigurationScreen<T extends ConfigurationMenu> extends Config
     this.customPoseButton =
         this.addRenderableWidget(
             new TextButton(
-                advancedPoseButton.getX() + advancedPoseButton.getWidth(),
+                this.advancedPoseButton.getX() + this.advancedPoseButton.getWidth(),
                 this.buttonTopPos,
-                poseButtonWidth + 10,
+                poseButtonWidth + 9,
                 "custom",
                 button ->
                     NetworkMessageHandlerManager.getServerHandler()

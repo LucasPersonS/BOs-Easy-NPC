@@ -49,7 +49,8 @@ class ObjectiveFactoryMetadataTest {
           ObjectiveType.ATTACK_VILLAGER,
           ObjectiveType.FACTION_HURT_BY_TARGET,
           ObjectiveType.HURT_BY_TARGET,
-          ObjectiveType.OWNER_HURT_BY_TARGET);
+          ObjectiveType.OWNER_HURT_BY_TARGET,
+          ObjectiveType.OWNER_HURT_TARGET);
 
   private static final Set<ObjectiveType> EXPECTED_PATHFINDER_MOB_OBJECTIVES =
       EnumSet.of(
@@ -68,9 +69,29 @@ class ObjectiveFactoryMetadataTest {
           ObjectiveType.MELEE_ATTACK,
           ObjectiveType.MOVE_BACK_TO_VILLAGE,
           ObjectiveType.MOVE_THROUGH_VILLAGE,
+          ObjectiveType.PROJECTILE_ATTACK,
           ObjectiveType.RANDOM_STROLL_IN_VILLAGE,
           ObjectiveType.RANDOM_SWIMMING,
           ObjectiveType.ZOMBIE_ATTACK);
+
+  private static final Set<ObjectiveType> EXPECTED_OUT_OF_COMBAT_OBJECTIVES =
+      EnumSet.of(
+          ObjectiveType.LOOK_AT_ANIMAL,
+          ObjectiveType.LOOK_AT_ENTITY_BY_UUID,
+          ObjectiveType.LOOK_AT_ITEM,
+          ObjectiveType.LOOK_AT_MOB,
+          ObjectiveType.LOOK_AT_OWNER,
+          ObjectiveType.LOOK_AT_PLAYER,
+          ObjectiveType.LOOK_AT_RESET,
+          ObjectiveType.LOOK_RANDOM_AROUND,
+          ObjectiveType.MOVE_BACK_TO_HOME,
+          ObjectiveType.MOVE_BACK_TO_VILLAGE,
+          ObjectiveType.MOVE_THROUGH_VILLAGE,
+          ObjectiveType.RANDOM_STROLL,
+          ObjectiveType.RANDOM_STROLL_AROUND_HOME,
+          ObjectiveType.RANDOM_STROLL_IN_VILLAGE,
+          ObjectiveType.RANDOM_SWIMMING,
+          ObjectiveType.WATER_AVOIDING_RANDOM_STROLL);
 
   @BeforeAll
   static void bootstrap() {
@@ -90,11 +111,27 @@ class ObjectiveFactoryMetadataTest {
     Set<ObjectiveType> pathfinderMobObjectives = EnumSet.noneOf(ObjectiveType.class);
     for (ObjectiveType objectiveType : BuiltInObjectiveFactories.getRegisteredTypes()) {
       ObjectiveGoalFactory objectiveGoalFactory = BuiltInObjectiveFactories.get(objectiveType);
+      if (objectiveGoalFactory instanceof OutOfCombatObjectiveFactory outOfCombatFactory) {
+        objectiveGoalFactory = outOfCombatFactory.delegate();
+      }
       if (objectiveGoalFactory instanceof PathfinderMobObjectiveFactory) {
         pathfinderMobObjectives.add(objectiveType);
       }
     }
 
     assertEquals(EXPECTED_PATHFINDER_MOB_OBJECTIVES, pathfinderMobObjectives);
+  }
+
+  @Test
+  @DisplayName("Idle look and stroll objectives pause while the NPC is in combat")
+  void testOutOfCombatClassification() {
+    Set<ObjectiveType> outOfCombatObjectives = EnumSet.noneOf(ObjectiveType.class);
+    for (ObjectiveType objectiveType : BuiltInObjectiveFactories.getRegisteredTypes()) {
+      if (BuiltInObjectiveFactories.get(objectiveType) instanceof OutOfCombatObjectiveFactory) {
+        outOfCombatObjectives.add(objectiveType);
+      }
+    }
+
+    assertEquals(EXPECTED_OUT_OF_COMBAT_OBJECTIVES, outOfCombatObjectives);
   }
 }

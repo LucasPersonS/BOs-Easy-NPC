@@ -1,0 +1,215 @@
+/*
+ * Copyright 2026 Markus Bordihn
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package de.markusbordihn.easynpc.configui.clienttest;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import de.markusbordihn.clientruntimeinterfacetoolkit.testrunner.By;
+import de.markusbordihn.clientruntimeinterfacetoolkit.testrunner.Until;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+class EditorScreenClientTest extends ClientTestBase {
+
+  private static final String TEXT_FIELD_CLASS =
+      "de.markusbordihn.easynpc.client.screen.components.TextField";
+  private static final String NEW_FACTION_NAME = "clienttest";
+  private static final String NEW_ACTION_COMMAND = "say clienttest";
+  private static final By TYPE_SPIN_BUTTON =
+      By.className("de.markusbordihn.easynpc.client.screen.components.SpinButton").withIndex(0);
+
+  private static String selectedType() {
+    return client.widget(TYPE_SPIN_BUTTON).string(By.FIELD_TEXT);
+  }
+
+  private static void saveScreenshotOfEveryType(String screenshotPrefix) {
+    Set<String> renderedTypes = new HashSet<>();
+    String type = selectedType();
+    while (renderedTypes.add(type)) {
+      client.saveScreenshot(screenshotPrefix + "-" + type.toLowerCase(Locale.ROOT));
+      client.assertLayoutClean(List.of("rawTranslationKey"), List.of());
+      client.click(TYPE_SPIN_BUTTON);
+      client.await(Until.settled(10));
+      type = selectedType();
+    }
+    assertTrue(renderedTypes.size() > 1, "The type button did not switch to another type");
+  }
+
+  private static void openEditor(By button, String screenClassName) {
+    assumeTrue(isEnabledWidget(button), button + " is not available on " + client.screenId());
+    assertScreenOfClass(clickAndAwaitScreenChange(button), screenClassName);
+  }
+
+  private static void typeIntoTextField(String text, By enabledButton) {
+    client.type(By.className(TEXT_FIELD_CLASS), text, true);
+    client.await(Until.widgetEnabled(enabledButton));
+  }
+
+  private static void openNewDialogEditor() {
+    openMainConfiguration(spawnTestNpc());
+    openSubPage("dialog", "advanced", "AdvancedDialogConfigurationScreen");
+    openEditor(configurationButton("dialog.add"), "DialogEditorScreen");
+  }
+
+  private static void openNewActionDataEntryEditor() {
+    openMainConfiguration(spawnTestNpc());
+    openSubPage("actions", "basic", "BasicActionConfigurationScreen");
+    openEditor(
+        By.translationKey("text.easy_npc.config.add_action", 0),
+        "ActionDataEntryEditorContainerScreen");
+  }
+
+  private static void openConditionDataEditorOfNewDialog() {
+    openNewDialogEditor();
+    openEditor(configurationButton("add_condition"), "ConditionDataEditorContainerScreen");
+  }
+
+  private static void openFactionsEditor() {
+    openMainConfiguration(spawnTestNpc());
+    openSubPage("attributes", "misc", "MiscAttributeConfigurationScreen");
+    openEditor(configurationButton("new"), "FactionsEditorScreen");
+  }
+
+  @Test
+  @DisplayName("Dialog editor renders for a new dialog")
+  void dialogEditorRenders() {
+    openNewDialogEditor();
+
+    client.saveScreenshot("dialog_editor");
+  }
+
+  @Test
+  @DisplayName("Dialog text editor renders")
+  void dialogTextEditorRenders() {
+    openNewDialogEditor();
+
+    openEditor(configurationButton("dialog.edit_text"), "DialogTextEditorScreen");
+
+    client.saveScreenshot("dialog_text_editor");
+  }
+
+  @Test
+  @DisplayName("Dialog options editor renders")
+  void dialogOptionsEditorRenders() {
+    openNewDialogEditor();
+
+    openEditor(configurationButton("dialog.edit_options"), "DialogOptionsEditorScreen");
+
+    client.saveScreenshot("dialog_options_editor");
+  }
+
+  @Test
+  @DisplayName("Dialog button editor renders for a new button")
+  void dialogButtonEditorRenders() {
+    openNewDialogEditor();
+
+    openEditor(configurationButton("dialog.add_button"), "DialogButtonEditorScreen");
+
+    client.saveScreenshot("dialog_button_editor");
+  }
+
+  @Test
+  @DisplayName("Condition editor renders for a dialog")
+  void conditionDataEditorRenders() {
+    openConditionDataEditorOfNewDialog();
+
+    client.saveScreenshot("condition_data_editor");
+  }
+
+  @Test
+  @DisplayName("Condition entry editor renders every selectable condition type")
+  void conditionDataEntryEditorRenders() {
+    openConditionDataEditorOfNewDialog();
+
+    openEditor(configurationButton("condition.add"), "ConditionDataEntryEditorContainerScreen");
+
+    saveScreenshotOfEveryType("condition_data_entry_editor");
+  }
+
+  @Test
+  @DisplayName("Action entry editor renders every selectable action type")
+  void actionDataEntryEditorRenders() {
+    openNewActionDataEntryEditor();
+
+    saveScreenshotOfEveryType("action_data_entry_editor");
+  }
+
+  @Test
+  @DisplayName("Action editor renders after saving an action")
+  void actionDataEditorRenders() {
+    openNewActionDataEntryEditor();
+    typeIntoTextField(NEW_ACTION_COMMAND, configurationButton("save"));
+
+    openEditor(configurationButton("save"), "ActionDataEditorContainerScreen");
+
+    client.saveScreenshot("action_data_editor");
+  }
+
+  @Test
+  @DisplayName("Projectile settings render from the combat attributes")
+  void projectileAttributeConfigurationRenders() {
+    openMainConfiguration(spawnTestNpc());
+    openSubPage("attributes", "combat", "CombatAttributeConfigurationScreen");
+
+    openEditor(
+        configurationButton("projectile_settings"), "ProjectileAttributeConfigurationScreen");
+
+    client.saveScreenshot("projectile_attribute_configuration");
+
+    client.click(configurationButton("projectile_page.effects"));
+    client.await(Until.settled(10));
+    client.saveScreenshot("projectile_attribute_configuration-effects");
+  }
+
+  @Test
+  @DisplayName("Boss bar settings render from the display attributes")
+  void bossBarAttributeConfigurationRenders() {
+    openMainConfiguration(spawnTestNpc());
+    openSubPage("attributes", "display", "DisplayAttributeConfigurationScreen");
+
+    openEditor(configurationButton("boss_bar_settings"), "BossBarAttributeConfigurationScreen");
+
+    client.saveScreenshot("boss_bar_attribute_configuration");
+  }
+
+  @Test
+  @DisplayName("Factions editor renders")
+  void factionsEditorRenders() {
+    openFactionsEditor();
+
+    client.saveScreenshot("factions_editor");
+  }
+
+  @Test
+  @DisplayName("Faction editor renders for a new faction")
+  void factionEditorRenders() {
+    openFactionsEditor();
+    typeIntoTextField(NEW_FACTION_NAME, configurationButton("add_faction"));
+
+    openEditor(configurationButton("add_faction"), "FactionEditorScreen");
+
+    client.saveScreenshot("faction_editor");
+  }
+}

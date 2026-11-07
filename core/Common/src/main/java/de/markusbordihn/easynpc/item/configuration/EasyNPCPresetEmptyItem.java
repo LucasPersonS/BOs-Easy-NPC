@@ -26,17 +26,14 @@ import de.markusbordihn.easynpc.block.entity.EasyNPCSpawnerBlockEntity;
 import de.markusbordihn.easynpc.data.preset.PresetData;
 import de.markusbordihn.easynpc.data.preset.PresetDataUtils;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
-import de.markusbordihn.easynpc.entity.easynpc.data.PresetDataCapable;
 import de.markusbordihn.easynpc.network.components.TextComponent;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -48,14 +45,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.SpawnData;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class EasyNPCPresetEmptyItem extends Item {
 
   public static final String NAME = "easy_npc_preset_empty";
-
-  private static final Logger log = LogManager.getLogger(Constants.LOG_NAME);
 
   public EasyNPCPresetEmptyItem(Properties properties) {
     super(properties);
@@ -64,21 +57,18 @@ public class EasyNPCPresetEmptyItem extends Item {
   @Override
   public InteractionResult interactLivingEntity(
       ItemStack itemStack, Player player, LivingEntity livingEntity, InteractionHand hand) {
-
-    // Ignore players and dead entities for capturing.
     if (livingEntity instanceof Player) {
       return InteractionResult.FAIL;
     }
+
     Level level = livingEntity.level();
 
     if (livingEntity instanceof EasyNPC<?> easyNPC && player instanceof ServerPlayer serverPlayer) {
-      // Check if player has access to the EasyNPC entity.
       if (!AccessManager.hasAccess(serverPlayer, easyNPC)) {
         return InteractionResult.FAIL;
       }
 
-      // Place the new preset item in the player inventory or drop it.
-      ItemStack presetItemStack = createPresetItemStack(easyNPC);
+      ItemStack presetItemStack = PresetDataUtils.toItemStack(easyNPC);
       if (!presetItemStack.isEmpty()) {
         if (!player.getInventory().add(presetItemStack)) {
           player.drop(presetItemStack, false);
@@ -90,35 +80,15 @@ public class EasyNPCPresetEmptyItem extends Item {
     return level.isClientSide ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
   }
 
-  private ItemStack createPresetItemStack(EasyNPC<?> easyNPC) {
-    // Get preset data from EasyNPC
-    PresetDataCapable<?> presetData = easyNPC.getEasyNPCPresetData();
-    if (presetData == null) {
-      log.error("Can't export preset data from {}", easyNPC);
-      return ItemStack.EMPTY;
-    }
-
-    CompoundTag presetDataTag = presetData.serializePresetData();
-    EntityType<?> entityType = easyNPC.getLivingEntity().getType();
-    PresetData preset = new PresetData(entityType, presetDataTag);
-
-    ItemStack itemStack = PresetDataUtils.toItemStack(preset);
-    log.debug("Captured NPC preset from {} to {}", entityType, itemStack);
-
-    return itemStack;
-  }
-
   @Override
   public InteractionResult useOn(UseOnContext useOnContext) {
 
     Level level = useOnContext.getLevel();
 
-    // Ignore client side
     if (level.isClientSide) {
       return InteractionResult.SUCCESS;
     }
 
-    // Check for Spawner Block
     BlockPos blockPos = useOnContext.getClickedPos();
     BlockState blockState = level.getBlockState(blockPos);
     if (!blockState.isAir()) {

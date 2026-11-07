@@ -57,15 +57,14 @@ public class NameHandler {
         color,
         nameVisibilityType);
 
-    // Remove the custom name if the name is empty.
     if (name.isEmpty()) {
       log.debug("[{}] Remove custom name", easyNPC);
       easyNPC.getEntity().setCustomName(null);
       easyNPC.getEntity().setCustomNameVisible(false);
+      setNameVisibility(easyNPC, NameVisibilityType.NEVER);
       return true;
     }
 
-    // Define custom color and style for the name, if any.
     Style style = Style.EMPTY;
     Component currentName = easyNPC.getEntity().getCustomName();
     if (color < 0 && currentName != null && currentName.getStyle().getColor() != null) {
@@ -75,20 +74,22 @@ public class NameHandler {
       style = style.withColor(TextColor.fromRgb(color));
     }
 
-    // Set the custom name for the entity with translation key support.
     easyNPC
         .getEntity()
         .setCustomName(
             TextComponent.getTextComponentRaw(name, TextUtils.isTranslationKey(name))
                 .setStyle(style));
+    setNameVisibility(easyNPC, nameVisibilityType);
 
-    // Set display attribute for name visibility.
+    return true;
+  }
+
+  private static void setNameVisibility(
+      EasyNPC<?> easyNPC, NameVisibilityType nameVisibilityType) {
     DisplayAttributeDataCapable<?> displayAttributeData = easyNPC.getEasyNPCDisplayAttributeData();
     if (displayAttributeData != null) {
       displayAttributeData.setDisplayAttribute(
           DisplayAttributeType.NAME_VISIBILITY, nameVisibilityType);
     }
-
-    return true;
   }
 }

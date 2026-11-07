@@ -1,0 +1,340 @@
+/*
+ * Copyright 2025 Markus Bordihn
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package de.markusbordihn.easynpc.gametest;
+
+import de.markusbordihn.easynpc.condition.ConditionManager;
+import de.markusbordihn.easynpc.condition.HasItemInHandCondition;
+import de.markusbordihn.easynpc.condition.HasItemInInventoryCondition;
+import de.markusbordihn.easynpc.condition.HealthConditionEvaluator;
+import de.markusbordihn.easynpc.data.action.ActionDataSet;
+import de.markusbordihn.easynpc.data.condition.ConditionDataEntry;
+import de.markusbordihn.easynpc.data.condition.ConditionOperationType;
+import de.markusbordihn.easynpc.data.condition.ConditionType;
+import de.markusbordihn.easynpc.data.condition.DurationType;
+import de.markusbordihn.easynpc.data.condition.HandItemType;
+import de.markusbordihn.easynpc.data.dialog.DialogButtonEntry;
+import de.markusbordihn.easynpc.data.dialog.DialogButtonType;
+import de.markusbordihn.easynpc.data.dialog.DialogDataEntry;
+import de.markusbordihn.easynpc.data.dialog.DialogDataSet;
+import de.markusbordihn.easynpc.data.execution.ExecutionId;
+import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.phys.Vec3;
+
+public class ConditionEvaluationTestHelper {
+
+  private ConditionEvaluationTestHelper() {}
+
+  public static void assertItemQuantityConditions(GameTestHelper helper) {
+    Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+    player.getInventory().clearContent();
+
+    ConditionDataEntry needTenDiamonds =
+        new ConditionDataEntry(
+            ConditionType.HAS_ITEM_IN_INVENTORY,
+            ConditionOperationType.EQUALS,
+            "minecraft:diamond",
+            10);
+
+    player.getInventory().add(new ItemStack(Items.DIAMOND, 9));
+    GameTestHelpers.assertTrue(
+        helper,
+        "9 diamonds should not satisfy a >= 10 condition",
+        !HasItemInInventoryCondition.evaluate(needTenDiamonds, player));
+
+    player.getInventory().add(new ItemStack(Items.DIAMOND, 1));
+    GameTestHelpers.assertTrue(
+        helper,
+        "10 diamonds should satisfy a >= 10 condition",
+        HasItemInInventoryCondition.evaluate(needTenDiamonds, player));
+
+    ConditionDataEntry needOneEmerald =
+        new ConditionDataEntry(ConditionType.HAS_ITEM_IN_INVENTORY).withName("minecraft:emerald");
+    GameTestHelpers.assertTrue(
+        helper,
+        "no emerald should fail a default (>= 1) condition",
+        !HasItemInInventoryCondition.evaluate(needOneEmerald, player));
+    player.getInventory().add(new ItemStack(Items.EMERALD, 1));
+    GameTestHelpers.assertTrue(
+        helper,
+        "one emerald should satisfy a default (>= 1) condition",
+        HasItemInInventoryCondition.evaluate(needOneEmerald, player));
+
+    ConditionDataEntry notTenGold =
+        new ConditionDataEntry(
+            ConditionType.HAS_ITEM_IN_INVENTORY,
+            ConditionOperationType.NOT_EQUALS,
+            "minecraft:gold_ingot",
+            10);
+    GameTestHelpers.assertTrue(
+        helper,
+        "no gold should satisfy a NOT (>= 10) condition",
+        HasItemInInventoryCondition.evaluate(notTenGold, player));
+    player.getInventory().add(new ItemStack(Items.GOLD_INGOT, 10));
+    GameTestHelpers.assertTrue(
+        helper,
+        "10 gold should fail a NOT (>= 10) condition",
+        !HasItemInInventoryCondition.evaluate(notTenGold, player));
+
+    ConditionDataEntry needFiveSticks =
+        new ConditionDataEntry(
+            ConditionType.HAS_ITEM_IN_HAND,
+            HandItemType.MAIN_HAND,
+            ConditionOperationType.EQUALS,
+            "minecraft:stick",
+            5);
+    player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STICK, 4));
+    GameTestHelpers.assertTrue(
+        helper,
+        "4 sticks in hand should not satisfy a >= 5 condition",
+        !HasItemInHandCondition.evaluate(needFiveSticks, player));
+    player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STICK, 5));
+    GameTestHelpers.assertTrue(
+        helper,
+        "5 sticks in hand should satisfy a >= 5 condition",
+        HasItemInHandCondition.evaluate(needFiveSticks, player));
+  }
+
+  public static void assertButtonExecutionLimitEnforced(GameTestHelper helper) {
+    ServerPlayer serverPlayer = GameTestHelpers.mockServerPlayer(helper, new Vec3(1, 2, 1));
+
+    int limit = 3;
+    ConditionDataEntry executionLimit =
+        new ConditionDataEntry(
+            ConditionType.EXECUTION_LIMIT,
+            DurationType.PER_DAY,
+            ConditionOperationType.NONE,
+            "",
+            limit);
+    Set<ConditionDataEntry> conditions = new LinkedHashSet<>();
+    conditions.add(executionLimit);
+
+    DialogButtonEntry button =
+        new DialogButtonEntry(
+            "limited_button",
+            "limited_button",
+            DialogButtonType.DEFAULT,
+            new ActionDataSet(),
+            conditions);
+    UUID npcId = UUID.randomUUID();
+    UUID dialogId = UUID.randomUUID();
+    ExecutionId buttonExecutionId = ExecutionId.dialogButton(npcId, dialogId, button.id());
+
+    // Mirror ExecuteDialogButtonActionMessage: check and record share the same execution id.
+    for (int click = 1; click <= limit; click++) {
+      GameTestHelpers.assertTrue(
+          helper,
+          "Click " + click + " of " + limit + " should be allowed",
+          ConditionManager.evaluateAll(button.conditions(), serverPlayer, buttonExecutionId));
+      ConditionManager.recordExecutions(button.conditions(), serverPlayer, buttonExecutionId);
+    }
+
+    GameTestHelpers.assertTrue(
+        helper,
+        "Click " + (limit + 1) + " should be blocked once the daily limit is reached",
+        !ConditionManager.evaluateAll(button.conditions(), serverPlayer, buttonExecutionId));
+
+    DialogButtonEntry otherButton =
+        new DialogButtonEntry(
+            "other_button",
+            "other_button",
+            DialogButtonType.DEFAULT,
+            new ActionDataSet(),
+            conditions);
+    GameTestHelpers.assertTrue(
+        helper,
+        "A different button id must not share the execution count",
+        ConditionManager.evaluateAll(
+            otherButton.conditions(),
+            serverPlayer,
+            ExecutionId.dialogButton(npcId, dialogId, otherButton.id())));
+  }
+
+  public static void assertShortExecutionLimitIntervalsEnforced(GameTestHelper helper) {
+    ServerPlayer serverPlayer = GameTestHelpers.mockServerPlayer(helper, new Vec3(1, 2, 1));
+    UUID npcId = UUID.randomUUID();
+
+    for (DurationType durationType :
+        new DurationType[] {DurationType.PER_5_MINUTES, DurationType.PER_15_MINUTES}) {
+      ConditionDataEntry oncePerInterval =
+          new ConditionDataEntry(
+              ConditionType.EXECUTION_LIMIT, durationType, ConditionOperationType.NONE, "", 1);
+      Set<ConditionDataEntry> conditions = new LinkedHashSet<>();
+      conditions.add(oncePerInterval);
+      ExecutionId executionId = ExecutionId.action(npcId, UUID.randomUUID());
+
+      GameTestHelpers.assertTrue(
+          helper,
+          "The first execution of a " + durationType + " limit should be allowed",
+          ConditionManager.evaluateAll(conditions, serverPlayer, executionId));
+      ConditionManager.recordExecutions(conditions, serverPlayer, executionId);
+
+      GameTestHelpers.assertTrue(
+          helper,
+          "The second execution within the " + durationType + " window should be blocked",
+          !ConditionManager.evaluateAll(conditions, serverPlayer, executionId));
+    }
+  }
+
+  public static void assertDefaultDialogExecutionLimitEnforced(
+      GameTestHelper helper, EntityType<?> entityType) {
+    ServerPlayer serverPlayer = GameTestHelpers.mockServerPlayer(helper, new Vec3(1, 2, 1));
+    EasyNPC<?> firstNpc = GameTestHelpers.mockEasyNPC(helper, entityType, new Vec3(2, 2, 1));
+    EasyNPC<?> secondNpc = GameTestHelpers.mockEasyNPC(helper, entityType, new Vec3(3, 2, 1));
+
+    setLimitedDefaultDialog(firstNpc);
+    setLimitedDefaultDialog(secondNpc);
+
+    GameTestHelpers.assertTrue(
+        helper,
+        "The default dialog should be available before the first open",
+        canOpenDefaultDialog(firstNpc, serverPlayer));
+
+    firstNpc.getEasyNPCDialogData().openDefaultDialog(serverPlayer);
+    serverPlayer.closeContainer();
+
+    GameTestHelpers.assertTrue(
+        helper,
+        "The default dialog should be blocked once the hourly limit is reached",
+        !canOpenDefaultDialog(firstNpc, serverPlayer));
+
+    GameTestHelpers.assertTrue(
+        helper,
+        "The same default dialog on another NPC must not share the execution count",
+        canOpenDefaultDialog(secondNpc, serverPlayer));
+
+    secondNpc.getEasyNPCDialogData().openDefaultDialog(serverPlayer);
+    serverPlayer.closeContainer();
+
+    GameTestHelpers.assertTrue(
+        helper,
+        "The second NPC should be blocked after its own execution",
+        !canOpenDefaultDialog(secondNpc, serverPlayer));
+  }
+
+  private static boolean canOpenDefaultDialog(EasyNPC<?> easyNPC, ServerPlayer serverPlayer) {
+    return easyNPC
+            .getEasyNPCDialogData()
+            .getDialogDataSet()
+            .getNextAvailableDialog(serverPlayer, easyNPC.getLivingEntity())
+        != null;
+  }
+
+  private static void setLimitedDefaultDialog(EasyNPC<?> easyNPC) {
+    ConditionDataEntry oncePerHour =
+        new ConditionDataEntry(
+            ConditionType.EXECUTION_LIMIT,
+            DurationType.PER_HOUR,
+            ConditionOperationType.NONE,
+            "",
+            1);
+    Set<ConditionDataEntry> conditions = new LinkedHashSet<>();
+    conditions.add(oncePerHour);
+
+    DialogDataEntry dialog = new DialogDataEntry("default", "Default", "Hello");
+    dialog.setConditions(conditions);
+
+    DialogDataSet dialogDataSet = new DialogDataSet();
+    dialogDataSet.addDialog(dialog);
+    easyNPC.getEasyNPCDialogData().setDialogDataSet(dialogDataSet);
+  }
+
+  public static void assertConditionalDialogOpenRespectsConditions(GameTestHelper helper) {
+    ServerPlayer serverPlayer = GameTestHelpers.mockServerPlayer(helper, new Vec3(1, 2, 1));
+    serverPlayer.getInventory().clearContent();
+    serverPlayer.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+
+    ConditionDataEntry needStick =
+        new ConditionDataEntry(
+            ConditionType.HAS_ITEM_IN_HAND,
+            HandItemType.MAIN_HAND,
+            ConditionOperationType.EQUALS,
+            "minecraft:stick",
+            1);
+    Set<ConditionDataEntry> conditions = new LinkedHashSet<>();
+    conditions.add(needStick);
+
+    DialogDataEntry dialog = new DialogDataEntry("gated_dialog", "Gated", "Hello");
+    dialog.setConditions(conditions);
+
+    DialogDataSet dialogDataSet = new DialogDataSet();
+    dialogDataSet.addDialog(dialog);
+    UUID dialogId = dialog.getId();
+
+    GameTestHelpers.assertTrue(
+        helper,
+        "Dialog must exist regardless of conditions",
+        dialogDataSet.getDialog(dialogId) != null);
+
+    GameTestHelpers.assertTrue(
+        helper,
+        "Conditional open must be blocked when the dialog condition is not met",
+        !dialogDataSet.canOpenDialog(dialogId, serverPlayer, null));
+
+    serverPlayer.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STICK, 1));
+    GameTestHelpers.assertTrue(
+        helper,
+        "Conditional open must be allowed when the dialog condition is met",
+        dialogDataSet.canOpenDialog(dialogId, serverPlayer, null));
+  }
+
+  public static void assertHealthTargetConditions(GameTestHelper helper, EntityType<?> entityType) {
+    // The NPC context provides both the NPC_HEALTH target and the level used for UUID lookups.
+    EasyNPC<?> npc = GameTestHelpers.mockEasyNPC(helper, entityType, new Vec3(2, 2, 1));
+    LivingEntity npcEntity = npc.getLivingEntity();
+
+    npcEntity.setHealth(npcEntity.getMaxHealth());
+    GameTestHelpers.assertTrue(
+        helper,
+        "Full NPC health must not satisfy a < 75% condition",
+        !HealthConditionEvaluator.evaluate(ConditionOperationType.LESS_THAN, 75, npcEntity));
+
+    npcEntity.setHealth(npcEntity.getMaxHealth() * 0.5F);
+    GameTestHelpers.assertTrue(
+        helper,
+        "Half NPC health must satisfy a < 75% condition",
+        HealthConditionEvaluator.evaluate(ConditionOperationType.LESS_THAN, 75, npcEntity));
+
+    EasyNPC<?> target = GameTestHelpers.mockEasyNPC(helper, entityType, new Vec3(3, 2, 1));
+    LivingEntity targetEntity = target.getLivingEntity();
+    String targetUuid = targetEntity.getUUID().toString();
+
+    GameTestHelpers.assertTrue(
+        helper,
+        "Target entity must be resolvable by UUID from the NPC context level",
+        HealthConditionEvaluator.resolveByUuid(npcEntity, targetUuid) == targetEntity);
+
+    LivingEntity unknownTarget =
+        HealthConditionEvaluator.resolveByUuid(npcEntity, UUID.randomUUID().toString());
+    GameTestHelpers.assertTrue(
+        helper, "Unknown entity UUID must resolve to null", unknownTarget == null);
+  }
+}

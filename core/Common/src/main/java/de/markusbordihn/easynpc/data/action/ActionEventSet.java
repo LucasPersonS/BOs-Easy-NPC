@@ -40,9 +40,8 @@ public class ActionEventSet {
         @Override
         public void encode(
             RegistryFriendlyByteBuf registryFriendlyByteBuf, ActionEventSet actionEventSet) {
-          registryFriendlyByteBuf.writeNbt(
-              EntityDataSerializersManager.validateAndGetNbt(
-                  actionEventSet.createTag(), "ActionEventSet"));
+          EntityDataSerializersManager.writeSizeLimitedNbt(
+              registryFriendlyByteBuf, actionEventSet.createTag(), "ActionEventSet");
         }
       };
   private final EnumMap<ActionEventType, ActionDataSet> actionsMap =
@@ -66,6 +65,7 @@ public class ActionEventSet {
     if (actionEventType != ActionEventType.NONE && this.actionsMap.containsKey(actionEventType)) {
       return this.actionsMap.get(actionEventType);
     }
+
     return new ActionDataSet();
   }
 
@@ -74,6 +74,7 @@ public class ActionEventSet {
       ActionDataSet actions = this.actionsMap.get(actionEventType);
       return actions != null && !actions.isEmpty();
     }
+
     return false;
   }
 

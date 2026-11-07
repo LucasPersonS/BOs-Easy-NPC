@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc.api.handler;
 
 import de.markusbordihn.easynpc.Constants;
+import de.markusbordihn.easynpc.data.npc.NPCEntityMetadata;
 import de.markusbordihn.easynpc.data.npc.NPCRemovalReason;
 import de.markusbordihn.easynpc.data.npc.SavedNPCEntityEntry;
 import de.markusbordihn.easynpc.data.preset.PresetType;
@@ -27,10 +28,12 @@ import de.markusbordihn.easynpc.entity.LivingEntityManager;
 import de.markusbordihn.easynpc.entity.NPCEntityManager;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import de.markusbordihn.easynpc.handler.PresetHandler;
+import de.markusbordihn.easynpc.handler.RespawnHandler;
 import de.markusbordihn.easynpc.security.CommandSecurity;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
@@ -145,6 +148,7 @@ public class EasyNPCEntityHandler {
       log.error("Cannot despawn null EasyNPC");
       return false;
     }
+
     NPCRemovalReason removalReason =
         reason == null || reason == NPCRemovalReason.NONE ? NPCRemovalReason.DESPAWNED : reason;
     NPCEntityManager.saveNPC(easyNPC, removalReason);
@@ -153,13 +157,18 @@ public class EasyNPCEntityHandler {
     return true;
   }
 
+  public static boolean respawn(EasyNPC<?> easyNPC, ServerLevel serverLevel) {
+    return RespawnHandler.respawnNPC(easyNPC, serverLevel);
+  }
+
   public static boolean delete(EasyNPC<?> easyNPC) {
     if (easyNPC == null) {
       log.error("Cannot delete null EasyNPC");
       return false;
     }
+
     UUID entityUUID = easyNPC.getEntityUUID();
-    NPCEntityManager.removeNPC(entityUUID);
+    NPCEntityManager.markNPCDeleted(entityUUID);
     NPCEntityManager.markIntentionalRemoval(entityUUID, NPCRemovalReason.DELETED);
     easyNPC.getEntity().discard();
     return true;
@@ -181,8 +190,7 @@ public class EasyNPCEntityHandler {
       return false;
     }
 
-    NPCEntityManager.removeNPC(uuid);
-    NPCEntityManager.markIntentionalRemoval(uuid, NPCRemovalReason.DELETED);
+    NPCEntityManager.markNPCDeleted(uuid);
     return true;
   }
 
@@ -192,33 +200,123 @@ public class EasyNPCEntityHandler {
       log.error("Cannot despawn NPC {}: not found in world", uuid);
       return false;
     }
+
     return despawn(easyNPC, reason);
   }
 
   public static boolean spawn(UUID uuid, ServerLevel serverLevel) {
-    Optional<SavedNPCEntityEntry> entry = NPCEntityManager.getNPC(uuid);
-    if (entry.isEmpty()) {
-      log.error("Cannot spawn NPC {}: no saved data found", uuid);
-      return false;
-    }
+    return spawn(uuid, serverLevel, false);
+  }
 
-    return PresetHandler.importPreset(
-        serverLevel, entry.get().npcData(), entry.get().metadata().ownerUUID());
+  public static boolean spawn(UUID uuid, ServerLevel serverLevel, boolean force) {
+    Optional<SavedNPCEntityEntry> entry = getSpawnableEntry(uuid, getSpawnRejection(uuid, force));
+    return entry.isPresent()
+        && PresetHandler.importPreset(
+            serverLevel, entry.get().npcData(), entry.get().metadata().ownerUUID());
   }
 
   public static boolean spawn(UUID uuid, ServerLevel serverLevel, Vec3 position) {
-    Optional<SavedNPCEntityEntry> entry = NPCEntityManager.getNPC(uuid);
+    return spawn(uuid, serverLevel, position, false);
+  }
+
+  public static boolean spawn(UUID uuid, ServerLevel serverLevel, Vec3 position, boolean force) {
+    Optional<SavedNPCEntityEntry> entry = getSpawnableEntry(uuid, getSpawnRejection(uuid, force));
     if (entry.isEmpty()) {
-      log.error("Cannot spawn NPC {}: no saved data found", uuid);
       return false;
     }
 
     CompoundTag npcData = entry.get().npcData().copy();
-    ListTag posTag = new ListTag();
-    posTag.add(DoubleTag.valueOf(position.x));
-    posTag.add(DoubleTag.valueOf(position.y));
-    posTag.add(DoubleTag.valueOf(position.z));
-    npcData.put("Pos", posTag);
+    putPosition(npcData, position);
     return PresetHandler.importPreset(serverLevel, npcData, entry.get().metadata().ownerUUID());
+  }
+
+  public static boolean revive(UUID uuid, ServerLevel serverLevel) {
+    return revive(uuid, serverLevel, null);
+  }
+
+  public static boolean revive(UUID uuid, ServerLevel serverLevel, Vec3 position) {
+    Optional<SavedNPCEntityEntry> entry = getSpawnableEntry(uuid, getReviveRejection(uuid));
+    if (entry.isEmpty()) {
+      return false;
+    }
+
+    CompoundTag npcData = entry.get().npcData().copy();
+    if (position != null) {
+      putPosition(npcData, position);
+    }
+    // LivingEntity#readAdditionalSaveData loads Attributes before Health, setHealth clamps to max.
+    npcData.putFloat("Health", Float.MAX_VALUE);
+    npcData.remove("DeathTime");
+    npcData.remove("HurtTime");
+    npcData.remove("Fire");
+    return PresetHandler.importPreset(serverLevel, npcData, entry.get().metadata().ownerUUID());
+  }
+
+  public static boolean isLoaded(UUID uuid) {
+    EasyNPC<?> easyNPC = LivingEntityManager.getServerEasyNPCEntityByUUID(uuid);
+    return easyNPC != null && !easyNPC.getEntity().isRemoved();
+  }
+
+  public static Optional<String> getSpawnRejection(UUID uuid, boolean force) {
+    return getRejection(
+        uuid, removalReason -> force || removalReason.isRestorableReason(), "use force to spawn it");
+  }
+
+  public static Optional<String> getReviveRejection(UUID uuid) {
+    return getRejection(
+        uuid,
+        removalReason ->
+            removalReason == NPCRemovalReason.KILLED || removalReason.isRestorableReason(),
+        "use spawn with force instead");
+  }
+
+  private static Optional<String> getRejection(
+      UUID uuid, Predicate<NPCRemovalReason> isAcceptedReason, String unacceptedReasonHint) {
+    if (NPCEntityManager.isNPCDeleted(uuid)) {
+      return Optional.of("it was deleted");
+    }
+
+    Optional<NPCEntityMetadata> metadata = NPCEntityManager.getMetadata(uuid);
+    if (metadata.isEmpty()) {
+      return Optional.of("no saved data found");
+    }
+
+    NPCRemovalReason removalReason = metadata.get().removalReason();
+    if (removalReason == NPCRemovalReason.ON_SHOULDER) {
+      return Optional.of("it sits on the shoulder of a player");
+    }
+
+    if (isLoaded(uuid)) {
+      return Optional.of("it is already loaded");
+    }
+
+    if (!isAcceptedReason.test(removalReason)) {
+      return Optional.of(
+          "it was removed with reason " + removalReason + ", " + unacceptedReasonHint);
+    }
+
+    return Optional.empty();
+  }
+
+  private static void putPosition(CompoundTag npcData, Vec3 position) {
+    ListTag positionTag = new ListTag();
+    positionTag.add(DoubleTag.valueOf(position.x));
+    positionTag.add(DoubleTag.valueOf(position.y));
+    positionTag.add(DoubleTag.valueOf(position.z));
+    npcData.put("Pos", positionTag);
+  }
+
+  private static Optional<SavedNPCEntityEntry> getSpawnableEntry(
+      UUID uuid, Optional<String> spawnRejection) {
+    if (spawnRejection.isPresent()) {
+      log.warn("Cannot spawn NPC {}: {}", uuid, spawnRejection.get());
+      return Optional.empty();
+    }
+
+    Optional<SavedNPCEntityEntry> entry = NPCEntityManager.getNPC(uuid);
+    if (entry.isEmpty()) {
+      log.error("Cannot spawn NPC {}: metadata exists, but its saved entity data is missing", uuid);
+    }
+    return entry;
   }
 }

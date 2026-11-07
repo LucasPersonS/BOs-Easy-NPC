@@ -47,10 +47,10 @@ import de.markusbordihn.easynpc.configui.client.screen.editor.condition.entry.Sc
 import de.markusbordihn.easynpc.configui.client.screen.editor.condition.entry.TimeOfDayConditionEntry;
 import de.markusbordihn.easynpc.configui.client.screen.editor.condition.entry.WeatherConditionEntry;
 import de.markusbordihn.easynpc.configui.menu.editor.EditorMenu;
+import de.markusbordihn.easynpc.configui.network.message.server.ResetExecutionLimitMessage;
 import de.markusbordihn.easynpc.data.condition.ConditionDataEntry;
 import de.markusbordihn.easynpc.data.condition.ConditionDataSet;
 import de.markusbordihn.easynpc.data.condition.ConditionType;
-import de.markusbordihn.easynpc.data.execution.ExecutionId;
 import de.markusbordihn.easynpc.network.components.TextComponent;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -69,7 +69,9 @@ import net.minecraft.world.entity.player.Inventory;
 
 public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> extends EditorScreen<T> {
 
+  private static final int HINT_TOP = 59;
   private static final int HINT_WIDTH = 285;
+  private static final int HINT_SPACING = 7;
 
   private final ConditionDataEntry conditionDataEntry;
   private final ConditionDataSet conditionDataSet;
@@ -83,6 +85,7 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
   protected Button deleteButton;
   protected Button conditionTypeButton;
   protected int contentTop;
+  private int conditionEntryTop;
   private ConditionEntryWidget conditionEntryWidget;
   private ConditionType conditionType;
   private boolean isNewEntry;
@@ -92,7 +95,7 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
     this.context = ConditionEditorContext.resolve(this);
     this.conditionDataSet = this.context.loadConditionDataSet();
     this.conditionDataEntryId = this.getConditionDataEntryUUID();
-    this.conditionDataEntry = loadConditionDataEntry();
+    this.conditionDataEntry = this.loadConditionDataEntry();
     this.conditionType =
         this.conditionDataEntry.conditionType() != ConditionType.NONE
             ? this.conditionDataEntry.conditionType()
@@ -113,7 +116,8 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
   }
 
   private boolean isSelectableConditionType(ConditionType conditionType) {
-    if (conditionType == ConditionType.NONE) {
+    if (conditionType == ConditionType.NONE
+        || !this.context.isSupportedConditionType(conditionType)) {
       return false;
     }
 
@@ -127,7 +131,7 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
   protected void changeConditionType(SpinButton<?> spinButton) {
     this.conditionType = (ConditionType) spinButton.get();
     this.clearWidgets();
-    init();
+    this.init();
   }
 
   private void saveConditionDataEntry() {
@@ -156,7 +160,7 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
             confirmed -> {
               if (confirmed) {
                 this.conditionDataSet.remove(this.conditionDataEntryId);
-                saveConditionDataEntry();
+                this.saveConditionDataEntry();
                 this.navigateToConditionDataEditor();
               } else {
                 this.minecraft.setScreen(this);
@@ -343,9 +347,22 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
         log.error("Unsupported condition type {}!", this.conditionType);
     }
 
+    int hintHeight =
+        this.font
+                .split(TextComponent.getTranslatedConfigText(this.hintTranslationKey()), HINT_WIDTH)
+                .size()
+            * this.font.lineHeight;
+    this.conditionEntryTop =
+        Math.max(this.contentTop + 55, this.topPos + HINT_TOP + hintHeight + HINT_SPACING);
     if (this.conditionEntryWidget != null) {
-      this.conditionEntryWidget.init(this.leftPos + 10, this.contentTop + 55);
+      this.conditionEntryWidget.init(this.leftPos + 10, this.conditionEntryTop);
     }
+  }
+
+  private String hintTranslationKey() {
+    return this.conditionType == ConditionType.FALLBACK
+        ? "condition.hint.fallback"
+        : "condition.hint." + this.conditionType.name().toLowerCase();
   }
 
   public <W extends GuiEventListener & Renderable & NarratableEntry> W addConditionEntryWidget(
@@ -357,8 +374,8 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
     return this.isNewEntry;
   }
 
-  public ExecutionId getExecutionLimitId() {
-    return this.context.executionLimitId();
+  public ResetExecutionLimitMessage createResetExecutionLimitMessage(boolean allPlayers) {
+    return this.context.createResetExecutionLimitMessage(allPlayers);
   }
 
   public Font getFont() {
@@ -388,16 +405,14 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
     Text.drawConfigStringWrapped(
         guiGraphics,
         this.font,
-        fallbackCondition
-            ? "condition.hint.fallback"
-            : "condition.hint." + this.conditionType.name().toLowerCase(),
+        this.hintTranslationKey(),
         this.leftPos + 10,
-        this.topPos + 59,
+        this.topPos + HINT_TOP,
         HINT_WIDTH,
         Constants.FONT_COLOR_DEFAULT);
 
     if (this.conditionEntryWidget != null) {
-      this.conditionEntryWidget.render(guiGraphics, this.leftPos + 10, this.contentTop + 55);
+      this.conditionEntryWidget.render(guiGraphics, this.leftPos + 10, this.conditionEntryTop);
     }
   }
 }

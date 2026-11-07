@@ -59,9 +59,9 @@ public record OpenActionDataEntryEditorMessage(
         buffer.readUUID(),
         buffer.readUUID(),
         buffer.readUUID(),
-        buffer.readEnum(ActionEventType.class),
-        buffer.readEnum(ConfigurationType.class),
-        buffer.readEnum(EditorType.class),
+        NetworkMessageRecord.readEnum(buffer, ActionEventType.class),
+        NetworkMessageRecord.readEnum(buffer, ConfigurationType.class),
+        NetworkMessageRecord.readEnum(buffer, EditorType.class),
         buffer.readInt());
   }
 
@@ -89,7 +89,7 @@ public record OpenActionDataEntryEditorMessage(
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }

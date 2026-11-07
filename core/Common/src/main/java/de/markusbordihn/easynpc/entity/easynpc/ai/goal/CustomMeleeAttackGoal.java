@@ -19,13 +19,53 @@
 
 package de.markusbordihn.easynpc.entity.easynpc.ai.goal;
 
+import de.markusbordihn.easynpc.data.objective.ObjectiveType;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
+import de.markusbordihn.easynpc.entity.easynpc.data.ObjectiveDataCapable;
+import de.markusbordihn.easynpc.entity.easynpc.handlers.AttackHandler;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 
 public class CustomMeleeAttackGoal<T extends EasyNPC<?>> extends MeleeAttackGoal {
 
+  private static final int DEFAULT_ATTACK_INTERVAL_TICKS = 20;
+  private static final double TICKS_PER_SECOND = 20.0D;
+
+  private final T easyNPC;
+
+  // Vanilla MeleeAttackGoal keeps its cooldown in a private field that is always reset to 20 ticks.
+  private int ticksUntilNextAttack;
+
   public CustomMeleeAttackGoal(T easyNPC, double speedModifier, boolean mustSeeTarget) {
     super(easyNPC.getPathfinderMob(), speedModifier, mustSeeTarget);
+    this.easyNPC = easyNPC;
+  }
+
+  @Override
+  public boolean canUse() {
+    return !this.isHoldingWeaponOfRangedAttack() && super.canUse();
+  }
+
+  @Override
+  public boolean canContinueToUse() {
+    return !this.isHoldingWeaponOfRangedAttack() && super.canContinueToUse();
+  }
+
+  private boolean isHoldingWeaponOfRangedAttack() {
+    ObjectiveDataCapable<?> objectiveData = this.easyNPC.getEasyNPCObjectiveData();
+    if (objectiveData == null) {
+      return false;
+    }
+
+    return (objectiveData.hasObjective(ObjectiveType.BOW_ATTACK)
+            && AttackHandler.isHoldingBowWeapon(this.mob))
+        || (objectiveData.hasObjective(ObjectiveType.CROSSBOW_ATTACK)
+            && AttackHandler.isHoldingCrossbowWeapon(this.mob))
+        || (objectiveData.hasObjective(ObjectiveType.GUN_ATTACK)
+            && AttackHandler.isHoldingGunWeapon(this.mob));
   }
 
   @Override
@@ -38,5 +78,38 @@ public class CustomMeleeAttackGoal<T extends EasyNPC<?>> extends MeleeAttackGoal
   public void start() {
     super.start();
     this.mob.setAggressive(true);
+    this.ticksUntilNextAttack = 0;
+  }
+
+  @Override
+  public void tick() {
+    this.ticksUntilNextAttack = Math.max(this.ticksUntilNextAttack - 1, 0);
+    super.tick();
+  }
+
+  @Override
+  protected void resetAttackCooldown() {
+    this.ticksUntilNextAttack = this.getAttackInterval();
+  }
+
+  @Override
+  protected boolean isTimeToAttack() {
+    return this.ticksUntilNextAttack <= 0;
+  }
+
+  @Override
+  protected int getTicksUntilNextAttack() {
+    return this.ticksUntilNextAttack;
+  }
+
+  @Override
+  protected int getAttackInterval() {
+    AttributeInstance attackSpeed = this.mob.getAttribute(Attributes.ATTACK_SPEED);
+    if (attackSpeed == null || attackSpeed.getValue() <= 0.0D) {
+      return this.adjustedTickDelay(DEFAULT_ATTACK_INTERVAL_TICKS);
+    }
+
+    return this.adjustedTickDelay(
+        Math.max(1, (int) Math.round(TICKS_PER_SECOND / attackSpeed.getValue())));
   }
 }

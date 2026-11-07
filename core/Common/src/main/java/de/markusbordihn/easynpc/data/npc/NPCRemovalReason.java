@@ -31,12 +31,14 @@ public enum NPCRemovalReason {
   UNLOADED_BY_SERVER,
   UNLOADED_BY_ACTION,
   CHANGED_DIMENSION,
+  ON_SHOULDER,
   DELETED;
 
   public static NPCRemovalReason fromRemovalReason(Entity.RemovalReason removalReason) {
     if (removalReason == null) {
       return NONE;
     }
+
     return switch (removalReason) {
       case KILLED -> KILLED;
       case DISCARDED -> DESPAWNED;
@@ -50,6 +52,7 @@ public enum NPCRemovalReason {
     if (value == null || value.isEmpty()) {
       return NONE;
     }
+
     try {
       return valueOf(value);
     } catch (IllegalArgumentException e) {
@@ -58,6 +61,13 @@ public enum NPCRemovalReason {
   }
 
   public boolean isDespawnReason() {
-    return this != NONE && this != DELETED;
+    return this != NONE && this != DELETED && this != ON_SHOULDER;
+  }
+
+  public boolean isRestorableReason() {
+    return this == DESPAWNED
+        || this == UNLOADED_BY_PLAYER
+        || this == UNLOADED_BY_SERVER
+        || this == UNLOADED_BY_ACTION;
   }
 }

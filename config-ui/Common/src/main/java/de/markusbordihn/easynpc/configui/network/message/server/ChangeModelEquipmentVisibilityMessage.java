@@ -47,7 +47,9 @@ public record ChangeModelEquipmentVisibilityMessage(
 
   public static ChangeModelEquipmentVisibilityMessage create(final FriendlyByteBuf buffer) {
     return new ChangeModelEquipmentVisibilityMessage(
-        buffer.readUUID(), buffer.readEnum(EquipmentSlot.class), buffer.readBoolean());
+        buffer.readUUID(),
+        NetworkMessageRecord.readEnum(buffer, EquipmentSlot.class),
+        buffer.readBoolean());
   }
 
   @Override
@@ -69,7 +71,7 @@ public record ChangeModelEquipmentVisibilityMessage(
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }

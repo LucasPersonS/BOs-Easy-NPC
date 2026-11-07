@@ -63,6 +63,7 @@ public enum ConfigurationType {
   FLEE_OBJECTIVE,
   INTERACTION_SOUND,
   INTERVAL_ACTION,
+  INVENTORY,
   FOLLOW_OBJECTIVE,
   LOCAL_PRESET_EXPORT,
   LOCAL_PRESET_IMPORT,
@@ -73,6 +74,7 @@ public enum ConfigurationType {
   NONE_TRADING,
   PLAYER_SKIN,
   POSE(true),
+  PROJECTILE_ATTRIBUTE,
   SCALING,
   SKIN(true),
   TARGET_OBJECTIVE,
@@ -81,7 +83,8 @@ public enum ConfigurationType {
   URL_SKIN,
   WORLD_PRESET_EXPORT,
   WORLD_PRESET_IMPORT,
-  YES_NO_DIALOG;
+  YES_NO_DIALOG,
+  BOSS_BAR_ATTRIBUTE;
 
   private final String configurationName = this.name().toLowerCase(Locale.ROOT) + "_configuration";
   private final ResourceLocation id =

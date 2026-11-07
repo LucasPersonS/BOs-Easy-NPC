@@ -62,9 +62,19 @@ public interface EasyNPC<E extends Mob> extends EasyNPCDataAccessors<E>, Npc {
 
   Random randomNumber = new Random();
 
+  int LEGACY_NPC_DATA_VERSION = -1;
+
+  static boolean isUsableServerSideInstance(EasyNPC<?> easyNPC) {
+    return easyNPC != null && !easyNPC.isClientSideInstance();
+  }
+
   int getNPCDataVersion();
 
   void setNPCDataVersion(int version);
+
+  default boolean isLegacyNPCData() {
+    return this.getNPCDataVersion() == LEGACY_NPC_DATA_VERSION;
+  }
 
   default NPCType getNPCType() {
     return RawNPCType.GENERIC;
@@ -108,10 +118,6 @@ public interface EasyNPC<E extends Mob> extends EasyNPCDataAccessors<E>, Npc {
     return EasyNPCEntityAccess.isServerSide(this);
   }
 
-  static boolean isUsableServerSideInstance(EasyNPC<?> easyNPC) {
-    return easyNPC != null && !easyNPC.isClientSideInstance();
-  }
-
   default LivingEntity getLivingEntity() {
     return EasyNPCEntityAccess.getLivingEntity(this);
   }
@@ -138,6 +144,11 @@ public interface EasyNPC<E extends Mob> extends EasyNPCDataAccessors<E>, Npc {
 
   default UUID getEntityUUID() {
     return EasyNPCEntityAccess.getEntityUUID(this);
+  }
+
+  default boolean isPersistentNPC() {
+    Mob mob = this.getMob();
+    return mob.isPersistenceRequired() || mob.requiresCustomPersistence();
   }
 
   default Component getEntityTypeName() {
@@ -220,12 +231,12 @@ public interface EasyNPC<E extends Mob> extends EasyNPCDataAccessors<E>, Npc {
 
   default <T> void setSynchedEntityData(SynchedDataIndex synchedDataIndex, T data) {
     if (synchedDataIndex.persistent) {
-      StatusDataCapable<?> statusData = getEasyNPCStatusData();
+      StatusDataCapable<?> statusData = this.getEasyNPCStatusData();
       if (statusData != null) {
-        statusData.markNPCDataUpdated();
+        statusData.markNPCDataUpdated(synchedDataIndex);
       }
     }
-    setSynchedEntityData(synchedDataIndex, data, false);
+    this.setSynchedEntityData(synchedDataIndex, data, false);
   }
 
   <T> void setSynchedEntityData(SynchedDataIndex synchedDataIndex, T data, boolean forceUpdate);

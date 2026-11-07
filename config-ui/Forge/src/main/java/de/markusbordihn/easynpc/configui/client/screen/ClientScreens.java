@@ -26,14 +26,17 @@ import de.markusbordihn.easynpc.configui.client.screen.configuration.actions.Dis
 import de.markusbordihn.easynpc.configui.client.screen.configuration.actions.IntervalActionConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.AbilitiesAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.BaseAttributeConfigurationScreenWrapper;
+import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.BossBarAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.CombatAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.DisplayAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.MiscAttributeConfigurationScreenWrapper;
+import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.ProjectileAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.AdvancedDialogConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.BasicDialogConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.NoneDialogConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.YesNoDialogConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.equipment.EquipmentConfigurationContainerScreenWrapper;
+import de.markusbordihn.easynpc.configui.client.screen.configuration.inventory.InventoryConfigurationContainerScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.main.MainConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.model.CobblemonModelConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.model.CustomModelConfigurationScreenWrapper;
@@ -158,6 +161,12 @@ public class ClientScreens {
               ModMenuTypes.COMBAT_ATTRIBUTE_CONFIGURATION_MENU.get(),
               CombatAttributeConfigurationScreenWrapper::new);
           MenuScreens.register(
+              ModMenuTypes.PROJECTILE_ATTRIBUTE_CONFIGURATION_MENU.get(),
+              ProjectileAttributeConfigurationScreenWrapper::new);
+          MenuScreens.register(
+              ModMenuTypes.BOSS_BAR_ATTRIBUTE_CONFIGURATION_MENU.get(),
+              BossBarAttributeConfigurationScreenWrapper::new);
+          MenuScreens.register(
               ModMenuTypes.COMBAT_SOUND_CONFIGURATION_MENU.get(),
               CombatSoundConfigurationScreenWrapper::new);
           MenuScreens.register(
@@ -238,6 +247,9 @@ public class ClientScreens {
           MenuScreens.register(
               ModMenuTypes.EQUIPMENT_CONFIGURATION_MENU.get(),
               EquipmentConfigurationContainerScreenWrapper::new);
+          MenuScreens.register(
+              ModMenuTypes.INVENTORY_CONFIGURATION_MENU.get(),
+              InventoryConfigurationContainerScreenWrapper::new);
           MenuScreens.register(
               ModMenuTypes.FOLLOW_OBJECTIVE_CONFIGURATION_MENU.get(),
               FollowObjectiveConfigurationScreenWrapper::new);

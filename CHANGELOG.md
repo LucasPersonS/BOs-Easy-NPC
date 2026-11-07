@@ -8,6 +8,121 @@ the [GitHub History][history] instead.
 Note: Please always back up your world / NPCs before updating to a new version!
 Check the [upgrade guide][upgrade_guide] for more information.
 
+### 7.18.0
+
+- Fixed #862 by keeping NPCs from getting lost on loading with mods like LetMeDespawn.
+- Fixed NPCs with melee and a ranged attack not shooting while holding a bow, crossbow or gun.
+- Fixed NPCs spinning between objectives and slime NPCs hopping the wrong way when attacking.
+- Fixed the boss bar staying on screen after teleporting away or changing dimensions.
+- Fixed creative pick block on an NPC not giving its spawn egg.
+- Fixed "Scoreboard" conditions adding a score of 0 for players without a score.
+- Fixed the Spartan Weaponry golden heavy crossbow and added the leather and copper ones.
+- Fixed overlapping hints, checkbox tooltips, and missing errors and log spam in the skin screens.
+- Fixed the "Custom" skin tab naming the folder `skins` instead of `config/easy_npc/skin`.
+- Fixed many German translations, the English Bogged name and raw "Main Hand"/"Off Hand" keys.
+- Changed preset items to be used up when spawning an NPC in survival to fix #844.
+- Changed stroll, home and look objectives to pause during combat and for 3 seconds after it.
+- Changed NPCs with a target but no usable attack, e.g. no bow in hand, to look at their target.
+- Changed the "Attack" and "Projectile Settings" screens to be simpler and added slider tooltips.
+- Changed boss bar options to their own screen in "Display", with a new "Hide after" setting.
+- Added per-player visibility conditions, e.g. by score, in the "Display" tab to fix #785.
+- Added custom projectiles with damage, trail and impact for bows, crossbows and guns to fix #855.
+- Added the "Projectile Attack" objective to shoot projectiles without a weapon, like a wizard.
+- Added projectile types like bullets, fireballs or items, multiple shots, knockback and effects.
+- Added the `projectile`, `boss_bar` and `objective … set attack type` commands and an API.
+- Added a "Ranged Attack" sound and projectile explosion limits in `npc_base.cfg`.
+
+### 7.17.1
+
+- Refactored the build to no longer ship tests, which makes the mod files up to 20 % smaller.
+
+### 7.17.0
+
+- Fixed #858 by supporting higher attribute limits set by AttributeFix and similar mods.
+  Needs AttributeFix or a similar mod on server and client; armor is capped at 100.
+- Fixed #857 by no longer rewriting NPC files on every chunk unload when nothing changed.
+- Fixed #854 by trying the next "Open Dialog (Conditional)" when the conditions of one are not met.
+- Fixed "Chance" conditions on actions and dialogs being rolled twice, which lowered the chance.
+- Fixed unsaved NPC changes, broken preset exports and spawn actions repeated after a crash.
+- Fixed `scale`, `rotate` and `position` rejecting `root` and `name clear` keeping the name shown.
+- Fixed dead, riding or leashed NPCs going on a shoulder and a shoulder render leak on disconnect.
+- Fixed hidden heads keeping their hat layer and NPCs following targets in other dimensions.
+- Fixed and improved several default presets, including "Grukk", "Forge Keeper" and "Yoga Master".
+- Changed the default "Light Level" from 7 to 0 (surrounding light) and limited it to 0 to 15.
+  Existing NPCs that kept the default switch as well; set 7 to keep the old look.
+- Changed "Close Dialog" and "Fallback" actions to run when no conditional dialog opened.
+- Changed "Follow Owner" NPCs with a teleport distance to follow their owner into other dimensions.
+- Changed server stop to wait up to 2 minutes for NPC files that are still being written.
+- Changed idle NPCs to react up to 0.5 s later to nearby players, falling or pressure plates.
+- Added `/easy_npc attribute`, `/easy_npc debug stats file_storage` and `storage.cfg` save settings.
+- Improved performance of NPC saving, backups, `/easy_npc list`, shoulder sync and idle NPCs.
+
+### 7.16.0
+
+- Fixed #432 by no longer running objectives twice or after removal when set more than once.
+- Fixed NPCs getting lost when they could not be put down from a player's shoulder.
+- Fixed "Sit on Shoulder" NPCs chasing their owner without a distance or time limit.
+- Fixed Easy Model Entities NPCs from addons being invisible on a player's shoulder.
+- Fixed melee NPCs ignoring "Attack Speed" and always attacking once per second.
+- Fixed unlimited world and server preset exports by allowing 10 per minute, see `security.cfg`.
+- Changed killed NPCs to need `force` or the new revive API to spawn again, since 7.15.0.
+- Changed built-in objectives to keep a priority set by addons instead of their default.
+- Changed the Iron Golem "Attack Speed" default to 1.0; existing ones keep 4.0 and attack faster.
+- Changed "Sit on Shoulder" from the "Abilities" to the "Misc" attribute tab.
+- Changed the optional Easy Model Entities dependency to require version 2.6.0 or newer.
+- Added an API to revive killed NPCs and a remount cooldown when dismounting from a shoulder.
+- Added distance, cooldown and combat settings to "Sit on Shoulder" for addons and commands.
+- Added `/easy_npc revive`, `/easy_npc shoulder` and `objective … priority` commands.
+- Added a shoulder offset per NPC, set in the "Misc" tab or with `/easy_npc shoulder offset`.
+- Updated the tested NeoForge version to 21.1.262, which fixes three network vulnerabilities.
+
+### 7.15.0
+
+- Fixed #838 by keeping preset imports silent when run through `/execute` or command blocks.
+- Fixed #380 by applying the NPC limit to the default spawner as well.
+- Fixed #849 by allowing resource pack sounds in the sound configuration.
+- Fixed #349 by no longer spawning NPCs left-handed at random.
+- Fixed #851 by locking dialog buttons per dialog, not across dialogs with the same label.
+- Fixed deleted or duplicated NPCs returning, memory leaks and several owner and UI issues.
+- Fixed the Epic Fight Wither Skeleton NPC missing its Epic Fight mob patch.
+- Changed requirements: same mod version on client and server, Easy Model Entities 2.5.0+.
+- Changed backups of all worlds and killed NPC data to expire after 30 days, see `storage.cfg`.
+- Added "Jump", "Assist Owner" and "Follow Nearest Player" to fix #845, fix #310, fix #761.
+- Added an NPC inventory with item pickup and death drops to fix #111, fix #197, fix #543, fix #670.
+- Added "Sit on Shoulder", a boss bar and `/easy_npc debug core loglevel` to fix #577, fix #219.
+- Added the "Hold" animation mode, a "Bank Teller" preset and new API methods for addons.
+
+### 7.14.0
+
+- Fixed #846 by keeping custom poses for players who start seeing the NPC later.
+- Fixed attribute and trading settings missing for players who start seeing the NPC later.
+- Fixed changed max uses, XP and trading type not shown in the trading screens until reload.
+- Fixed `/easy_npc sound set` changes not reaching players until the NPC was reloaded.
+- Added game tests that check NPC poses and settings after respawns and for new players.
+
+### 7.13.0
+
+- Fixed color and formatting tags in dialog button names showing as plain text.
+- Fixed the button preview in the editor showing lowercase names as a raw translation key.
+- Fixed the "Move EasyNPC" item not working for NPC owners outside of creative mode.
+- Fixed `/easy_npc owner set` reporting success even when the owner could not be changed.
+- Fixed the game crashing when the URL or player skin screen showed a skin download error.
+- Fixed the preset browser search showing no results after scrolling down the list.
+- Changed the network protocol version, so client and server must run the same mod version.
+- Added `@initiator`, `@npc` and `@score()` support to dialog button names to fix #841.
+- Added automatic client tests with the Client Runtime Interface Toolkit.
+- Larger core refactoring and code cleanup.
+
+### 7.12.2
+
+- Fixed the Fairy hitbox being far too small, so its name tag and speech bubble sat in its body.
+- Fixed scaled NPCs keeping their old hitbox and eye level, so hits, clicks and looking missed.
+- Fixed oversized names, lists and NPC data in network packets being read without any limit.
+- Fixed invalid NPC positions, scales, attributes, names and durations from being applied.
+- Changed Fairy NPCs to take up the space of their model, so they collide and can be clicked.
+- Changed Skeleton, Stray and Bogged NPCs to the vanilla hitbox height, they were slightly short.
+- Changed the network protocol version, so client and server must run the same mod version.
+
 ### 7.12.1
 
 - Fixed #836 by always showing "Restore", including datapack presets, with a reason tooltip.
@@ -745,10 +860,10 @@ with earlier releases.
 
 Easy NPC is now split into three separate mods:
 
-- **Easy NPC** – Bundle that includes both Core and Configuration UI for a plug‑and‑play experience.
-- **Easy NPC: Core** – Lightweight runtime and logic for NPCs, with minimal dependencies. Intended
+- **Easy NPC** - Bundle that includes both Core and Configuration UI for a plug-and-play experience.
+- **Easy NPC: Core** - Lightweight runtime and logic for NPCs, with minimal dependencies. Intended
   for servers, modpacks, and developers.
-- **Easy NPC: Configuration UI** – Standalone configuration interface for creating and editing NPCs.
+- **Easy NPC: Configuration UI** - Standalone configuration interface for creating and editing NPCs.
   Can be installed on clients that need the UI.
 
 🎯 Why this change?

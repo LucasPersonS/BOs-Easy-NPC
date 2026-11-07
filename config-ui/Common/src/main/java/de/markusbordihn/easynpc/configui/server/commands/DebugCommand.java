@@ -22,6 +22,7 @@ package de.markusbordihn.easynpc.configui.server.commands;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import de.markusbordihn.easynpc.commands.Command;
+import de.markusbordihn.easynpc.commands.LogLevelCommand;
 import de.markusbordihn.easynpc.configui.Constants;
 import de.markusbordihn.easynpc.configui.debug.DebugManager;
 import net.minecraft.ChatFormatting;
@@ -34,9 +35,11 @@ public class DebugCommand extends Command {
 
   public static ArgumentBuilder<CommandSourceStack, ?> register() {
     return Commands.literal("debug")
-        .requires(cs -> cs.hasPermission(Commands.LEVEL_GAMEMASTERS))
+        .requires(
+            commandSourceStack -> commandSourceStack.hasPermission(Commands.LEVEL_GAMEMASTERS))
         .then(
             Commands.literal("config")
+                .then(LogLevelCommand.register(Constants.LOG_NAME, Constants.MOD_NAME))
                 .then(
                     Commands.argument("enable", BoolArgumentType.bool())
                         .executes(
@@ -46,25 +49,25 @@ public class DebugCommand extends Command {
                                     BoolArgumentType.getBool(context, "enable")))));
   }
 
-  public static int setDebug(CommandSourceStack context, boolean enable) {
+  public static int setDebug(CommandSourceStack commandSourceStack, boolean enable) {
     if (enable) {
       sendSuccessMessage(
-          context,
+          commandSourceStack,
           "► Enable debug for "
               + Constants.MOD_NAME
               + ", please check debug.log for the full output.",
           ChatFormatting.GREEN);
       sendSuccessMessage(
-          context,
-          "> Use '/"
-              + de.markusbordihn.easynpc.configui.Constants.MOD_COMMAND
-              + " debug config false' to disable the debug!",
+          commandSourceStack,
+          "> Use '/" + Constants.MOD_COMMAND + " debug config false' to disable the debug!",
           ChatFormatting.WHITE);
     } else {
       sendSuccessMessage(
-          context, "■ Disable debug for " + Constants.MOD_NAME + "!", ChatFormatting.RED);
+          commandSourceStack,
+          "■ Disable debug for " + Constants.MOD_NAME + "!",
+          ChatFormatting.RED);
       sendSuccessMessage(
-          context,
+          commandSourceStack,
           "> Please check the latest.log and/or debug.log for the full output.",
           ChatFormatting.WHITE);
     }

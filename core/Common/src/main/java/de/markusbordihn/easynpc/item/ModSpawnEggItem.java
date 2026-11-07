@@ -23,6 +23,7 @@ import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import de.markusbordihn.easynpc.handler.OwnerHandler;
 import de.markusbordihn.easynpc.network.components.TextComponent;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -53,6 +54,7 @@ public class ModSpawnEggItem extends SpawnEggItem {
 
   public static final String SUFFIX = "_spawn_egg";
   protected static final Logger log = LogManager.getLogger(Constants.LOG_NAME);
+  private static final List<ModSpawnEggItem> SPAWN_EGG_ITEMS = new ArrayList<>();
   private final Supplier<? extends EntityType<? extends Mob>> typeSupplier;
 
   public ModSpawnEggItem(EntityType<? extends Mob> entityType, Properties properties) {
@@ -63,6 +65,17 @@ public class ModSpawnEggItem extends SpawnEggItem {
       Supplier<? extends EntityType<? extends Mob>> entityType, Properties properties) {
     super(null, Constants.FONT_COLOR_RED, Constants.FONT_COLOR_YELLOW, properties);
     this.typeSupplier = entityType;
+    SPAWN_EGG_ITEMS.add(this);
+  }
+
+  // SpawnEggItem.byId misses eggs created without an entity type, see loader SpawnEggItemMixin.
+  public static ModSpawnEggItem byEntityType(EntityType<?> entityType) {
+    for (ModSpawnEggItem spawnEggItem : SPAWN_EGG_ITEMS) {
+      if (spawnEggItem.typeSupplier.get() == entityType) {
+        return spawnEggItem;
+      }
+    }
+    return null;
   }
 
   @Override
@@ -76,6 +89,7 @@ public class ModSpawnEggItem extends SpawnEggItem {
                   .replace(Constants.ITEM_PREFIX, Constants.ENTITY_PREFIX)
                   .replace(SUFFIX, "")));
     }
+
     return TextComponent.getTranslatedTextRaw(this.getDescriptionId());
   }
 
@@ -96,29 +110,29 @@ public class ModSpawnEggItem extends SpawnEggItem {
     if (!(level instanceof ServerLevel)) {
       return InteractionResult.SUCCESS;
     }
+
     Player player = context.getPlayer();
     ItemStack itemStack = context.getItemInHand();
     BlockPos blockPos = context.getClickedPos();
     Direction direction = context.getClickedFace();
     BlockState blockState = level.getBlockState(blockPos);
-    BlockPos blockPos1;
+    BlockPos spawnPosition;
     if (blockState.getCollisionShape(level, blockPos).isEmpty()) {
-      blockPos1 = blockPos;
+      spawnPosition = blockPos;
     } else {
-      blockPos1 = blockPos.relative(direction);
+      spawnPosition = blockPos.relative(direction);
     }
 
-    // Spawn the entity based on the spawn egg type.
     EntityType<?> entityType = this.getType(itemStack);
     Entity entity =
         entityType.spawn(
             (ServerLevel) level,
             itemStack,
             context.getPlayer(),
-            blockPos1,
+            spawnPosition,
             MobSpawnType.SPAWN_EGG,
             true,
-            !Objects.equals(blockPos, blockPos1) && direction == Direction.UP);
+            !Objects.equals(blockPos, spawnPosition) && direction == Direction.UP);
 
     if (entity != null) {
       if (entity instanceof EasyNPC<?> easyNPC && player != null) {

@@ -42,7 +42,8 @@ public record ChangeProfessionMessage(UUID uuid, Profession profession)
       StreamCodec.of((buffer, message) -> message.write(buffer), ChangeProfessionMessage::create);
 
   public static ChangeProfessionMessage create(final FriendlyByteBuf buffer) {
-    return new ChangeProfessionMessage(buffer.readUUID(), buffer.readEnum(Profession.class));
+    return new ChangeProfessionMessage(
+        buffer.readUUID(), NetworkMessageRecord.readEnum(buffer, Profession.class));
   }
 
   @Override
@@ -63,7 +64,7 @@ public record ChangeProfessionMessage(UUID uuid, Profession profession)
 
   @Override
   public void handleServer(final ServerPlayer serverPlayer) {
-    EasyNPC<?> easyNPC = getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
+    EasyNPC<?> easyNPC = this.getEasyNPCAndCheckAccess(this.uuid, serverPlayer);
     if (easyNPC == null) {
       return;
     }

@@ -30,7 +30,9 @@ import de.markusbordihn.easynpc.entity.easynpc.ai.goal.CrossbowAttackGoal;
 import de.markusbordihn.easynpc.entity.easynpc.ai.goal.CustomFactionHurtByTargetGoal;
 import de.markusbordihn.easynpc.entity.easynpc.ai.goal.CustomMeleeAttackGoal;
 import de.markusbordihn.easynpc.entity.easynpc.ai.goal.CustomOwnerHurtByTargetGoal;
+import de.markusbordihn.easynpc.entity.easynpc.ai.goal.CustomOwnerHurtTargetGoal;
 import de.markusbordihn.easynpc.entity.easynpc.ai.goal.GunAttackGoal;
+import de.markusbordihn.easynpc.entity.easynpc.ai.goal.ProjectileAttackGoal;
 import de.markusbordihn.easynpc.entity.easynpc.ai.goal.ZombieAttackGoal;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
@@ -97,6 +99,16 @@ final class AttackObjectiveFactories {
                     objectiveDataEntry.getSpeedModifier(),
                     objectiveDataEntry.getAttackInterval(),
                     objectiveDataEntry.getAttackRadius())));
+
+    register(
+        ObjectiveType.PROJECTILE_ATTACK,
+        requiresPathfinderMob(
+            (objectiveDataEntry, easyNPC) ->
+                new ProjectileAttackGoal<>(
+                    easyNPC,
+                    objectiveDataEntry.getSpeedModifier(),
+                    objectiveDataEntry.getAttackInterval(),
+                    objectiveDataEntry.getAttackRadius())));
   }
 
   private static void registerAttackTargets() {
@@ -131,6 +143,10 @@ final class AttackObjectiveFactories {
     registerTarget(
         ObjectiveType.OWNER_HURT_BY_TARGET,
         (objectiveDataEntry, easyNPC) -> new CustomOwnerHurtByTargetGoal<>(easyNPC));
+
+    registerTarget(
+        ObjectiveType.OWNER_HURT_TARGET,
+        (objectiveDataEntry, easyNPC) -> new CustomOwnerHurtTargetGoal<>(easyNPC));
 
     registerTarget(
         ObjectiveType.FACTION_HURT_BY_TARGET,
