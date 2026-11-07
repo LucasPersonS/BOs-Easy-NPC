@@ -130,6 +130,23 @@ public interface DialogDataCapable<T extends Mob> extends EasyNPC<T> {
     EasyNPCEventRegistry.fireDialogOpened(this, serverPlayer, dialog);
   }
 
+  /**
+   * A world dialogue teaser became a conversation (the player clicked the NPC or expanded the
+   * teaser). The teaser itself is opened without these side effects, so walking past an NPC does
+   * not use up execution limits, play the open sound for everyone nearby or trigger "talked to"
+   * hooks.
+   */
+  default void engageWorldDialog(ServerPlayer serverPlayer, UUID dialogId) {
+    DialogDataEntry dialog = dialogId != null ? this.getDialogDataSet().getDialog(dialogId) : null;
+    if (dialog != null) {
+      this.getDialogDataSet().recordDialogExecution(dialog, serverPlayer, this.getLivingEntity());
+    }
+    this.playDefaultSoundIfAvailable(SoundType.DIALOG_OPEN);
+    if (dialog != null) {
+      EasyNPCEventRegistry.fireDialogOpened(this, serverPlayer, dialog);
+    }
+  }
+
   default boolean openDialogIfConditionsMet(ServerPlayer serverPlayer, UUID dialogId) {
     if (!this.getDialogDataSet().canOpenDialog(dialogId, serverPlayer, this.getLivingEntity())) {
       return false;

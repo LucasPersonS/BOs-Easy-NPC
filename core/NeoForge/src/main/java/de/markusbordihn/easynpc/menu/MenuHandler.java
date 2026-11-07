@@ -19,20 +19,30 @@
 
 package de.markusbordihn.easynpc.menu;
 
+import de.markusbordihn.easynpc.data.dialog.WorldDialogSessionManager;
+import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import de.markusbordihn.easynpc.menu.dialog.DialogMenu;
+import java.util.UUID;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.MenuType;
 
 public class MenuHandler implements MenuHandlerInterface {
 
   public MenuHandler() {}
 
-  /** Direct clicks use the same Hades presentation as proximity-opened dialogue. */
+  /**
+   * Direct clicks use the same Hades presentation as proximity-opened dialogue. A dialogue opened
+   * from farther away or without line of sight (ON_DISTANCE actions, commands, delayed action
+   * chains) would be closed by the world session within a second, so it keeps the classic screen.
+   */
   @Override
-  public void openDialogMenu(net.minecraft.server.level.ServerPlayer player,
-      de.markusbordihn.easynpc.entity.easynpc.EasyNPC<?> npc, java.util.UUID dialogId,
-      int pageIndex) {
-    de.markusbordihn.easynpc.data.dialog.WorldDialogSessionManager.open(
-        player, npc, dialogId, pageIndex);
+  public void openDialogMenu(
+      ServerPlayer player, EasyNPC<?> npc, UUID dialogId, int pageIndex) {
+    if (WorldDialogSessionManager.canPresentInWorld(player, npc)) {
+      WorldDialogSessionManager.open(player, npc, dialogId, pageIndex);
+    } else {
+      MenuHandlerInterface.super.openDialogMenu(player, npc, dialogId, pageIndex);
+    }
   }
 
   @Override

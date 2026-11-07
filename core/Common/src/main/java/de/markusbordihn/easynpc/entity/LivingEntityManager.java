@@ -169,7 +169,7 @@ public class LivingEntityManager {
 
   public static void removeServerPlayer(ServerPlayer serverPlayer) {
     log.debug("{} [Remove] Server player {}: {}", LOG_PREFIX, serverPlayer, serverPlayer.getUUID());
-    WorldDialogSessionManager.close(serverPlayer, false);
+    WorldDialogSessionManager.playerLeft(serverPlayer);
     playerMap.remove(serverPlayer.getUUID());
     playerNameMap.remove(serverPlayer.getName().getString());
 

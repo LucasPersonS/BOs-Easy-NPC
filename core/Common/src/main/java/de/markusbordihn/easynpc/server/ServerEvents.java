@@ -22,6 +22,7 @@ package de.markusbordihn.easynpc.server;
 import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.backup.BackupManager;
 import de.markusbordihn.easynpc.condition.ConditionWarnings;
+import de.markusbordihn.easynpc.data.dialog.WorldDialogSessionManager;
 import de.markusbordihn.easynpc.data.preset.PresetReference;
 import de.markusbordihn.easynpc.data.storage.NPCStorageStatistics;
 import de.markusbordihn.easynpc.entity.EasyNPCEntityTypes;
@@ -93,7 +94,7 @@ public class ServerEvents {
     EnvironmentChangeTracker.handleServerTick(minecraftServer);
     PlayerIdleTracker.handleServerTick(minecraftServer);
     VisibilityConditionTracker.handleServerTick(minecraftServer);
-    de.markusbordihn.easynpc.data.dialog.WorldDialogSessionManager.tick(minecraftServer);
+    WorldDialogSessionManager.tick(minecraftServer);
   }
 
   public static void handleServerStopping(MinecraftServer minecraftServer) {
@@ -111,6 +112,7 @@ public class ServerEvents {
     PauseManager.reset();
     PlayerIdleTracker.reset();
     VisibilityConditionTracker.reset();
+    WorldDialogSessionManager.reset();
     PresetReference.clearCache();
 
     log.info(

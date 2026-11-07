@@ -20,6 +20,8 @@
 package de.markusbordihn.easynpc.network.message.server;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.netty.buffer.Unpooled;
 import java.util.UUID;
@@ -40,15 +42,43 @@ class WorldDialogNetworkMessageRoundTripTest {
   }
 
   @Test
-  @DisplayName("A switch request keeps the NPC id and the alternate flag")
-  void testBeginAlternateMessage() {
+  @DisplayName("A begin request without a kind is an automatic (teaser) request")
+  void testBeginDefaultKind() {
     UUID npcId = UUID.randomUUID();
     FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
-    new BeginWorldDialogMessage(npcId, true).write(buffer);
+    new BeginWorldDialogMessage(npcId).write(buffer);
+
+    BeginWorldDialogMessage message = BeginWorldDialogMessage.create(buffer);
+    assertEquals(BeginWorldDialogMessage.Kind.AUTO, message.kind());
+    assertFalse(message.alternate());
+  }
+
+  @Test
+  @DisplayName("Every begin request kind survives the round trip")
+  void testBeginKinds() {
+    for (BeginWorldDialogMessage.Kind kind : BeginWorldDialogMessage.Kind.values()) {
+      UUID npcId = UUID.randomUUID();
+      FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+      new BeginWorldDialogMessage(npcId, kind).write(buffer);
+
+      BeginWorldDialogMessage message = BeginWorldDialogMessage.create(buffer);
+      assertEquals(npcId, message.uuid());
+      assertEquals(kind, message.kind());
+      assertEquals(kind == BeginWorldDialogMessage.Kind.ALTERNATE, message.alternate());
+    }
+  }
+
+  @Test
+  @DisplayName("An unknown begin request kind decodes to null instead of failing")
+  void testBeginUnknownKind() {
+    UUID npcId = UUID.randomUUID();
+    FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+    buffer.writeUUID(npcId);
+    buffer.writeVarInt(99);
 
     BeginWorldDialogMessage message = BeginWorldDialogMessage.create(buffer);
     assertEquals(npcId, message.uuid());
-    assertEquals(true, message.alternate());
+    assertNull(message.kind());
   }
 
   @Test

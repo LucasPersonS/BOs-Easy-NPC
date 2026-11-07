@@ -94,6 +94,9 @@ public final class WorldDialogOverlay {
   private static final int CLICK_COOLDOWN_TICKS = 5;
   private static final int OUTLINE_TICKS = 2;
 
+  /** An NPC that did not answer an automatic request is not asked again for this long. */
+  private static final long QUIET_NPC_MS = 30_000L;
+
   private static final long OPEN_ANIM_MS = 160L;
   private static final long PRESS_FLASH_MS = 320L;
   private static final long DENY_MS = 320L;
@@ -128,6 +131,11 @@ public final class WorldDialogOverlay {
   private static UUID lastClosedNpc;
   private static long lastClosedAtMs;
   private static final Set<UUID> talkativeNpcs = new HashSet<>();
+  // NPCs that had nothing to say (no dialogue, conditions, hidden ...), with the time to ask again.
+  private static final Map<UUID, Long> quietNpcs = new HashMap<>();
+  private static UUID awaitedNpc;
+  private static long awaitedUntilTick;
+  private static boolean engagedSent;
 
   // Aim.
   private static EasyNPC<?> aimedNpc;
@@ -228,10 +236,11 @@ public final class WorldDialogOverlay {
             && !aimedNpcId.equals(screenData.uuid())
             && !aimedNpcId.equals(suppressedNpc)) {
           closeQuietly();
-          sendBegin(List.of(aimedNpcId), gameTime);
+          sendBegin(aimedNpcId, gameTime);
         }
       }
     } else {
+      expireAwaitedRequest(gameTime);
       requestNearby(minecraft, gameTime);
     }
 
@@ -270,7 +279,11 @@ public final class WorldDialogOverlay {
     return true;
   }
 
-  /** No session: ask for the aimed NPC first, then the nearest ones. The server opens one. */
+  /**
+   * No session: ask for the aimed NPC, otherwise the nearest one. Only one request is sent at a
+   * time; an NPC that does not answer is skipped for {@link #QUIET_NPC_MS} so the next one gets its
+   * turn and the server is not asked about every NPC around the player every 30 ticks.
+   */
   private static void requestNearby(Minecraft minecraft, long gameTime) {
     List<EasyNPC<?>> nearby = findNearby(minecraft);
     if (suppressedNpc != null
@@ -278,29 +291,43 @@ public final class WorldDialogOverlay {
       suppressedNpc = null;
     }
 
-    List<UUID> order = new ArrayList<>();
-    if (aimedNpcId != null && aimTicks >= AIM_DWELL_TICKS && !aimedNpcId.equals(suppressedNpc)) {
-      order.add(aimedNpcId);
+    long now = Util.getMillis();
+    quietNpcs.values().removeIf(until -> until <= now);
+    UUID target = null;
+    if (aimedNpcId != null
+        && aimTicks >= AIM_DWELL_TICKS
+        && !aimedNpcId.equals(suppressedNpc)
+        && !quietNpcs.containsKey(aimedNpcId)) {
+      target = aimedNpcId;
     }
-    for (EasyNPC<?> npc : nearby) {
-      UUID id = npc.getEntityUUID();
-      if (!id.equals(suppressedNpc) && !order.contains(id)) {
-        order.add(id);
+    for (int index = 0; target == null && index < nearby.size(); index++) {
+      UUID id = nearby.get(index).getEntityUUID();
+      if (!id.equals(suppressedNpc) && !quietNpcs.containsKey(id)) {
+        target = id;
       }
     }
-    if (order.isEmpty()) {
+    if (target == null) {
       return;
     }
-    if (!order.getFirst().equals(requestedNpc) || gameTime >= nextRequestTick) {
-      sendBegin(order, gameTime);
+    if (!target.equals(requestedNpc) || gameTime >= nextRequestTick) {
+      sendBegin(target, gameTime);
     }
   }
 
-  private static void sendBegin(List<UUID> order, long gameTime) {
-    requestedNpc = order.getFirst();
+  private static void sendBegin(UUID target, long gameTime) {
+    requestedNpc = target;
     nextRequestTick = gameTime + REQUEST_INTERVAL_TICKS;
-    for (UUID id : order) {
-      NetworkHandlerManager.sendMessageToServer(new BeginWorldDialogMessage(id, false));
+    awaitedNpc = target;
+    awaitedUntilTick = gameTime + REQUEST_INTERVAL_TICKS;
+    NetworkHandlerManager.sendMessageToServer(
+        new BeginWorldDialogMessage(target, BeginWorldDialogMessage.Kind.AUTO));
+  }
+
+  /** The awaited NPC did not open a teaser in time: it has nothing to say to us right now. */
+  private static void expireAwaitedRequest(long gameTime) {
+    if (awaitedNpc != null && gameTime >= awaitedUntilTick) {
+      quietNpcs.put(awaitedNpc, Util.getMillis() + QUIET_NPC_MS);
+      awaitedNpc = null;
     }
   }
 
@@ -376,6 +403,10 @@ public final class WorldDialogOverlay {
     alternateAvailable =
         newAdditionalData.getData().getBoolean(AdditionalScreenData.WORLD_DIALOG_ALTERNATE_TAG);
     talkativeNpcs.add(newScreenData.uuid());
+    quietNpcs.remove(newScreenData.uuid());
+    if (newScreenData.uuid().equals(awaitedNpc)) {
+      awaitedNpc = null;
+    }
     requestedNpc = newScreenData.uuid();
     suppressedNpc = null;
     outOfRangeTicks = 0;
@@ -387,6 +418,8 @@ public final class WorldDialogOverlay {
     if (newSession) {
       mode = newScreenData.uuid().equals(expandOnArrival) ? Mode.FULL : Mode.TEASER;
       npcDialogPresented = false;
+      // A session opened by our click was requested with ENGAGE already.
+      engagedSent = mode == Mode.FULL;
     }
     if (newScreenData.uuid().equals(expandOnArrival)) {
       expandOnArrival = null;
@@ -420,6 +453,9 @@ public final class WorldDialogOverlay {
     nextRequestTick = 0L;
     lastClosedNpc = null;
     talkativeNpcs.clear();
+    quietNpcs.clear();
+    awaitedNpc = null;
+    engagedSent = false;
     setAim(null);
     promptNpc = null;
     promptAlpha = 0.0F;
@@ -501,7 +537,8 @@ public final class WorldDialogOverlay {
           expand();
         } else if (alternateAvailable) {
           playSound(SoundEvents.BOOK_PAGE_TURN, 0.95F, 0.45F);
-          NetworkHandlerManager.sendMessageToServer(new BeginWorldDialogMessage(target, true));
+          NetworkHandlerManager.sendMessageToServer(
+              new BeginWorldDialogMessage(target, BeginWorldDialogMessage.Kind.ALTERNATE));
         }
       }
       return true;
@@ -515,11 +552,14 @@ public final class WorldDialogOverlay {
         else closeQuietly();
       }
       if (target.equals(suppressedNpc)) suppressedNpc = null;
+      quietNpcs.remove(target);
       expandOnArrival = target;
       expandOnArrivalUntilMs = Util.getMillis() + EXPAND_WAIT_MS;
       requestedNpc = target;
       nextRequestTick = gameTime + REQUEST_INTERVAL_TICKS;
-      NetworkHandlerManager.sendMessageToServer(new BeginWorldDialogMessage(target, false));
+      // A click is talking: the server opens the dialogue and runs the NPC's interaction actions.
+      NetworkHandlerManager.sendMessageToServer(
+          new BeginWorldDialogMessage(target, BeginWorldDialogMessage.Kind.ENGAGE));
     }
     // An NPC we never heard talk keeps its vanilla interaction (trading, commands, ...).
     return talkative;
@@ -544,6 +584,12 @@ public final class WorldDialogOverlay {
 
   private static void expand() {
     mode = Mode.FULL;
+    if (!engagedSent && screenData != null) {
+      engagedSent = true;
+      // The teaser becomes a conversation now; until here it did not count as talking.
+      NetworkHandlerManager.sendMessageToServer(
+          new BeginWorldDialogMessage(screenData.uuid(), BeginWorldDialogMessage.Kind.ENGAGE));
+    }
     openedAtMs = Util.getMillis();
     choiceOffset = 0;
     hoverProgress.clear();
