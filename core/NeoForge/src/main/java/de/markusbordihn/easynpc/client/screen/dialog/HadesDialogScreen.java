@@ -52,6 +52,8 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
   private ResourceLocation portrait;
   private int portraitWidth = 512, portraitHeight = 768;
   private String subtitle = "";
+  private Object rawTextDialog;
+  private String rawText;
   private SimpleSoundInstance speechSound;
 
   public HadesDialogScreen(T menu, Inventory inventory, Component title) {
@@ -75,7 +77,12 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
     if (hasDialogData()) {
       var metadata = new DialogMetaData(getEasyNPC().getLivingEntity(), minecraft.player,
           getAdditionalScreenData() != null ? getAdditionalScreenData().getScoreboardData() : null);
-      String raw = getDialogData().getDialogText(metadata);
+      // init() runs again on every resize; keep the randomly picked text of this dialog.
+      if (rawTextDialog != getDialogData()) {
+        rawText = getDialogData().getDialogText(metadata);
+        rawTextDialog = getDialogData();
+      }
+      String raw = rawText;
       if (raw != null) text = TextComponent.getText(raw).copy()
           .withStyle(style -> style.withFont(DIALOG_FONT));
     }

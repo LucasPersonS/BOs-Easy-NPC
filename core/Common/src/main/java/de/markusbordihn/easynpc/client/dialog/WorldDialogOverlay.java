@@ -83,6 +83,10 @@ import org.joml.Matrix4f;
  */
 public final class WorldDialogOverlay {
 
+  private static DialogDataEntry cachedTextDialog;
+  private static java.util.UUID cachedTextNpc;
+  private static String cachedText = "";
+
   private enum Mode {
     TEASER,
     FULL
@@ -1023,11 +1027,19 @@ public final class WorldDialogOverlay {
   }
 
   private static String dialogText(EasyNPC<?> easyNPC, Minecraft minecraft) {
+    // Dialogs with several texts pick one at random on every getDialogText call; this runs every
+    // frame, so keep the pick for as long as the same dialog is shown instead of flickering.
+    if (dialog == cachedTextDialog && easyNPC.getEntityUUID().equals(cachedTextNpc)) {
+      return cachedText;
+    }
     DialogMetaData metadata =
         new DialogMetaData(
             easyNPC.getLivingEntity(), minecraft.player, additionalData.getScoreboardData());
     String text = dialog.getDialogText(metadata);
-    return text != null && !text.isBlank() ? text : "…";
+    cachedTextDialog = dialog;
+    cachedTextNpc = easyNPC.getEntityUUID();
+    cachedText = text != null && !text.isBlank() ? text : "…";
+    return cachedText;
   }
 
   private static List<ChoiceView> collectChoices(Minecraft minecraft, EasyNPC<?> easyNPC) {
