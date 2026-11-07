@@ -64,6 +64,7 @@ public class LivingEntityEvents {
       LivingEntityManager.addEasyNPC(easyNPC);
       if (livingEntity.level() instanceof ServerLevel serverLevel) {
         handleServerEasyNPCJoin(easyNPC, livingEntity, serverLevel.getServer());
+        de.markusbordihn.easynpc.paravexia.village.VillageRuntime.onNpcJoin(easyNPC);
       }
     } else if (livingEntity instanceof ServerPlayer serverPlayer) {
       LivingEntityManager.addServerPlayer(serverPlayer);
