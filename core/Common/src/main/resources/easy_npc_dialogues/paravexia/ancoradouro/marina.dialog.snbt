@@ -1,0 +1,65 @@
+{
+  Id:"paravexia:ancoradouro/marina",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Marina Teles",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Mapas! Recém-desenhados, quase certos. A ilha tem a mania de mudar quando ninguém está olhando."},{Text:"Você tem cara de quem vai se perder, @initiator. Isso é um elogio. Quem se perde descobre coisas."}],
+        Buttons:[
+          {Label:"ver_mercadorias",Name:"Ver mercadorias",Actions:[{Type:"OPEN_TRADING_SCREEN"}]},
+          {Label:"niveis",Name:"Como funcionam as áreas?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"niveis"}]},
+          {Label:"lugares",Name:"Que lugares existem?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"lugares"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"niveis",
+        Name:"Marina Teles",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Cada área tem um nível de perigo, de zero a cinquenta. O bosque aqui do lado é zero. Comece por ele, sério."}],
+        Buttons:[
+          {Label:"zonas",Name:"E as zonas perigosas?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"zonas"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"zonas",
+        Name:"Marina Teles",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Algumas regiões não seguem os níveis. Um elemento só manda nelas, e tudo lá dentro obedece. Essas eu evito."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"lugares",
+        Name:"Marina Teles",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Ao norte, um vilarejo chamado Vésperae. A leste, a tribo do Santuário Ita-Karu. E uma catedral que ninguém desenha igual."}],
+        Buttons:[
+          {Label:"catedral",Name:"Por que a catedral?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"catedral"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"catedral",
+        Name:"Marina Teles",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Cada mapa que eu faço põe a catedral num lugar diferente. Como se ela fosse até quem está procurando."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

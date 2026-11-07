@@ -1,0 +1,42 @@
+{
+  Id:"paravexia:ancoradouro/caio",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Caio",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Desculpa, tô com pressa. Água pros doentes, sopa da pousada, e a doutora não pode ficar sozinha."},{Text:"Você dormiu bem? Eu não durmo. Não mais. Prefiro não arriscar."}],
+        Buttons:[
+          {Label:"dormir",Name:"Por que não dorme?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"dormir"}]},
+          {Label:"doentes",Name:"Como estão os doentes?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"doentes"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"dormir",
+        Name:"Caio",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Porque todos que dormem demais aqui não acordam. E porque, quando eu fecho os olhos, ouço um sino tocando."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"doentes",
+        Name:"Caio",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Iguais. Sempre iguais. Às vezes eles sorriem juntos, todos ao mesmo tempo. A doutora diz que é coincidência."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

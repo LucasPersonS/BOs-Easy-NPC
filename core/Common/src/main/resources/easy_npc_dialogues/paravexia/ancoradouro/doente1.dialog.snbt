@@ -1,0 +1,18 @@
+{
+  Id:"paravexia:ancoradouro/doente1",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Doente da travessia",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"...o sino... ainda não tocou..."},{Text:"...cinco... eram cinco..."}],
+        Buttons:[
+          {Label:"sair",Name:"Descanse.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+{
+  Id:"paravexia:ancoradouro/joaquim",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Joaquim Bigorna",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Lâmina cega, cabo rachado, armadura amassada? Deixa comigo. Só não me peça para parar de martelar."},{Text:"@initiator! Chegou na hora. O fogo tá bom e o ferro tá barato. Pelo menos por enquanto."}],
+        Buttons:[
+          {Label:"ver_mercadorias",Name:"Ver mercadorias",Actions:[{Type:"OPEN_TRADING_SCREEN"}]},
+          {Label:"martelar",Name:"Por que não para?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"martelar"}]},
+          {Label:"davi",Name:"E o seu aprendiz?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"davi"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"martelar",
+        Name:"Joaquim Bigorna",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Quando o martelo para, o bosque fala. E ele fala com a voz do meu filho, que ficou doente em casa. Então eu martelo."}],
+        Buttons:[
+          {Label:"filho",Name:"Sinto muito.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"filho"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"filho",
+        Name:"Joaquim Bigorna",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Não sinta. Ache a tal planta, se ela existir. E se achar, me conta antes de contar pra Iara."}],
+        Buttons:[
+          {Label:"ver_mercadorias",Name:"Ver mercadorias",Actions:[{Type:"OPEN_TRADING_SCREEN"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"davi",
+        Name:"Joaquim Bigorna",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"O Davi? Coração bom, braço fraco, boca grande. Vai ser herói ou vai ser lembrado. Tô torcendo pelo primeiro."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

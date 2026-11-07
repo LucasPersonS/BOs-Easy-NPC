@@ -1,0 +1,42 @@
+{
+  Id:"paravexia:ancoradouro/lima",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Guarda Lima",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Vai entrar no bosque? Diga seu nome em voz alta antes. Pra ele não ter que perguntar."},{Text:"Tudo tranquilo no portão. Muito tranquilo. Tranquilo demais, se quer saber."}],
+        Buttons:[
+          {Label:"nome",Name:"Por que dizer meu nome?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"nome"}]},
+          {Label:"medo",Name:"Você tem medo?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"medo"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"nome",
+        Name:"Guarda Lima",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Se o bosque já sabe, ele não precisa te chamar. E é quando chama que as pessoas se perdem. Pelo menos, é o que dizem."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"medo",
+        Name:"Guarda Lima",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Eu? Medo? Não. Claro que não. Só fico de costas pro muro e de frente pras árvores. Por estratégia."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

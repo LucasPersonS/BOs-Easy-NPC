@@ -1,0 +1,18 @@
+{
+  Id:"paravexia:ancoradouro/hospede",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Hóspede da Pousada",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Vim para ficar uma noite. Faz semanas. Nunca estive tão bem."},{Text:"A Lúcia disse que depois a gente acerta. Que gentil, não é?"},{Text:"Lá fora? Não, obrigado. Aqui dentro está tudo certo."}],
+        Buttons:[
+          {Label:"sair",Name:"Aproveite.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

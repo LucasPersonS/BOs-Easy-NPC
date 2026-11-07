@@ -1,0 +1,54 @@
+{
+  Id:"paravexia:ancoradouro/nina",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Nina",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Oi, @initiator. O bosque falou de você hoje."},{Text:"Shh. Tô conversando com o poço. Ele repete o que o bosque fala, só que mais devagar."}],
+        Buttons:[
+          {Label:"bosque",Name:"O que o bosque disse?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"bosque"}]},
+          {Label:"pais",Name:"Cadê seus pais?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"pais"}]},
+          {Label:"lucia",Name:"Você gosta da pousada?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"lucia"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"bosque",
+        Name:"Nina",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Que você vai encontrar o que procura. E que vai se arrepender um pouquinho. Só um pouquinho, ele disse."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"pais",
+        Name:"Nina",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Eles me colocaram no barco e disseram que eu ia ficar curada. Eu nem tava doente. Acho que eles é que estavam."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"lucia",
+        Name:"Nina",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"A tia Lúcia é boazinha. Ela me dá doce sempre que eu fico triste. Por isso eu tento não ficar triste. Assim eu fico livre."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

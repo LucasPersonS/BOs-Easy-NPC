@@ -1,0 +1,43 @@
+{
+  Id:"paravexia:ancoradouro/amaro",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Seu Amaro",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Sementes legítimas de Perfídia, amigo! Plante hoje, cure tudo amanhã. Garantia de vida, ou da morte, o que vier antes."},{Text:"Amuleto contra sussurros! Mapa do tesouro! Tudo original, tudo com desconto pra quem acabou de chegar."}],
+        Buttons:[
+          {Label:"ver_mercadorias",Name:"Ver mercadorias",Actions:[{Type:"OPEN_TRADING_SCREEN"}]},
+          {Label:"legitimas",Name:"São legítimas mesmo?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"legitimas"}]},
+          {Label:"perfidia",Name:"Você já viu a planta?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"perfidia"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"legitimas",
+        Name:"Seu Amaro",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Quase todas. Uma em cada cem, talvez. A graça é descobrir qual. Ninguém nunca reclamou, pelo menos não acordado."}],
+        Buttons:[
+          {Label:"ver_mercadorias",Name:"Ver mercadorias",Actions:[{Type:"OPEN_TRADING_SCREEN"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"perfidia",
+        Name:"Seu Amaro",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Vi uma vez. Numa festa, numa catedral bonita demais. Uma moça me ofereceu. Eu recusei. Até hoje não sei por quê."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

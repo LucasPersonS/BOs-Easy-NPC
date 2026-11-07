@@ -1,0 +1,18 @@
+{
+  Id:"paravexia:ancoradouro/estivador2",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Estivadora",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Contei de novo. Sobrou uma caixa. Sempre sobra uma."},{Text:"O selo é nosso, mas ninguém lembra de ter fechado essa."}],
+        Buttons:[
+          {Label:"sair",Name:"Não atrapalho.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

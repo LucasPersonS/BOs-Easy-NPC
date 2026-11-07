@@ -1,0 +1,53 @@
+{
+  Id:"paravexia:ancoradouro/tito",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Tito Malabares",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Respeitável público! Ou só você. Serve. Quer ouvir uma piada? Ela termina um segundo antes da graça."},{Text:"Já reparou que ninguém lembra em qual navio eu vim? Nem eu! Ha! Essa foi boa. Ou não. Tanto faz."}],
+        Buttons:[
+          {Label:"piada",Name:"Conte a piada.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"piada"}]},
+          {Label:"navio",Name:"De onde você veio?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"navio"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"piada",
+        Name:"Tito Malabares",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Um homem entra numa ilha procurando a cura. A ilha pergunta: cura de quê? E o homem..."}],
+        Buttons:[
+          {Label:"e_ai",Name:"E o homem o quê?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"piada_fim"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"piada_fim",
+        Name:"Tito Malabares",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Ha! Viu? Acabou um segundo antes da graça. A graça é você esperando. É sempre você esperando."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"navio",
+        Name:"Tito Malabares",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"De um lugar onde tudo era engraçado até não ser. Agora eu gravo as risadas, para quando elas acabarem. Sorria!"}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

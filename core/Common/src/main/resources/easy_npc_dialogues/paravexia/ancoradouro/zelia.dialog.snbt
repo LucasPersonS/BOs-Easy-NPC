@@ -1,0 +1,42 @@
+{
+  Id:"paravexia:ancoradouro/zelia",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Dona Zélia",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Comeu hoje, criatura? Não comeu. Tá na cara. Passa na pousada que tem pão."},{Text:"Sopa pros doentes, pão pra todo mundo. Quem trabalha não pergunta de onde vem a farinha."}],
+        Buttons:[
+          {Label:"farinha",Name:"De onde vem a farinha?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"farinha"}]},
+          {Label:"doentes",Name:"Os doentes comem?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"doentes"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"farinha",
+        Name:"Dona Zélia",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Do armazém. Sempre tem. Até quando não devia ter. Eu não pergunto, e você também não devia."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"doentes",
+        Name:"Dona Zélia",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Não comem nada. Mas eu levo a sopa mesmo assim. Um dia alguém acorda com fome, e vai ter sopa quente esperando."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

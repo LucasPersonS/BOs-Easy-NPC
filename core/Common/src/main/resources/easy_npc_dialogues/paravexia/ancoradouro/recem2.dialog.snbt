@@ -1,0 +1,18 @@
+{
+  Id:"paravexia:ancoradouro/recem2",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Expedicionário",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Essa carta é minha passagem de volta. Pelo menos é o que eu repito."},{Text:"Dizem que o bosque chama pelo nome. Ainda bem que ninguém aqui sabe o meu."},{Text:"Vim pelo meu irmão. Ele dorme desde a primavera."}],
+        Buttons:[
+          {Label:"sair",Name:"Boa sorte.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

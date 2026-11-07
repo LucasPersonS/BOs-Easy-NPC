@@ -1,0 +1,99 @@
+{
+  Id:"paravexia:ancoradouro/odete",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Capitã Odete",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Pés em terra firme, @initiator. Aproveite: foi a última coisa firme que esta viagem prometeu."},{Text:"Ainda de pé? Ótimo. O Santa Esperança não volta tão cedo, então trate de se acostumar com o Ancoradouro."}],
+        Buttons:[
+          {Label:"primeiros_passos",Name:"Por onde eu começo?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"passos_1"}]},
+          {Label:"navio",Name:"Quando o navio volta?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"navio"}]},
+          {Label:"cartas",Name:"Quem mandou as cartas?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"cartas"}]},
+          {Label:"bosque",Name:"E aquele bosque?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"bosque"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"passos_1",
+        Name:"Capitã Odete",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Primeiro: arrume onde dormir. A Pousada Lume é quente e a Lúcia não cobra na hora. Isso já devia te preocupar."}],
+        Buttons:[
+          {Label:"continuar",Name:"Continuar",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"passos_2"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"passos_2",
+        Name:"Capitã Odete",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Depois, ferramentas. O Bento troca suprimentos no armazém e o Joaquim conserta o que você quebrar. Vai quebrar."}],
+        Buttons:[
+          {Label:"continuar",Name:"Continuar",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"passos_3"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"passos_3",
+        Name:"Capitã Odete",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Por fim, mapa. A Marina explica os níveis das áreas. Comece pelo bosque, nível zero. E volte antes de escurecer."}],
+        Buttons:[
+          {Label:"entendido",Name:"Entendido, capitã.",Actions:[{Type:"CLOSE_DIALOG"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"navio",
+        Name:"Capitã Odete",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Quando a bússola parar de girar. Desde que avistamos a ilha ela aponta para todos os lados, menos para casa."}],
+        Buttons:[
+          {Label:"bussola",Name:"Isso é normal?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"bussola"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"bussola",
+        Name:"Capitã Odete",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Vinte e dois anos de mar e nunca vi. Os marujos dizem que a ilha não quer que ninguém saia. Eu digo que é ferrugem."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"cartas",
+        Name:"Capitã Odete",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Se eu soubesse, não estaria aqui. Quem pagou a viagem também recebeu uma. Mesma letra. Mesmo papel. Fale com o Ezequiel."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"bosque",
+        Name:"Capitã Odete",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"O Bosque dos Sussurros. Dizem que ele chama você pelo nome. Se ouvir o seu, não responda. Só continue andando."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}
