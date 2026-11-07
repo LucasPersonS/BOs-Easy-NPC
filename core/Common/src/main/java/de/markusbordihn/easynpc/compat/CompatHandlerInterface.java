@@ -32,6 +32,11 @@ public interface CompatHandlerInterface {
   boolean isModLoaded(String modId);
 
   default void register() {
+    CompatConstants.MOD_GECKOLIB_LOADED = this.isModLoaded(CompatConstants.MOD_GECKOLIB_ID);
+    this.logFoundMod(
+        CompatConstants.MOD_GECKOLIB_NAME,
+        CompatConstants.MOD_GECKOLIB_ID,
+        CompatConstants.MOD_GECKOLIB_LOADED);
     CompatConstants.MOD_EPIC_FIGHT_LOADED = this.isModLoaded(CompatConstants.MOD_EPIC_FIGHT_ID);
     this.logFoundMod(
         CompatConstants.MOD_EPIC_FIGHT_NAME,

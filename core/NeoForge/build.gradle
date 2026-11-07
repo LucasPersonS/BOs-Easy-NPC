@@ -8,6 +8,16 @@ plugins {
 
 evaluationDependsOn(':Common')
 
+repositories {
+  maven {
+    name = 'GeckoLib'
+    url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+    content {
+      includeGroup 'software.bernie.geckolib'
+    }
+  }
+}
+
 base {
   archivesName = "${project.mod_id}-neoforge-${project.minecraft_version}"
 }
@@ -89,6 +99,9 @@ dependencies {
   //runtimeOnly "maven.modrinth:cobblemon:${project.neoforge_cobblemon_version}"
   //runtimeOnly "maven.modrinth:kotlin-for-forge:${project.neoforge_kotlin_for_forge_version}"
   //runtimeOnly "maven.modrinth:architectury-api:${project.neoforge_architectury_version}"
+
+  // GeckoLib (optional): renders Paravexia scenes. Only compiled against; the modpack ships it.
+  compileOnly "software.bernie.geckolib:geckolib-neoforge-${project.minecraft_version}:${project.neoforge_geckolib_version}"
 
   // Epic Fight integration
   compileOnly "maven.modrinth:epic-fight:${project.neoforge_epic_fight_version}"

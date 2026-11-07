@@ -1,0 +1,35 @@
+{
+  "title": "Ferreiro",
+  "animation": "idle",
+  "hitbox": [
+    1.6,
+    2.0
+  ],
+  "footprint": [
+    3,
+    3
+  ],
+  "tags": [
+    "vila",
+    "praca",
+    "forja",
+    "trabalho"
+  ],
+  "actors": [
+    {
+      "slot": "actor_a",
+      "skins": [
+        "easy_npc:textures/scene_skins/ferreiro_1.png",
+        "easy_npc:textures/scene_skins/ferreiro_2.png",
+        "easy_npc:textures/scene_skins/ferreiro_3.png",
+        "easy_npc:textures/scene_skins/ferreiro_4.png"
+      ]
+    }
+  ],
+  "lines": [
+    "Cuidado com as faíscas!",
+    "Uma lâmina boa pede paciência... e braço.",
+    "Volte amanhã, o aço ainda está cantando."
+  ],
+  "weight": 10
+}

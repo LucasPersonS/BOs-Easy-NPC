@@ -116,6 +116,7 @@ public class CommandManager {
             .then(StatsCommand.register())
             .then(TestCommand.register())
             .then(TradingCommand.register())
-            .then(de.markusbordihn.easynpc.paravexia.village.VillageCommand.register()));
+            .then(de.markusbordihn.easynpc.paravexia.village.VillageCommand.register())
+            .then(de.markusbordihn.easynpc.paravexia.scene.SceneCommand.register()));
   }
 }

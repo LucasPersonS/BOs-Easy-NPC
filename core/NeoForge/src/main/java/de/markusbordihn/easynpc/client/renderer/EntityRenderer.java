@@ -96,5 +96,9 @@ public class EntityRenderer {
           ModEntityType.getEntityType(EasyModelEntitiesEntityType.EASY_MODEL_NPC),
           context -> new EasyModelNPCRenderer<>(context, ModModelLayers.DOPPLER));
     }
+
+    if (CompatConstants.MOD_GECKOLIB_LOADED) {
+      de.markusbordihn.easynpc.paravexia.scene.client.SceneClientRegistration.registerRenderer(event);
+    }
   }
 }

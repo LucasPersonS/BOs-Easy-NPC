@@ -73,6 +73,10 @@ public class ModEntityType {
       registerEntityTypes(
           EasyModelEntitiesEntityType.values(), EASY_MODEL_ENTITIES_TYPE, "Easy Model Entities");
     }
+    // Scenes render through GeckoLib, so the type only exists when GeckoLib is installed.
+    if (CompatConstants.MOD_GECKOLIB_LOADED) {
+      de.markusbordihn.easynpc.paravexia.scene.SceneRegistration.registerEntityType(ENTITY_TYPES);
+    }
   }
 
   private ModEntityType() {}
