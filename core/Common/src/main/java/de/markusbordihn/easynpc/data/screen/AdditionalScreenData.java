@@ -40,6 +40,9 @@ import net.minecraft.server.level.ServerPlayer;
 
 public class AdditionalScreenData implements AdditionalScreenDataInterface {
 
+  /** True when the NPC also has the other kind of dialogue (quest list vs. its own dialogue). */
+  public static final String WORLD_DIALOG_ALTERNATE_TAG = "WorldDialogAlternate";
+
   private static final String ACTION_EVENT_DATA_TAG = "ActionEventData";
   private static final String ACTION_EVENT_TYPE_TAG = "ActionEventType";
   private static final String DIALOG_DATA_TAG = "DialogData";

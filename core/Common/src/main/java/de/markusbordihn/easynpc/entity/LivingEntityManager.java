@@ -21,6 +21,7 @@ package de.markusbordihn.easynpc.entity;
 
 import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.data.npc.NPCRemovalReason;
+import de.markusbordihn.easynpc.data.dialog.WorldDialogSessionManager;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import de.markusbordihn.easynpc.entity.easynpc.data.ObjectiveDataCapable;
 import de.markusbordihn.easynpc.entity.easynpc.data.OwnerDataCapable;
@@ -164,6 +165,7 @@ public class LivingEntityManager {
 
   public static void removeServerPlayer(ServerPlayer serverPlayer) {
     log.debug("{} [Remove] Server player {}: {}", LOG_PREFIX, serverPlayer, serverPlayer.getUUID());
+    WorldDialogSessionManager.close(serverPlayer, false);
     playerMap.remove(serverPlayer.getUUID());
     playerNameMap.remove(serverPlayer.getName().getString());
 

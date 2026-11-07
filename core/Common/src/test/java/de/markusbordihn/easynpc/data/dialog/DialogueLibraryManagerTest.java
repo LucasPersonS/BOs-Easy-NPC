@@ -2,6 +2,7 @@ package de.markusbordihn.easynpc.data.dialog;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import de.markusbordihn.easynpc.data.action.ActionDataType;
 import java.nio.file.Path;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,18 @@ class DialogueLibraryManagerTest {
   private static final String VALID = """
       {Id:"paravexia:crossroads/intro",DialogData:{Type:"STANDARD",DialogDataSet:[
         {Label:"default",Name:"Intro",Texts:[{Text:"Hello"}]}
+      ]}}
+      """;
+  private static final String MERCHANT = """
+      {Id:"paravexia:merchant",DialogData:{Type:"STANDARD",DialogDataSet:[
+        {Label:"default",Name:"Merchant",Texts:[{Text:"Need something?"}],Buttons:[
+          {Label:"trade",Name:"Show me your wares.",Actions:[{Type:"OPEN_TRADING_SCREEN"}]},
+          {Label:"chat",Name:"Any news?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"news"}]},
+          {Label:"leave",Name:"Goodbye.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]},
+        {Label:"news",Name:"Merchant",Texts:[{Text:"The road is quiet."}],Buttons:[
+          {Label:"back",Name:"Back",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]}
       ]}}
       """;
 
@@ -47,5 +60,24 @@ class DialogueLibraryManagerTest {
     var error = assertThrows(IllegalArgumentException.class, () -> DialogueLibraryManager.parse(
         broken, ResourceLocation.parse("paravexia:broken")));
     assertTrue(error.getMessage().contains("missing dialogue missing"));
+  }
+
+  @Test
+  void merchantLibraryKeepsTradeAndConversationActions() throws Exception {
+    var library =
+        DialogueLibraryManager.parse(
+            MERCHANT, ResourceLocation.parse("easy_npc:fallback_merchant"));
+    var greeting = library.dialogues().getDialog("default");
+
+    assertNotNull(greeting);
+    assertEquals(3, greeting.getDialogButtons().size());
+    assertTrue(
+        greeting.getDialogButtons().stream()
+            .anyMatch(
+                button ->
+                    button
+                        .actionDataSet()
+                        .hasActionDataType(ActionDataType.OPEN_TRADING_SCREEN)));
+    assertTrue(library.dialogues().hasDialog("news"));
   }
 }

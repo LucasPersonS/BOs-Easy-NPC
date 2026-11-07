@@ -139,6 +139,8 @@ tasks.matching { it.name == 'runGameTestServer' }.configureEach {
 }
 
 test {
+  useJUnitPlatform()
+  include '**/*Test.class'
   exclude '**/mixin/**'
 }
 

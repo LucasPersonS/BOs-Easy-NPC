@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc.menu.dialog;
 
 import de.markusbordihn.easynpc.data.screen.AdditionalScreenData;
+import de.markusbordihn.easynpc.data.dialog.QuestDialogBridge;
 import de.markusbordihn.easynpc.data.screen.ScreenData;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import java.util.UUID;
@@ -74,6 +75,17 @@ public class DialogMenuHandler {
     final CompoundTag additionalSyncData = new CompoundTag();
     AdditionalScreenData.addActionEventSet(additionalSyncData, easyNPC);
     AdditionalScreenData.addDialogDataSet(additionalSyncData, easyNPC, serverPlayer);
+    boolean alternate;
+    if (QuestDialogBridge.DIALOG_ID.equals(dialogId)) {
+      var base = AdditionalScreenData.getDialogDataSet(additionalSyncData);
+      alternate = base != null && base.hasDialog();
+      var decorated = QuestDialogBridge.decorate(serverPlayer, npcUUID, base);
+      additionalSyncData.put("DialogData", decorated.createTag());
+    } else {
+      alternate = serverPlayer != null && QuestDialogBridge.available(serverPlayer, npcUUID);
+    }
+    // Lets the in-world dialogue offer "switch to quests / back to the conversation".
+    additionalSyncData.putBoolean(AdditionalScreenData.WORLD_DIALOG_ALTERNATE_TAG, alternate);
 
     return new ScreenData(npcUUID, dialogId, null, null, null, pageIndex, additionalSyncData);
   }

@@ -19,35 +19,75 @@
 
 package de.markusbordihn.easynpc.client;
 
+import de.markusbordihn.easynpc.Constants;
+import de.markusbordihn.easynpc.client.dialog.WorldDialogOverlay;
 import de.markusbordihn.easynpc.client.compat.cobblemon.CobblemonVariantHelper;
 import de.markusbordihn.easynpc.client.renderer.entity.SpeechBubbleFrameRenderer;
 import de.markusbordihn.easynpc.compat.CompatConstants;
 import de.markusbordihn.easynpc.compat.cobblemon.CobblemonLoader;
 import de.markusbordihn.easynpc.compat.easymodelentities.EasyModelEntitiesLoader;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.event.TagsUpdatedEvent;
 
-@EventBusSubscriber(value = Dist.CLIENT)
+@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD, modid = Constants.MOD_ID)
 public class ClientEventHandler {
 
   @SubscribeEvent
   public static void onClientSetup(FMLClientSetupEvent event) {
     event.enqueueWork(() -> ClientEvents.handleClientStartedEvent(Minecraft.getInstance()));
   }
+
+  @SubscribeEvent
+  public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+    event.registerAbove(
+        VanillaGuiLayers.CROSSHAIR,
+        ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "world_dialog"),
+        WorldDialogOverlay::renderHud);
+  }
 }
 
-@EventBusSubscriber(value = Dist.CLIENT)
+@EventBusSubscriber(value = Dist.CLIENT, modid = Constants.MOD_ID)
 class ClientGameEventHandler {
+
+  @SubscribeEvent
+  public static void onClientTickPre(ClientTickEvent.Pre event) {
+    WorldDialogOverlay.preTick();
+  }
 
   @SubscribeEvent
   public static void onClientTick(ClientTickEvent.Post event) {
     ClientEvents.handleClientTickEvent();
+    WorldDialogOverlay.tick();
+  }
+
+  @SubscribeEvent
+  public static void onInteractionKey(InputEvent.InteractionKeyMappingTriggered event) {
+    if (event.isUseItem() && event.getHand() != InteractionHand.MAIN_HAND) {
+      // Vanilla asks once per hand; the main-hand pass already decided.
+      return;
+    }
+    if ((event.isAttack() || event.isUseItem()) && WorldDialogOverlay.click(event.isUseItem())) {
+      event.setSwingHand(false);
+      event.setCanceled(true);
+    }
+  }
+
+  @SubscribeEvent
+  public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
+    if (WorldDialogOverlay.scroll(event.getScrollDeltaY())) {
+      event.setCanceled(true);
+    }
   }
 
   @SubscribeEvent
@@ -62,6 +102,11 @@ class ClientGameEventHandler {
         event.getPoseStack(),
         minecraft.renderBuffers().bufferSource(),
         event.getCamera(),
+        event.getProjectionMatrix(),
+        event.getPartialTick().getGameTimeDeltaPartialTick(false));
+    WorldDialogOverlay.captureView(
+        event.getCamera(),
+        event.getModelViewMatrix(),
         event.getProjectionMatrix(),
         event.getPartialTick().getGameTimeDeltaPartialTick(false));
   }

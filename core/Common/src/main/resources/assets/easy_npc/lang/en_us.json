@@ -1,7 +1,7 @@
 {
   "hades.easy_npc.locked": "Requirements not met",
   "hades.easy_npc.reveal": "Space / click: reveal dialogue",
-  "hades.easy_npc.controls": "Tab: select   Enter: confirm",
+  "hades.easy_npc.controls": "1-3: choose   Tab: select   Enter: confirm",
   "hades.easy_npc.speaking": "NPC speaking",
   "block.easy_npc.boss_spawner": "EasyNPC Boss Spawner",
   "block.easy_npc.default_spawner": "EasyNPC Default Spawner",
@@ -203,5 +203,11 @@
   "tooltip.easy_npc.spawner.default_spawner": "The Default Spawner is a spawner that allows you to spawn a default NPC.",
   "tooltip.easy_npc.spawner.group_spawner": "The Group Spawner is a spawner that allows you to spawn a group of NPCs.",
   "tooltip.easy_npc.spawner.single_spawner": "The Single Spawner is a spawner that allows you to spawn a single NPC.",
-  "tooltip.easy_npc.spawner.world_spawner": "The World Spawner is a group spawner that counts its preset population across the whole world (all dimensions)."
+  "tooltip.easy_npc.spawner.world_spawner": "The World Spawner is a group spawner that counts its preset population across the whole world (all dimensions).",
+  "easy_npc.world_dialog.talk": "Talk",
+  "easy_npc.world_dialog.show_quests": "Quests",
+  "easy_npc.world_dialog.show_dialog": "Conversation",
+  "easy_npc.world_dialog.switch_hint": "Right-click the NPC: %s",
+  "easy_npc.world_dialog.choose_hint": "Keys 1-%s or aim and click",
+  "easy_npc.world_dialog.choose_hint_one": "Key 1 or aim and click"
 }

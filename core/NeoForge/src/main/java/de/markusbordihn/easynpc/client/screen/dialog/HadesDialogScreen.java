@@ -9,6 +9,7 @@ import de.markusbordihn.easynpc.client.screen.components.Text;
 import de.markusbordihn.easynpc.compat.IntegrationRegistry;
 import de.markusbordihn.easynpc.condition.ClientConditionEvaluator;
 import de.markusbordihn.easynpc.config.ClientDialogConfig;
+import de.markusbordihn.easynpc.data.action.ActionDataType;
 import de.markusbordihn.easynpc.data.action.ActionEventType;
 import de.markusbordihn.easynpc.data.dialog.DialogButtonConditionMode;
 import de.markusbordihn.easynpc.data.dialog.DialogButtonEntry;
@@ -35,17 +36,15 @@ import org.lwjgl.glfw.GLFW;
 
 /** Cinematic interaction UI; server-owned dialog actions and locks remain authoritative. */
 public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, AdditionalScreenData> {
-  private static final ResourceLocation DISPLAY_FONT =
-      ResourceLocation.fromNamespaceAndPath("easy_npc", "hades_display");
-  private static final ResourceLocation BODY_FONT =
-      ResourceLocation.fromNamespaceAndPath("easy_npc", "hades_body");
+  private static final ResourceLocation DIALOG_FONT =
+      ResourceLocation.fromNamespaceAndPath("easy_npc", "dtm_sans");
   private static final SoundEvent SPEAK = SoundEvent.createVariableRangeEvent(
       ResourceLocation.fromNamespaceAndPath("easy_npc", "gui.speak"));
   private final List<Choice> choices = new ArrayList<>();
   private final List<Button> controls = new ArrayList<>();
   private List<FormattedCharSequence> lines = List.of();
   private DialogOptionsData options = DialogOptionsData.DEFAULT;
-  private int panelX, panelY, panelWidth, panelHeight, page, linesPerPage, choiceOffset;
+  private int panelX, panelY, panelWidth, panelHeight, page, linesPerPage, choicesPerPage, choiceOffset;
   private long revealStart;
   private int lastRevealed;
   private boolean revealed, opened, closed;
@@ -69,6 +68,7 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
     panelX = geometry.x();
     panelWidth = geometry.width();
     linesPerPage = geometry.linesPerPage();
+    choicesPerPage = geometry.choicesPerPage();
     panelHeight = geometry.height();
     panelY = geometry.y();
     Component text = Component.empty();
@@ -77,7 +77,7 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
           getAdditionalScreenData() != null ? getAdditionalScreenData().getScoreboardData() : null);
       String raw = getDialogData().getDialogText(metadata);
       if (raw != null) text = TextComponent.getText(raw).copy()
-          .withStyle(style -> style.withFont(BODY_FONT));
+          .withStyle(style -> style.withFont(DIALOG_FONT));
     }
     lines = font.split(text, Math.max(40, panelWidth - 36));
     page = Math.min(page, lastPage());
@@ -151,10 +151,11 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
       choice.button.visible = false;
       if (!locked || options.buttonConditionMode() != DialogButtonConditionMode.HIDE) visible.add(choice);
     }
-    choiceOffset = Math.max(0, Math.min(choiceOffset, Math.max(0, visible.size() - 2)));
+    choiceOffset = Math.max(0, Math.min(choiceOffset, Math.max(0, visible.size() - choicesPerPage)));
     boolean done = !typing() && page == lastPage();
-    for (int i = choiceOffset; i < Math.min(visible.size(), choiceOffset + 2); i++) {
+    for (int i = choiceOffset; i < Math.min(visible.size(), choiceOffset + choicesPerPage); i++) {
       Button button = visible.get(i).button;
+      ((CinematicButton) button).choiceNumber = i + 1;
       button.visible = done;
       button.setX(panelX + 10);
       button.setY(panelY + panelHeight + 8 + (i - choiceOffset) * 23);
@@ -170,8 +171,8 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
     less.setY(panelY + panelHeight + 8);
     less.visible = done && choiceOffset > 0;
     more.setX(panelX + panelWidth - 26);
-    more.setY(panelY + panelHeight + 31);
-    more.visible = done && choiceOffset + 2 < visible.size();
+    more.setY(panelY + panelHeight + 8 + (choicesPerPage - 1) * 23);
+    more.visible = done && choiceOffset + choicesPerPage < visible.size();
   }
 
   private boolean unavailable(DialogButtonEntry entry) {
@@ -280,11 +281,11 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
   }
 
   private Component display(Component component) {
-    return component.copy().withStyle(style -> style.withFont(DISPLAY_FONT));
+    return component.copy().withStyle(style -> style.withFont(DIALOG_FONT));
   }
 
   private Component body(Component component) {
-    return component.copy().withStyle(style -> style.withFont(BODY_FONT));
+    return component.copy().withStyle(style -> style.withFont(DIALOG_FONT));
   }
 
   private Component fit(Component component, int maxWidth) {
@@ -340,6 +341,16 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
       else advance();
       return true;
     }
+    if (key >= GLFW.GLFW_KEY_1 && key <= GLFW.GLFW_KEY_9) {
+      int choiceNumber = key - GLFW.GLFW_KEY_0;
+      for (Choice choice : choices) {
+        CinematicButton button = (CinematicButton) choice.button;
+        if (button.visible && button.active && button.choiceNumber == choiceNumber) {
+          button.onPress();
+          return true;
+        }
+      }
+    }
     if (key == GLFW.GLFW_KEY_RIGHT) { advance(); return true; }
     if (key == GLFW.GLFW_KEY_LEFT) { if (page > 0) changePage(-1); return true; }
     return super.keyPressed(key, scan, mods);
@@ -364,8 +375,13 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
     final Button button;
     Choice(DialogButtonEntry entry) {
       this.entry = entry;
-      this.button = new CinematicButton(0, 0, 100,
-          body(TextComponent.getTextComponentRaw(entry.name(), entry.isTranslationKey())), b -> {
+      this.button = new CinematicButton(
+          0,
+          0,
+          100,
+          body(TextComponent.getTextComponentRaw(entry.name(), entry.isTranslationKey())),
+          entry.actionDataSet().hasActionDataType(ActionDataType.OPEN_TRADING_SCREEN),
+          b -> {
             if (typing() || page != lastPage() || unavailable(entry)) return;
             action(ActionEventType.ON_BUTTON_CLICK);
             if (entry.hasActionData()) NetworkMessageHandlerManager.getServerHandler()
@@ -376,18 +392,58 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
   }
 
   private final class CinematicButton extends Button {
+    private final boolean merchantAction;
+    private int choiceNumber;
+
     CinematicButton(int x, int y, int w, Component message, OnPress onPress) {
+      this(x, y, w, message, false, onPress);
+    }
+
+    CinematicButton(
+        int x, int y, int w, Component message, boolean merchantAction, OnPress onPress) {
       super(x, y, w, 20, message, onPress, DEFAULT_NARRATION);
+      this.merchantAction = merchantAction;
     }
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float delta) {
       boolean focus = isHoveredOrFocused();
-      g.fill(getX(), getY(), getX() + getWidth(), getY() + height, focus ? 0xe52b4947 : 0xc80a1419);
+      if (choiceNumber > 0) {
+        g.fill(getX(), getY(), getX() + getWidth(), getY() + height, 0xffd8d1cf);
+        g.fill(
+            getX() + 2,
+            getY() + 2,
+            getX() + getWidth() - 2,
+            getY() + height - 2,
+            focus ? 0xf05b4961 : 0xe531293e);
+      } else {
+        g.fill(
+            getX(),
+            getY(),
+            getX() + getWidth(),
+            getY() + height,
+            focus ? 0xe52b4947 : 0xc80a1419);
+      }
       HadesFrame.line(g, getX() + 5, getY() + height - 1, getX() + getWidth() - 5,
-          getY() + height - 1, focus ? HadesFrame.JADE : 0xff365453);
-      if (getWidth() > 30) HadesFrame.diamond(g, getX() + 8, getY() + 9, 2,
-          active ? HadesFrame.JADE : 0xff657476);
-      int inset = getWidth() > 30 ? 17 : 4;
+          getY() + height - 1,
+          merchantAction ? 0xffd4a853 : focus ? HadesFrame.JADE : 0xff365453);
+      if (choiceNumber > 0) {
+        int marker = merchantAction ? 0xffd4a853 : active ? HadesFrame.JADE : 0xff657476;
+        g.fill(getX() + 7, getY() + 5, getX() + 19, getY() + 16, 0xff171322);
+        g.drawCenteredString(
+            font,
+            body(Component.literal(Integer.toString(choiceNumber))),
+            getX() + 13,
+            getY() + 7,
+            marker);
+      } else if (getWidth() > 30) {
+        HadesFrame.diamond(
+            g,
+            getX() + 8,
+            getY() + 9,
+            2,
+            active ? HadesFrame.JADE : 0xff657476);
+      }
+      int inset = choiceNumber > 0 ? 25 : getWidth() > 30 ? 17 : 4;
       Component label = fit(getMessage(), Math.max(1, getWidth() - inset - 5));
       g.drawString(font, label, getX() + inset, getY() + 6,
           active ? 0xffe5e3d6 : 0xff718080, false);

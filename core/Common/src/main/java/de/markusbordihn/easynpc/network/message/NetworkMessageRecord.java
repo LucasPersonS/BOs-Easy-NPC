@@ -21,6 +21,7 @@ package de.markusbordihn.easynpc.network.message;
 
 import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.data.screen.ScreenData;
+import de.markusbordihn.easynpc.data.dialog.WorldDialogSessionManager;
 import de.markusbordihn.easynpc.entity.LivingEntityManager;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import de.markusbordihn.easynpc.menu.dialog.DialogMenu;
@@ -117,6 +118,10 @@ public interface NetworkMessageRecord extends CustomPacketPayload {
     if (uuid == null || serverPlayer == null) {
       log.warn("Blocked dialog action without valid context from {}", serverPlayer);
       return false;
+    }
+
+    if (WorldDialogSessionManager.isValid(serverPlayer, uuid, dialogId)) {
+      return true;
     }
 
     if (!(serverPlayer.containerMenu instanceof DialogMenu dialogMenu)) {

@@ -19,6 +19,7 @@
 
 package de.markusbordihn.easynpc.server;
 
+import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.compat.CompatConstants;
 import de.markusbordihn.easynpc.compat.cobblemon.CobblemonLoader;
 import de.markusbordihn.easynpc.compat.easymodelentities.EasyModelEntitiesLoader;
@@ -29,7 +30,7 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-@EventBusSubscriber
+@EventBusSubscriber(modid = Constants.MOD_ID)
 public class ServerEventHandler {
 
   private ServerEventHandler() {}

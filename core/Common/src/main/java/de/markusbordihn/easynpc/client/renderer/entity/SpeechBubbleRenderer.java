@@ -312,6 +312,7 @@ public class SpeechBubbleRenderer {
           pose,
           bufferSource.getBuffer(RenderType.textSeeThrough(Constants.TEXTURE_SPEECH_BUBBLE)),
           occludedBodyAlpha,
+          0.0F,
           offsetPixelsX,
           offsetPixelsY);
       drawBubbleText(
@@ -325,11 +326,13 @@ public class SpeechBubbleRenderer {
     }
 
     if (occlusionMode != OcclusionMode.ALWAYS) {
+      // Body and text share the plane z = 0; the body never writes depth, so they cannot fight.
       drawBubbleBody(
           speechBubbleInstance,
           pose,
-          bufferSource.getBuffer(RenderType.text(Constants.TEXTURE_SPEECH_BUBBLE)),
+          bufferSource.getBuffer(SpeechBubbleRenderTypes.body()),
           textAlpha,
+          0.0F,
           offsetPixelsX,
           offsetPixelsY);
       drawBubbleText(
@@ -338,6 +341,14 @@ public class SpeechBubbleRenderer {
           bufferSource,
           Font.DisplayMode.NORMAL,
           textAlpha,
+          offsetPixelsX,
+          offsetPixelsY);
+      drawBubbleBody(
+          speechBubbleInstance,
+          pose,
+          bufferSource.getBuffer(SpeechBubbleRenderTypes.silhouette()),
+          FULLY_VISIBLE_ALPHA,
+          0.0F,
           offsetPixelsX,
           offsetPixelsY);
     }
@@ -363,6 +374,7 @@ public class SpeechBubbleRenderer {
         pose,
         bufferSource.getBuffer(bodyRenderType),
         textAlpha,
+        BUBBLE_DEPTH_BEHIND_TEXT,
         offsetPixelsX,
         offsetPixelsY);
 
@@ -373,6 +385,7 @@ public class SpeechBubbleRenderer {
           pose,
           bufferSource.getBuffer(SpeechBubbleRenderTypes.occluded()),
           occludedBodyAlpha,
+          BUBBLE_DEPTH_BEHIND_TEXT,
           offsetPixelsX,
           offsetPixelsY);
       drawBubbleText(
@@ -408,6 +421,7 @@ public class SpeechBubbleRenderer {
       Matrix4f pose,
       VertexConsumer bubbleConsumer,
       int bodyAlpha,
+      float depth,
       float offsetPixelsX,
       float offsetPixelsY) {
     float bubbleWidth = speechBubbleInstance.bubbleWidthPixels();
@@ -426,12 +440,20 @@ public class SpeechBubbleRenderer {
         bubbleWidth,
         bubbleHeight,
         packedLight,
-        bodyAlpha);
+        bodyAlpha,
+        depth);
     if (speechBubbleInstance.lateralProgress() < LATERAL_TAIL_THRESHOLD) {
       renderBubbleTail(
-          pose, bubbleConsumer, bubbleCenterX, bubbleTop + bubbleHeight, packedLight, bodyAlpha);
+          pose,
+          bubbleConsumer,
+          bubbleCenterX,
+          bubbleTop + bubbleHeight,
+          packedLight,
+          bodyAlpha,
+          depth);
     } else {
-      renderSideBubbleTail(pose, bubbleConsumer, bubbleLeft, bubbleCenterY, packedLight, bodyAlpha);
+      renderSideBubbleTail(
+          pose, bubbleConsumer, bubbleLeft, bubbleCenterY, packedLight, bodyAlpha, depth);
     }
   }
 
@@ -488,7 +510,8 @@ public class SpeechBubbleRenderer {
       float width,
       float height,
       int packedLight,
-      int alpha) {
+      int alpha,
+      float depth) {
     float[] columns = {left, left + BODY_BORDER, left + width - BODY_BORDER, left + width};
     float[] rows = {top, top + BODY_BORDER, top + height - BODY_BORDER, top + height};
     float[] sharedAxisTexture = {0.0F, BODY_BORDER, BODY_SIZE - BODY_BORDER, BODY_SIZE};
@@ -507,7 +530,8 @@ public class SpeechBubbleRenderer {
             sharedAxisTexture[column + 1],
             sharedAxisTexture[row + 1],
             packedLight,
-            alpha);
+            alpha,
+            depth);
       }
     }
   }
@@ -518,7 +542,8 @@ public class SpeechBubbleRenderer {
       float centerX,
       float top,
       int packedLight,
-      int alpha) {
+      int alpha,
+      float depth) {
     quad(
         pose,
         consumer,
@@ -531,7 +556,8 @@ public class SpeechBubbleRenderer {
         TAIL_U + TAIL_WIDTH,
         TAIL_HEIGHT,
         packedLight,
-        alpha);
+            alpha,
+            depth);
   }
 
   private static void renderSideBubbleTail(
@@ -540,7 +566,8 @@ public class SpeechBubbleRenderer {
       float right,
       float centerY,
       int packedLight,
-      int alpha) {
+      int alpha,
+      float depth) {
     float left = right - SIDE_TAIL_WIDTH;
     float top = centerY - SIDE_TAIL_HEIGHT / 2.0F;
     float bottom = centerY + SIDE_TAIL_HEIGHT / 2.0F;
@@ -548,10 +575,10 @@ public class SpeechBubbleRenderer {
     float u1 = (TAIL_U + TAIL_WIDTH) / TEXTURE_SIZE;
     float v = TAIL_HEIGHT / TEXTURE_SIZE;
 
-    vertex(pose, consumer, left, top, u0, v, packedLight, alpha);
-    vertex(pose, consumer, left, bottom, u1, v, packedLight, alpha);
-    vertex(pose, consumer, right, bottom, u1, 0.0F, packedLight, alpha);
-    vertex(pose, consumer, right, top, u0, 0.0F, packedLight, alpha);
+    vertex(pose, consumer, left, top, u0, v, packedLight, alpha, depth);
+    vertex(pose, consumer, left, bottom, u1, v, packedLight, alpha, depth);
+    vertex(pose, consumer, right, bottom, u1, 0.0F, packedLight, alpha, depth);
+    vertex(pose, consumer, right, top, u0, 0.0F, packedLight, alpha, depth);
   }
 
   private static void quad(
@@ -566,17 +593,18 @@ public class SpeechBubbleRenderer {
       float textureX1,
       float textureY1,
       int packedLight,
-      int alpha) {
+      int alpha,
+      float depth) {
     float u0 = textureX0 / TEXTURE_SIZE;
     float v0 = textureY0 / TEXTURE_SIZE;
     float u1 = textureX1 / TEXTURE_SIZE;
     float v1 = textureY1 / TEXTURE_SIZE;
 
     // Same vertex order as BakedGlyph, so the quad faces the camera like the text does.
-    vertex(pose, consumer, x0, y0, u0, v0, packedLight, alpha);
-    vertex(pose, consumer, x0, y1, u0, v1, packedLight, alpha);
-    vertex(pose, consumer, x1, y1, u1, v1, packedLight, alpha);
-    vertex(pose, consumer, x1, y0, u1, v0, packedLight, alpha);
+    vertex(pose, consumer, x0, y0, u0, v0, packedLight, alpha, depth);
+    vertex(pose, consumer, x0, y1, u0, v1, packedLight, alpha, depth);
+    vertex(pose, consumer, x1, y1, u1, v1, packedLight, alpha, depth);
+    vertex(pose, consumer, x1, y0, u1, v0, packedLight, alpha, depth);
   }
 
   private static void vertex(
@@ -587,9 +615,10 @@ public class SpeechBubbleRenderer {
       float u,
       float v,
       int packedLight,
-      int alpha) {
+      int alpha,
+      float depth) {
     consumer
-        .addVertex(pose, x, y, BUBBLE_DEPTH_BEHIND_TEXT)
+        .addVertex(pose, x, y, depth)
         .setColor(255, 255, 255, alpha)
         .setUv(u, v)
         .setLight(packedLight);

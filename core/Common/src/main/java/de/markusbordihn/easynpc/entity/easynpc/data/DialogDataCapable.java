@@ -24,6 +24,7 @@ import de.markusbordihn.easynpc.data.dialog.DialogButtonEntry;
 import de.markusbordihn.easynpc.data.dialog.DialogDataEntry;
 import de.markusbordihn.easynpc.data.dialog.DialogDataSet;
 import de.markusbordihn.easynpc.data.dialog.DialogType;
+import de.markusbordihn.easynpc.data.dialog.WorldDialogSessionManager;
 import de.markusbordihn.easynpc.data.server.ServerDataAccessor;
 import de.markusbordihn.easynpc.data.server.ServerDataIndex;
 import de.markusbordihn.easynpc.data.server.ServerEntityData;
@@ -106,7 +107,12 @@ public interface DialogDataCapable<T extends Mob> extends EasyNPC<T> {
     if (dialog != null) {
       getDialogDataSet().recordDialogExecution(dialog, serverPlayer, this.getLivingEntity());
     }
-    MenuManager.getMenuHandler().openDialogMenu(serverPlayer, this, dialogId, 0);
+    if (WorldDialogSessionManager.hasSession(serverPlayer, this.getEntityUUID())
+        || WorldDialogSessionManager.consumeRequestedOpen(serverPlayer, this.getEntityUUID())) {
+      WorldDialogSessionManager.open(serverPlayer, this, dialogId, 0);
+    } else {
+      MenuManager.getMenuHandler().openDialogMenu(serverPlayer, this, dialogId, 0);
+    }
     this.playDefaultSoundIfAvailable(SoundType.DIALOG_OPEN);
     EasyNPCEventRegistry.fireDialogOpened(this, serverPlayer, dialog);
   }

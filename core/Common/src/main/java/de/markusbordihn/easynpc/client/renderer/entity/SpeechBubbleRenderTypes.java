@@ -50,12 +50,14 @@ public class SpeechBubbleRenderTypes extends RenderType {
             RENDERTYPE_TEXT_SHADER.setupRenderState();
             TRANSLUCENT_TRANSPARENCY.setupRenderState();
             GREATER_DEPTH_TEST.setupRenderState();
+            NO_CULL.setupRenderState();
             LIGHTMAP.setupRenderState();
             COLOR_WRITE.setupRenderState();
           },
           () -> {
             COLOR_WRITE.clearRenderState();
             LIGHTMAP.clearRenderState();
+            NO_CULL.clearRenderState();
             GREATER_DEPTH_TEST.clearRenderState();
             TRANSLUCENT_TRANSPARENCY.clearRenderState();
             RENDERTYPE_TEXT_SHADER.clearRenderState();
@@ -75,10 +77,76 @@ public class SpeechBubbleRenderTypes extends RenderType {
             RENDERTYPE_TEXT_SHADER.setupRenderState();
             NO_TRANSPARENCY.setupRenderState();
             LEQUAL_DEPTH_TEST.setupRenderState();
+            NO_CULL.setupRenderState();
             LIGHTMAP.setupRenderState();
+            COLOR_DEPTH_WRITE.setupRenderState();
           },
           () -> {
+            COLOR_DEPTH_WRITE.clearRenderState();
             LIGHTMAP.clearRenderState();
+            NO_CULL.clearRenderState();
+            LEQUAL_DEPTH_TEST.clearRenderState();
+            NO_TRANSPARENCY.clearRenderState();
+            RENDERTYPE_TEXT_SHADER.clearRenderState();
+            SPEECH_BUBBLE_TEXTURE.clearRenderState();
+          });
+
+  /**
+   * Visible body for the vanilla (non-shader) path: depth-tested against the world but never writes
+   * depth, so the text drawn on the same plane cannot z-fight with it at any distance.
+   */
+  private static final RenderType BODY =
+      new SpeechBubbleRenderTypes(
+          Constants.MOD_ID + ":speech_bubble_body",
+          DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
+          VertexFormat.Mode.QUADS,
+          BUFFER_SIZE,
+          false,
+          false,
+          () -> {
+            SPEECH_BUBBLE_TEXTURE.setupRenderState();
+            RENDERTYPE_TEXT_SHADER.setupRenderState();
+            TRANSLUCENT_TRANSPARENCY.setupRenderState();
+            LEQUAL_DEPTH_TEST.setupRenderState();
+            NO_CULL.setupRenderState();
+            LIGHTMAP.setupRenderState();
+            COLOR_WRITE.setupRenderState();
+          },
+          () -> {
+            COLOR_WRITE.clearRenderState();
+            LIGHTMAP.clearRenderState();
+            NO_CULL.clearRenderState();
+            LEQUAL_DEPTH_TEST.clearRenderState();
+            TRANSLUCENT_TRANSPARENCY.clearRenderState();
+            RENDERTYPE_TEXT_SHADER.clearRenderState();
+            SPEECH_BUBBLE_TEXTURE.clearRenderState();
+          });
+
+  /**
+   * Depth-only silhouette written after the text, so translucents rendered later (water,
+   * particles) stay behind the bubble. The text shader discards the transparent tail pixels.
+   */
+  private static final RenderType SILHOUETTE =
+      new SpeechBubbleRenderTypes(
+          Constants.MOD_ID + ":speech_bubble_silhouette",
+          DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
+          VertexFormat.Mode.QUADS,
+          BUFFER_SIZE,
+          false,
+          false,
+          () -> {
+            SPEECH_BUBBLE_TEXTURE.setupRenderState();
+            RENDERTYPE_TEXT_SHADER.setupRenderState();
+            NO_TRANSPARENCY.setupRenderState();
+            LEQUAL_DEPTH_TEST.setupRenderState();
+            NO_CULL.setupRenderState();
+            LIGHTMAP.setupRenderState();
+            DEPTH_WRITE.setupRenderState();
+          },
+          () -> {
+            DEPTH_WRITE.clearRenderState();
+            LIGHTMAP.clearRenderState();
+            NO_CULL.clearRenderState();
             LEQUAL_DEPTH_TEST.clearRenderState();
             NO_TRANSPARENCY.clearRenderState();
             RENDERTYPE_TEXT_SHADER.clearRenderState();
@@ -105,6 +173,14 @@ public class SpeechBubbleRenderTypes extends RenderType {
     return OPAQUE_BODY;
   }
 
+  public static RenderType body() {
+    return BODY;
+  }
+
+  public static RenderType silhouette() {
+    return SILHOUETTE;
+  }
+
   public static MultiBufferSource opaqueTextBufferSource(MultiBufferSource bufferSource) {
     return renderType -> bufferSource.getBuffer(opaqueText(renderType));
   }
@@ -123,8 +199,10 @@ public class SpeechBubbleRenderTypes extends RenderType {
                 () -> {
                   sourceRenderType.setupRenderState();
                   NO_TRANSPARENCY.setupRenderState();
+                  POLYGON_OFFSET_LAYERING.setupRenderState();
                 },
                 () -> {
+                  POLYGON_OFFSET_LAYERING.clearRenderState();
                   NO_TRANSPARENCY.clearRenderState();
                   sourceRenderType.clearRenderState();
                 }));

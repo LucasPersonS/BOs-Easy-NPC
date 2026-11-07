@@ -83,6 +83,7 @@ public class ServerEvents {
     OwnerLoginRestoreHandler.handleServerTick(minecraftServer);
     EnvironmentChangeTracker.handleServerTick(minecraftServer);
     PlayerIdleTracker.handleServerTick(minecraftServer);
+    de.markusbordihn.easynpc.data.dialog.WorldDialogSessionManager.tick(minecraftServer);
   }
 
   public static void handleServerStopping(MinecraftServer minecraftServer) {

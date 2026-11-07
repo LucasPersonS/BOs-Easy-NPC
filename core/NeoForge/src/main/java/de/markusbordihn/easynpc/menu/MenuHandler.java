@@ -26,6 +26,15 @@ public class MenuHandler implements MenuHandlerInterface {
 
   public MenuHandler() {}
 
+  /** Direct clicks use the same Hades presentation as proximity-opened dialogue. */
+  @Override
+  public void openDialogMenu(net.minecraft.server.level.ServerPlayer player,
+      de.markusbordihn.easynpc.entity.easynpc.EasyNPC<?> npc, java.util.UUID dialogId,
+      int pageIndex) {
+    de.markusbordihn.easynpc.data.dialog.WorldDialogSessionManager.open(
+        player, npc, dialogId, pageIndex);
+  }
+
   @Override
   public MenuType<? extends DialogMenu> getDialogMenuType() {
     return ModMenuTypes.DIALOG_MENU.get();
