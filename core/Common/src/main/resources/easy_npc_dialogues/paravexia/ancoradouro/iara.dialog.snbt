@@ -1,0 +1,65 @@
+{
+  Id:"paravexia:ancoradouro/iara",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Profª Iara",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Ah, um explorador. Excelente. Encontrou alguma planta incomum no bosque, @initiator? Qualquer coisa me interessa."},{Text:"Ciência, não superstição. A Perfídia é uma planta, e plantas podem ser estudadas. E patenteadas."}],
+        Buttons:[
+          {Label:"quem",Name:"Quem financia você?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"quem"}]},
+          {Label:"bosque",Name:"O que achou no bosque?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"bosque"}]},
+          {Label:"perfidia",Name:"A Perfídia existe?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"perfidia"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"quem",
+        Name:"Profª Iara",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Uma farmacêutica muito interessada em curas. E em ser a primeira a vendê-las. Não me olhe assim, alguém tem que pagar."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"bosque",
+        Name:"Profª Iara",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Folhas que mudam de cor quando você fala perto delas. Sério. Anotei tudo. Só não entro além da orla. Ainda."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"perfidia",
+        Name:"Profª Iara",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Todos os registros apontam para o mesmo lugar: festas, música e uma mulher que oferece exatamente o que você quer."}],
+        Buttons:[
+          {Label:"mulher",Name:"Uma mulher?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"mulher"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"mulher",
+        Name:"Profª Iara",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Superstição, provavelmente. Mas se você a encontrar, peça uma amostra. Para a ciência. E me traga."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

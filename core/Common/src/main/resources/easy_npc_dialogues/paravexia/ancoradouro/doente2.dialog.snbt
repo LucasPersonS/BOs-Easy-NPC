@@ -1,0 +1,18 @@
+{
+  Id:"paravexia:ancoradouro/doente2",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Doente da travessia",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"...a catedral... é bonita... tão bonita..."},{Text:"...Samuel... volta..."}],
+        Buttons:[
+          {Label:"sair",Name:"Descanse.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

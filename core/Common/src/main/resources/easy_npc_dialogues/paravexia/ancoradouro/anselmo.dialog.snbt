@@ -1,0 +1,54 @@
+{
+  Id:"paravexia:ancoradouro/anselmo",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Vovô Anselmo",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"O mar tá calmo hoje. Isso nunca é bom sinal."},{Text:"Senta aqui, menino. Ninguém tem pressa no fim das coisas."}],
+        Buttons:[
+          {Label:"quando",Name:"Quando o senhor chegou?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"quando"}]},
+          {Label:"chora",Name:"Por que o senhor chora?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"chora"}]},
+          {Label:"vesperae",Name:"O que tem ao norte?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"vesperae"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"quando",
+        Name:"Vovô Anselmo",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Antes de todos. Ou depois. Eu lembro de pescar aqui quando ainda não existia cais. Ninguém lembra de mim chegando."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"chora",
+        Name:"Vovô Anselmo",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Pelo dia de hoje, que vai embora. Pelo de amanhã, que vai ser igual. É um choro bom, acredite. É de verdade."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"vesperae",
+        Name:"Vovô Anselmo",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Vésperae. Um vilarejo onde o amanhã é igual ao hoje, e as pessoas agradecem por isso. Eu quase fiquei lá."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

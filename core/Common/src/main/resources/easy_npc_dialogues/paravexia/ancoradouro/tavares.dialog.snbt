@@ -1,0 +1,54 @@
+{
+  Id:"paravexia:ancoradouro/tavares",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Sargento Tavares",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Novato. Ótimo. Mais um pra eu contar na volta. Ou não contar."},{Text:"Fique dentro da vila depois que escurecer. Não é um conselho, @initiator."}],
+        Buttons:[
+          {Label:"perigos",Name:"Que perigos existem?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"perigos"}]},
+          {Label:"leste",Name:"O que tem a leste?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"leste"}]},
+          {Label:"noite",Name:"Por que não à noite?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"noite"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"perigos",
+        Name:"Sargento Tavares",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"No bosque, pouca coisa. Fora dele, criaturas sem pele, que só sabem morder. Elas não recuam. Você deveria."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"leste",
+        Name:"Sargento Tavares",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"O Santuário Ita-Karu. Uma tribo. Não negociam, não conversam, não perdoam. Se ouvir tambores, volte."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"noite",
+        Name:"Sargento Tavares",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Porque de dia o bosque sussurra. De noite ele responde. Já perdi dois homens assim. Não vou perder um novato."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

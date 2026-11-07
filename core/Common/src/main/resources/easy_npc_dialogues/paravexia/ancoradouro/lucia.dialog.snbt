@@ -1,0 +1,66 @@
+{
+  Id:"paravexia:ancoradouro/lucia",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Lúcia Dorneles",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Entra, @initiator. Tem sopa quente, cama limpa e ninguém aqui vai te apressar."},{Text:"Você parece cansado. Senta um pouco. Depois a gente acerta, não se preocupe com isso agora."}],
+        Buttons:[
+          {Label:"ver_mercadorias",Name:"Ver mercadorias",Actions:[{Type:"OPEN_TRADING_SCREEN"}]},
+          {Label:"preco",Name:"Quanto custa a estadia?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"preco"}]},
+          {Label:"hospedes",Name:"Seus hóspedes não saem?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"hospedes"}]},
+          {Label:"desejo",Name:"Como sabe meu nome?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"desejo"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"preco",
+        Name:"Lúcia Dorneles",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Custa pouco. Quase nada, para quem chegou de tão longe. Depois a gente acerta. Sempre acerta."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"hospedes",
+        Name:"Lúcia Dorneles",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Saem quando quiserem. Mas por que iriam? Aqui ninguém sente fome, nem frio, nem saudade. Pergunte a eles."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"desejo",
+        Name:"Lúcia Dorneles",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Eu lembro do nome de todo mundo. E do que cada um mais deseja. É um dom bobo. Você, por exemplo, quer voltar."}],
+        Buttons:[
+          {Label:"querem_voltar",Name:"Todos querem voltar.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"voltar"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"voltar",
+        Name:"Lúcia Dorneles",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Não todos. Alguns só querem parar de sofrer. E isso, @initiator, eu posso oferecer agora mesmo."}],
+        Buttons:[
+          {Label:"nao",Name:"Agora não.",Actions:[{Type:"CLOSE_DIALOG"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      }
+    ]
+  }
+}

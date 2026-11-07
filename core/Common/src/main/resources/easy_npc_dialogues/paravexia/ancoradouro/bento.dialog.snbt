@@ -1,0 +1,54 @@
+{
+  Id:"paravexia:ancoradouro/bento",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Bento Arruda",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Nome, motivo da viagem e o que pretende levar. É só para a prestação de contas, @initiator."},{Text:"Suprimentos da expedição. Comida, tochas, ferramentas. Tudo anotado, tudo pago."}],
+        Buttons:[
+          {Label:"ver_mercadorias",Name:"Ver mercadorias",Actions:[{Type:"OPEN_TRADING_SCREEN"}]},
+          {Label:"contas",Name:"Prestação de contas a quem?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"contas"}]},
+          {Label:"caixa",Name:"Falta alguma coisa aqui?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"caixa"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"contas",
+        Name:"Bento Arruda",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"A quem financiou a viagem, claro. O nome está no contrato. Que eu... deixei no navio. Mais alguma pergunta?"}],
+        Buttons:[
+          {Label:"ver_mercadorias",Name:"Ver mercadorias",Actions:[{Type:"OPEN_TRADING_SCREEN"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"caixa",
+        Name:"Bento Arruda",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Faltar, não. Sobrar. Toda manhã aparece uma caixa a mais, com o nosso selo. Ninguém lembra de ter trazido."}],
+        Buttons:[
+          {Label:"dentro",Name:"E o que tem dentro?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"dentro"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"dentro",
+        Name:"Bento Arruda",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Papel em branco. Pilhas e pilhas de papel em branco. Igual ao das cartas. Eu guardo, por via das dúvidas."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

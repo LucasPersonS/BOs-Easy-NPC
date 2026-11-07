@@ -1,0 +1,18 @@
+{
+  Id:"paravexia:ancoradouro/recem1",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Expedicionária",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Acabei de descer. Alguém sabe onde fica a pousada?"},{Text:"O chão ainda balança, ou sou eu?"},{Text:"Minha carta dizia para procurar a planta perto de um sino. Você ouviu algum sino?"}],
+        Buttons:[
+          {Label:"sair",Name:"Boa sorte.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

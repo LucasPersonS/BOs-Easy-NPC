@@ -1,0 +1,65 @@
+{
+  Id:"paravexia:ancoradouro/ezequiel",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Ezequiel",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Nenhuma carta para você hoje. Ainda."},{Text:"Chegaram doze esta manhã. Nenhum barco. Como sempre."}],
+        Buttons:[
+          {Label:"cartas",Name:"De onde vêm as cartas?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"cartas"}]},
+          {Label:"abrir",Name:"Você já abriu alguma?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"abrir"}]},
+          {Label:"minha",Name:"Tem alguma com meu nome?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"minha"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"cartas",
+        Name:"Ezequiel",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Aparecem no balcão antes do sol. Sempre a mesma letra, o mesmo papel. Às vezes para gente que ainda nem desembarcou."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"abrir",
+        Name:"Ezequiel",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Não são para mim. Quando for a minha vez, eu saberei. Até lá, só entrego."}],
+        Buttons:[
+          {Label:"vez",Name:"Sua vez de quê?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"vez"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"vez",
+        Name:"Ezequiel",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"De ir embora, eu acho. Ou de ficar para sempre. Nas cartas, as duas coisas parecem muito com a mesma."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"minha",
+        Name:"Ezequiel",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Não. Mas guardei um envelope em branco com o seu formato. Volte amanhã, @initiator. Ou depois."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

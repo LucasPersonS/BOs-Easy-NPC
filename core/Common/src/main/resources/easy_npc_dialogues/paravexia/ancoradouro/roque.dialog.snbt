@@ -1,0 +1,42 @@
+{
+  Id:"paravexia:ancoradouro/roque",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Roque",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Madeira boa, essa do bosque. Pena que eu só corto a primeira fileira."},{Text:"Ei. Se você entrar lá, não acredite em quem te chamar. Eu não acredito mais."}],
+        Buttons:[
+          {Label:"fileira",Name:"Por que só a primeira?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"fileira"}]},
+          {Label:"voz",Name:"Quem te chama?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"voz"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"fileira",
+        Name:"Roque",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Porque depois dela as árvores começam a sussurrar. E não é vento, @initiator. Vento não sabe o seu nome."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"voz",
+        Name:"Roque",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"A minha mulher. Ela ficou em casa, do outro lado do mar. Mas no bosque ela me chama, toda tarde, bem baixinho."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

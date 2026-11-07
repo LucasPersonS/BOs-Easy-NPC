@@ -1,0 +1,18 @@
+{
+  Id:"paravexia:ancoradouro/ouvinte",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Leitora do mural",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Todo dia eu leio as cartas novas. Um dia vai ter uma com meu nome."},{Text:"Essa aqui é para alguém que chega amanhã. Estranho, né?"}],
+        Buttons:[
+          {Label:"sair",Name:"Boa sorte.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

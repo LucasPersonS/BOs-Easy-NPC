@@ -1,0 +1,18 @@
+{
+  Id:"paravexia:ancoradouro/estivador1",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Estivador",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Caixa pra cá, caixa pra lá. A ilha não paga melhor que o porto."},{Text:"Cuidado aí, essa é pesada. Ou leve. Depende do dia."}],
+        Buttons:[
+          {Label:"sair",Name:"Não atrapalho.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

@@ -82,3 +82,11 @@ Condições, limites de execução, transições e recompensas continuam validad
 afastar-se, perder a linha de visão ou abrir outra tela, a sessão flutuante é encerrada. Para evitar
 que ela reabra imediatamente, o mesmo NPC só volta a iniciar o diálogo depois que o jogador sair da
 área e se aproximar novamente.
+
+## Bibliotecas embutidas no jar
+
+O jar também traz bibliotecas prontas em `easy_npc_dialogues/` (listadas em
+`easy_npc_dialogues/index.txt`), como as do vilarejo inicial (`paravexia:ancoradouro/<morador>`).
+Elas carregam sozinhas, sem copiar arquivos. Para editar uma, crie em
+`config/easy_npc/dialogues/` um arquivo com o mesmo `Id`: o arquivo da pasta substitui o embutido
+depois de `/easy_npc dialog library reload`.

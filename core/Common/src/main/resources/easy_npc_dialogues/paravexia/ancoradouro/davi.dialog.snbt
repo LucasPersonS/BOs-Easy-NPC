@@ -1,0 +1,42 @@
+{
+  Id:"paravexia:ancoradouro/davi",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Davi",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Você viu meu martelo? Não, espera, tá aqui. Você vai pro bosque? Me leva junto um dia!"},{Text:"Um dia eu vou ser herói, sabia? O Joaquim diz que primeiro eu tenho que aprender a não queimar a mão."}],
+        Buttons:[
+          {Label:"heroi",Name:"Herói de quê?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"heroi"}]},
+          {Label:"recado",Name:"Precisa de ajuda?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"recado"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"heroi",
+        Name:"Davi",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"De tudo! Vou achar a Perfídia, curar o filho do Joaquim, enfrentar as feras de pele nenhuma do Sargento. Nessa ordem."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"recado",
+        Name:"Davi",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Sempre! Levo recado da forja pro armazém o dia todo. Se quiser ajudar, pergunta pro Bento se a caixa nova chegou."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}

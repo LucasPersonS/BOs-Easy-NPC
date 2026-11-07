@@ -1,0 +1,76 @@
+{
+  Id:"paravexia:ancoradouro/helena",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Dra. Helena",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Fale baixo, por favor. Eles não acordam, mas às vezes parece que estão ouvindo."},{Text:"Se você sente sono demais, cansaço que não passa, me procure. Cedo. Por favor."}],
+        Buttons:[
+          {Label:"doenca",Name:"O que é essa doença?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"doenca"}]},
+          {Label:"murmurios",Name:"Eles falam dormindo?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"murmurios"}]},
+          {Label:"ervas",Name:"Precisa de ajuda?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"ervas"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"doenca",
+        Name:"Dra. Helena",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Febre, cansaço, e depois o sono que não termina. O coração bate, a respiração segue. A pessoa só... não volta."}],
+        Buttons:[
+          {Label:"cura",Name:"A Perfídia cura isso?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"cura"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"cura",
+        Name:"Dra. Helena",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Dizem que cura qualquer coisa. Sou médica, @initiator. Tudo que cura qualquer coisa costuma cobrar alguma coisa."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"murmurios",
+        Name:"Dra. Helena",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Todos dizem as mesmas palavras. Uma catedral. Um sino. E nomes, cinco nomes. Gente que nunca conheceram."}],
+        Buttons:[
+          {Label:"nomes",Name:"Que nomes?",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"nomes"}]},
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]}
+        ]
+      },
+      {
+        Label:"nomes",
+        Name:"Dra. Helena",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Anoto todos, mas a tinta some do caderno pela manhã. Só fica um: Samuel. Esse nunca some."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      },
+      {
+        Label:"ervas",
+        Name:"Dra. Helena",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"Ervas do bosque, amostras de qualquer planta estranha. Traga o que encontrar. Pago bem, e não pergunto onde achou."}],
+        Buttons:[
+          {Label:"voltar",Name:"Tenho outra pergunta.",Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]},
+          {Label:"sair",Name:"Até mais.",Actions:[{Type:"CLOSE_DIALOG"}]}
+        ]
+      }
+    ]
+  }
+}
