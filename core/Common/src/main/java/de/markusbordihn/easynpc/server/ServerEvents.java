@@ -79,6 +79,7 @@ public class ServerEvents {
     log.info("{} Server started Events ...", Constants.LOG_REGISTER_PREFIX);
 
     NPCEntityManager.ensureInitialized(minecraftServer);
+    de.markusbordihn.easynpc.paravexia.village.VillageRuntime.start(minecraftServer);
   }
 
   public static void handleServerTick(MinecraftServer minecraftServer) {
@@ -94,6 +95,7 @@ public class ServerEvents {
     PlayerIdleTracker.handleServerTick(minecraftServer);
     VisibilityConditionTracker.handleServerTick(minecraftServer);
     de.markusbordihn.easynpc.data.dialog.WorldDialogSessionManager.tick(minecraftServer);
+    de.markusbordihn.easynpc.paravexia.village.VillageRuntime.tick(minecraftServer);
   }
 
   public static void handleServerStopping(MinecraftServer minecraftServer) {
@@ -111,6 +113,7 @@ public class ServerEvents {
     PauseManager.reset();
     PlayerIdleTracker.reset();
     VisibilityConditionTracker.reset();
+    de.markusbordihn.easynpc.paravexia.village.VillageRuntime.stop();
     PresetReference.clearCache();
 
     log.info(

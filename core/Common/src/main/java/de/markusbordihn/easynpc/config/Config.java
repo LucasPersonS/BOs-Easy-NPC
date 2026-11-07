@@ -59,6 +59,7 @@ public class Config {
     SecurityConfig.registerConfig();
     SpawnerTypeConfig.registerConfig();
     StorageConfig.registerConfig();
+    de.markusbordihn.easynpc.paravexia.village.VillageConfig.registerConfig();
   }
 
   public static void registerClientConfig() {
