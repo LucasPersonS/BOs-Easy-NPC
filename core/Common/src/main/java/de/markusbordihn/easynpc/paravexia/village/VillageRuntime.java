@@ -61,6 +61,7 @@ public final class VillageRuntime {
     server = minecraftServer;
     reset();
     budgetGuard = new NpcBudgetGuard(VillageConfig.budgetSettings());
+    VillageCommand.ensureVillageDirectory();
     VillageSavedData data = VillageSavedData.get(minecraftServer);
     for (VillageSavedData.Village village : data.villages()) {
       queueMissingSpawns(village);

@@ -46,6 +46,9 @@ public final class VillageCommand extends Command {
                   .map(data -> data.villages().stream().map(village -> village.spec().id()).toList())
                   .orElse(java.util.List.of()),
               builder);
+  // Lists config/easy_npc/villages/*.json so staff can Tab-complete the file to import.
+  private static final SuggestionProvider<CommandSourceStack> FILES =
+      (context, builder) -> SharedSuggestionProvider.suggest(listVillageFiles(), builder);
   private static final SuggestionProvider<CommandSourceStack> PROFILES =
       (context, builder) ->
           SharedSuggestionProvider.suggest(
@@ -130,7 +133,10 @@ public final class VillageCommand extends Command {
                         .executes(context -> status(context, StringArgumentType.getString(context, VILLAGE_ARG)))))
         .then(
             Commands.literal("import")
-                .then(Commands.argument(FILE_ARG, StringArgumentType.word()).executes(VillageCommand::importFile)));
+                .then(
+                    Commands.argument(FILE_ARG, StringArgumentType.word())
+                        .suggests(FILES)
+                        .executes(VillageCommand::importFile)));
   }
 
   private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String>
@@ -259,6 +265,14 @@ public final class VillageCommand extends Command {
       return sendFailureMessage(context.getSource(), "File name must match " + FILE_PATTERN.pattern());
     }
     Path path = VILLAGE_DIRECTORY.resolve(file + ".json");
+    if (!Files.isRegularFile(path)) {
+      java.util.List<String> available = listVillageFiles();
+      return sendFailureMessage(
+          context.getSource(),
+          "File not found: "
+              + path.toAbsolutePath().normalize()
+              + (available.isEmpty() ? " (folder is empty)" : " (available: " + String.join(", ", available) + ")"));
+    }
     String json;
     try {
       json = Files.readString(path, StandardCharsets.UTF_8);
@@ -270,6 +284,32 @@ public final class VillageCommand extends Command {
       return sendFailureMessage(context.getSource(), spec.error().get().message());
     }
     return feedback(context.getSource(), VillageService.apply(spec.getOrThrow()));
+  }
+
+  /** Creates config/easy_npc/villages so staff know where to drop village files. */
+  public static void ensureVillageDirectory() {
+    try {
+      Files.createDirectories(VILLAGE_DIRECTORY);
+    } catch (IOException exception) {
+      log.warn("Unable to create village folder {}: {}", VILLAGE_DIRECTORY, exception.getMessage());
+    }
+  }
+
+  static java.util.List<String> listVillageFiles() {
+    if (!Files.isDirectory(VILLAGE_DIRECTORY)) {
+      return java.util.List.of();
+    }
+    try (java.util.stream.Stream<Path> files = Files.list(VILLAGE_DIRECTORY)) {
+      return files
+          .map(file -> file.getFileName().toString())
+          .filter(name -> name.endsWith(".json"))
+          .map(name -> name.substring(0, name.length() - ".json".length()))
+          .filter(name -> FILE_PATTERN.matcher(name).matches())
+          .sorted()
+          .toList();
+    } catch (IOException exception) {
+      return java.util.List.of();
+    }
   }
 
   private static int feedback(CommandSourceStack source, VillageService.Result result) {
