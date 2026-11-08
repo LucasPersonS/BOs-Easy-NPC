@@ -4,12 +4,11 @@ public final class SceneConstants {
 
   public static final String ENTITY_ID = "scene";
   public static final String DATA_DIRECTORY = "easy_npc_scenes";
-  /** Top level bones whose name starts with this are drawn with an actor skin. */
+  /** Top level bones whose name starts with this are scene actors drawn with the NPC skin. */
   public static final String ACTOR_BONE_PREFIX = "actor_";
-  /** Separator of the synced actor skin list ("slot=ns:path;slot=ns:path"). */
-  public static final char SKIN_SEPARATOR = ';';
-  public static final int LINE_COOLDOWN_TICKS = 40;
-  public static final int MAX_SCENES_PER_COMMAND_RADIUS = 32;
+  public static final int MAX_COMMAND_RADIUS = 32;
+  /** Model pixels per block. */
+  public static final float PIXELS_PER_BLOCK = 16F;
 
   private SceneConstants() {}
 }

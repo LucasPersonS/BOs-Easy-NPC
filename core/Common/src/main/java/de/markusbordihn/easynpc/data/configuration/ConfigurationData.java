@@ -136,6 +136,30 @@ public record ConfigurationData(
               ConfigurationType.COBBLEMON_MODEL,
               ConfigurationType.EASY_MODEL_ENTITIES_MODEL));
 
+  /**
+   * Paravexia scene actors: full skin setup (default/player/url/custom/advanced), dialogs, actions,
+   * trading and presets; no poses, model editing, scaling or objectives because the scene
+   * animation drives the body and the actor must stay where the scene was placed.
+   */
+  public static final ConfigurationData SCENE =
+      new ConfigurationData(
+          exclude(
+              HUMANOID.enabledTypes(),
+              ConfigurationType.ADVANCED_POSE,
+              ConfigurationType.BASIC_POSE,
+              ConfigurationType.CUSTOM_POSE,
+              ConfigurationType.DEFAULT_POSE,
+              ConfigurationType.POSE,
+              ConfigurationType.DEFAULT_MODEL,
+              ConfigurationType.SCALING,
+              ConfigurationType.EQUIPMENT,
+              ConfigurationType.BASIC_OBJECTIVE,
+              ConfigurationType.ATTACK_OBJECTIVE,
+              ConfigurationType.FLEE_OBJECTIVE,
+              ConfigurationType.FOLLOW_OBJECTIVE,
+              ConfigurationType.LOOK_OBJECTIVE,
+              ConfigurationType.TARGET_OBJECTIVE));
+
   public ConfigurationData(Set<ConfigurationType> enabledTypes) {
     this(enabledTypes, Collections.emptySet());
   }

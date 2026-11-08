@@ -5,24 +5,26 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.markusbordihn.easynpc.Constants;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 
 /**
  * Server side description of a scene: a fixed "living picture" (blacksmith at the anvil, bard
  * playing) rendered from one GeckoLib model with one looping animation.
  *
- * <p>Loaded from {@code data/<namespace>/easy_npc_scenes/<path>.json}. The client resolves the
- * model, animation and props texture by convention from the scene id:
- * {@code <namespace>:geo/scene/<path>.geo.json}, {@code animations/scene/<path>.animation.json} and
- * {@code textures/scene/<path>.png}, so only the values the client cannot derive (animation name,
- * actor skins, hitbox) are synced on the entity.
+ * <p>Loaded from {@code data/<namespace>/easy_npc_scenes/<path>.json}. Every actor of the scene is
+ * its own Easy NPC (skin, name, dialogs set in the normal NPC editor), standing on the pivot of its
+ * {@code actor_*} bone; the first actor also draws the props. The client resolves model, animation
+ * and props texture from the scene id: {@code <ns>:geo/scene/<path>.geo.json},
+ * {@code animations/scene/<path>.animation.json}, {@code textures/scene/<path>.png}.
  */
 public record SceneDefinition(
     ResourceLocation id,
@@ -34,26 +36,38 @@ public record SceneDefinition(
     int footprintDepth,
     List<String> tags,
     List<Actor> actors,
-    List<String> lines,
     int weight) {
 
   public static final int MAX_ACTORS = 4;
-  public static final int MAX_SKINS_PER_ACTOR = 32;
-  public static final int MAX_LINES = 32;
-  public static final int MAX_LINE_LENGTH = 200;
+  public static final float MAX_ACTOR_OFFSET = 64F;
   public static final String DEFAULT_ANIMATION = "idle";
 
   public SceneDefinition {
     tags = List.copyOf(tags);
     actors = List.copyOf(actors);
-    lines = List.copyOf(lines);
   }
 
-  /** One humanoid in the scene. Bones under the top level bone {@code slot} use the actor skin. */
-  public record Actor(String slot, List<ResourceLocation> skins) {
+  /**
+   * One humanoid of the scene. {@code offset} is the pivot of its top level bone in model pixels
+   * (Bedrock space: +x = the model's left, -z = front); the actor NPC stands there.
+   */
+  public record Actor(String slot, Vector3f offset) {
     public Actor {
-      skins = List.copyOf(skins);
+      offset = new Vector3f(offset);
     }
+
+    @Override
+    public Vector3f offset() {
+      return new Vector3f(this.offset);
+    }
+  }
+
+  public Actor primaryActor() {
+    return this.actors.get(0);
+  }
+
+  public Optional<Actor> actor(String slot) {
+    return this.actors.stream().filter(actor -> actor.slot().equals(slot)).findFirst();
   }
 
   public static SceneDefinition parse(ResourceLocation id, JsonObject json) {
@@ -63,15 +77,15 @@ public record SceneDefinition(
       throw new IllegalArgumentException("invalid animation name");
     }
 
-    float hitboxWidth = 1.0F;
+    float hitboxWidth = 0.8F;
     float hitboxHeight = 2.0F;
     if (json.has("hitbox")) {
       JsonArray hitbox = GsonHelper.getAsJsonArray(json, "hitbox");
       if (hitbox.size() != 2) {
         throw new IllegalArgumentException("hitbox must be [width, height]");
       }
-      hitboxWidth = Mth.clamp(hitbox.get(0).getAsFloat(), 0.25F, 8.0F);
-      hitboxHeight = Mth.clamp(hitbox.get(1).getAsFloat(), 0.25F, 8.0F);
+      hitboxWidth = Mth.clamp(hitbox.get(0).getAsFloat(), 0.25F, 4.0F);
+      hitboxHeight = Mth.clamp(hitbox.get(1).getAsFloat(), 0.25F, 4.0F);
     }
 
     int footprintWidth = 1;
@@ -91,72 +105,52 @@ public record SceneDefinition(
     }
 
     List<Actor> actors = new ArrayList<>();
+    Set<String> slots = new HashSet<>();
     for (JsonElement element : GsonHelper.getAsJsonArray(json, "actors", new JsonArray())) {
       JsonObject actorJson = element.getAsJsonObject();
       String slot = GsonHelper.getAsString(actorJson, "slot");
-      if (!slot.startsWith(SceneConstants.ACTOR_BONE_PREFIX)) {
+      if (!slot.startsWith(SceneConstants.ACTOR_BONE_PREFIX) || slot.length() > 32) {
         throw new IllegalArgumentException(
             "actor slot '" + slot + "' must start with " + SceneConstants.ACTOR_BONE_PREFIX);
       }
-      List<ResourceLocation> skins = new ArrayList<>();
-      for (JsonElement skin : GsonHelper.getAsJsonArray(actorJson, "skins", new JsonArray())) {
-        skins.add(parseLocation(skin.getAsString(), id.getNamespace()));
+      if (!slots.add(slot)) {
+        throw new IllegalArgumentException("duplicate actor slot '" + slot + "'");
       }
-      if (skins.isEmpty() || skins.size() > MAX_SKINS_PER_ACTOR) {
-        throw new IllegalArgumentException("actor '" + slot + "' needs 1.." + MAX_SKINS_PER_ACTOR + " skins");
+      Vector3f offset = new Vector3f();
+      if (actorJson.has("offset")) {
+        JsonArray values = GsonHelper.getAsJsonArray(actorJson, "offset");
+        if (values.size() != 3) {
+          throw new IllegalArgumentException("actor '" + slot + "' offset must be [x, y, z]");
+        }
+        offset.set(
+            Mth.clamp(values.get(0).getAsFloat(), -MAX_ACTOR_OFFSET, MAX_ACTOR_OFFSET),
+            Mth.clamp(values.get(1).getAsFloat(), -MAX_ACTOR_OFFSET, MAX_ACTOR_OFFSET),
+            Mth.clamp(values.get(2).getAsFloat(), -MAX_ACTOR_OFFSET, MAX_ACTOR_OFFSET));
       }
-      actors.add(new Actor(slot, skins));
+      actors.add(new Actor(slot, offset));
     }
-    if (actors.size() > MAX_ACTORS) {
-      throw new IllegalArgumentException("at most " + MAX_ACTORS + " actors per scene");
-    }
-
-    List<String> lines = new ArrayList<>();
-    for (JsonElement line : GsonHelper.getAsJsonArray(json, "lines", new JsonArray())) {
-      String text = line.getAsString();
-      if (!text.isBlank()) {
-        lines.add(text.length() > MAX_LINE_LENGTH ? text.substring(0, MAX_LINE_LENGTH) : text);
-      }
-    }
-    if (lines.size() > MAX_LINES) {
-      lines = lines.subList(0, MAX_LINES);
+    if (actors.isEmpty() || actors.size() > MAX_ACTORS) {
+      throw new IllegalArgumentException("a scene needs 1.." + MAX_ACTORS + " actors");
     }
 
     int weight = Mth.clamp(GsonHelper.getAsInt(json, "weight", 10), 0, 1000);
     return new SceneDefinition(
-        id,
-        title,
-        animation,
-        hitboxWidth,
-        hitboxHeight,
-        footprintWidth,
-        footprintDepth,
-        tags,
-        actors,
-        lines,
-        weight);
+        id, title, animation, hitboxWidth, hitboxHeight, footprintWidth, footprintDepth, tags, actors, weight);
   }
 
-  /** Parses the synced actor skin list "slot=ns:path;slot=ns:path", skipping broken entries. */
-  public static Map<String, ResourceLocation> parseSkinList(String value) {
-    if (value == null || value.isEmpty()) {
-      return Map.of();
-    }
-    Map<String, ResourceLocation> skins = new LinkedHashMap<>();
-    for (String entry : value.split(String.valueOf(SceneConstants.SKIN_SEPARATOR))) {
-      int split = entry.indexOf('=');
-      if (split <= 0) {
-        continue;
-      }
-      ResourceLocation skin = ResourceLocation.tryParse(entry.substring(split + 1));
-      if (skin != null) {
-        skins.put(entry.substring(0, split), skin);
-      }
-    }
-    return Collections.unmodifiableMap(skins);
+  /**
+   * World offset of a model point given in Bedrock pixels, using the same transform as the
+   * GeckoLib entity renderer (x negated, then rotated by 180 - yaw around Y).
+   */
+  public static Vec3 worldOffset(Vector3f modelPixels, float yaw) {
+    Vector3f offset =
+        new Vector3f(-modelPixels.x, modelPixels.y, modelPixels.z)
+            .div(SceneConstants.PIXELS_PER_BLOCK)
+            .rotateY((180F - yaw) * Mth.DEG_TO_RAD);
+    return new Vec3(offset.x, offset.y, offset.z);
   }
 
-  /** Accepts {@code ns:path} or a bare path in the scene's namespace. */
+  /** Accepts {@code ns:path} or a bare path in the given namespace. */
   static ResourceLocation parseLocation(String value, String defaultNamespace) {
     ResourceLocation location =
         value.indexOf(':') >= 0

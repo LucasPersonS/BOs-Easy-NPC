@@ -2,7 +2,10 @@ package de.markusbordihn.easynpc.paravexia.scene.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import de.markusbordihn.easynpc.paravexia.scene.GeoSceneEntity;
+import de.markusbordihn.easynpc.client.renderer.entity.EasyNPCEntityRenderer;
+import de.markusbordihn.easynpc.paravexia.scene.GeoSceneNPC;
+import de.markusbordihn.easynpc.paravexia.scene.SceneConstants;
+import de.markusbordihn.easynpc.paravexia.scene.SceneSkinVariant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
@@ -10,9 +13,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
+import org.joml.Vector3f;
 import software.bernie.geckolib.cache.GeckoLibCache;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
@@ -21,20 +23,27 @@ import software.bernie.geckolib.renderer.layer.AutoGlowingGeoLayer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
 /**
- * Draws a scene in passes: the props with the scene texture (actor bones hidden), an optional
- * glowmask pass, then one pass per actor with that actor's 64x64 player-layout skin.
+ * Draws one scene actor NPC. The whole scene model is placed around the scene origin (the NPC
+ * stands on its actor pivot), then drawn in passes:
  *
- * <p>Actor cubes must use UVs laid out for a 64x64 skin relative to the model's texture size (the
- * scene generator scales them when the props atlas is larger than 64x64).
+ * <ol>
+ *   <li>props with the scene texture — primary actor only;
+ *   <li>optional glowmask ({@code textures/scene/<id>_glowmask.png}) — primary actor only;
+ *   <li>this NPC's actor with its Easy NPC skin (default list, player name, URL, uploaded file or
+ *       server texture), falling back to the base {@code npc_skin}.
+ * </ol>
+ *
+ * <p>Actor cubes use the 64x64 player skin layout; 64x64 and 128x128 skins both work because UVs
+ * are normalized.
  */
-public class SceneRenderer extends GeoEntityRenderer<GeoSceneEntity> {
+public class SceneRenderer extends GeoEntityRenderer<GeoSceneNPC> implements EasyNPCEntityRenderer {
 
   // Resource packs can't change while a world renders, so presence checks are cached per path.
   private static final Map<ResourceLocation, Boolean> RESOURCE_PRESENT = new ConcurrentHashMap<>();
 
   public SceneRenderer(EntityRendererProvider.Context context) {
     super(context, new SceneModel());
-    this.shadowRadius = 0.0F;
+    this.shadowRadius = 0.4F;
     addRenderLayer(new GlowLayer(this));
     addRenderLayer(new ActorSkinLayer(this));
   }
@@ -45,8 +54,19 @@ public class SceneRenderer extends GeoEntityRenderer<GeoSceneEntity> {
   }
 
   @Override
+  public ResourceLocation getDefaultTexture() {
+    return SceneSkinVariant.NPC_SKIN.getTextureLocation();
+  }
+
+  /** Skin of this actor through the normal Easy NPC skin managers. */
+  ResourceLocation actorSkin(GeoSceneNPC scene) {
+    ResourceLocation skin = getEntityPlayerTexture(scene);
+    return skin != null ? skin : getDefaultTexture();
+  }
+
+  @Override
   public void render(
-      GeoSceneEntity scene,
+      GeoSceneNPC scene,
       float entityYaw,
       float partialTick,
       PoseStack poseStack,
@@ -64,7 +84,7 @@ public class SceneRenderer extends GeoEntityRenderer<GeoSceneEntity> {
   @Override
   public void preRender(
       PoseStack poseStack,
-      GeoSceneEntity scene,
+      GeoSceneNPC scene,
       BakedGeoModel model,
       @Nullable MultiBufferSource bufferSource,
       @Nullable VertexConsumer buffer,
@@ -74,36 +94,43 @@ public class SceneRenderer extends GeoEntityRenderer<GeoSceneEntity> {
       int packedOverlay,
       int colour) {
     if (!isReRender) {
-      ScenePasses.showProps(model);
+      ScenePasses.showProps(model, scene.isPrimaryActor());
     }
     super.preRender(
         poseStack, scene, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, colour);
   }
 
-  // Non-living entities get yaw 0 from GeckoLib; scenes use the entity's own rotation.
+  /**
+   * After the body rotation, shift the model so its origin lands on the scene origin instead of on
+   * this actor (GeckoLib internal space: x negated).
+   */
   @Override
   protected void applyRotations(
-      GeoSceneEntity scene,
+      GeoSceneNPC scene,
       PoseStack poseStack,
       float ageInTicks,
       float rotationYaw,
       float partialTick,
       float nativeScale) {
-    super.applyRotations(
-        scene, poseStack, ageInTicks, Mth.rotLerp(partialTick, scene.yRotO, scene.getYRot()), partialTick, nativeScale);
+    super.applyRotations(scene, poseStack, ageInTicks, rotationYaw, partialTick, nativeScale);
+    Vector3f anchor = scene.getAnchor();
+    poseStack.translate(
+        anchor.x / SceneConstants.PIXELS_PER_BLOCK,
+        -anchor.y / SceneConstants.PIXELS_PER_BLOCK,
+        -anchor.z / SceneConstants.PIXELS_PER_BLOCK);
   }
 
-  /** Emissive pass from {@code textures/scene/<id>_glowmask.png}, skipped when there is none. */
-  static final class GlowLayer extends AutoGlowingGeoLayer<GeoSceneEntity> {
+  /** Emissive pass from {@code textures/scene/<id>_glowmask.png}; primary actor only. */
+  static final class GlowLayer extends AutoGlowingGeoLayer<GeoSceneNPC> {
 
-    GlowLayer(GeoRenderer<GeoSceneEntity> renderer) {
+    GlowLayer(GeoRenderer<GeoSceneNPC> renderer) {
       super(renderer);
     }
 
     @Override
     public void render(
         PoseStack poseStack,
-        GeoSceneEntity scene,
+        GeoSceneNPC scene,
         BakedGeoModel bakedModel,
         @Nullable RenderType renderType,
         MultiBufferSource bufferSource,
@@ -111,24 +138,27 @@ public class SceneRenderer extends GeoEntityRenderer<GeoSceneEntity> {
         float partialTick,
         int packedLight,
         int packedOverlay) {
-      if (resourcePresent(SceneModel.assets(scene).glowmask())) {
+      if (scene.isPrimaryActor() && resourcePresent(SceneModel.assets(scene).glowmask())) {
         super.render(
             poseStack, scene, bakedModel, renderType, bufferSource, buffer, partialTick, packedLight, packedOverlay);
       }
     }
   }
 
-  /** Re-renders the skin bones of each top level actor_* bone with that actor's skin. */
-  static final class ActorSkinLayer extends GeoRenderLayer<GeoSceneEntity> {
+  /** Re-renders the skin bones of this NPC's actor slot with the NPC skin. */
+  static final class ActorSkinLayer extends GeoRenderLayer<GeoSceneNPC> {
 
-    ActorSkinLayer(GeoRenderer<GeoSceneEntity> renderer) {
+    private final SceneRenderer sceneRenderer;
+
+    ActorSkinLayer(SceneRenderer renderer) {
       super(renderer);
+      this.sceneRenderer = renderer;
     }
 
     @Override
     public void render(
         PoseStack poseStack,
-        GeoSceneEntity scene,
+        GeoSceneNPC scene,
         BakedGeoModel bakedModel,
         @Nullable RenderType renderType,
         MultiBufferSource bufferSource,
@@ -136,14 +166,11 @@ public class SceneRenderer extends GeoEntityRenderer<GeoSceneEntity> {
         float partialTick,
         int packedLight,
         int packedOverlay) {
-      Map<String, ResourceLocation> skins = scene.getActorSkins();
-      int colour = getRenderer().getRenderColor(scene, partialTick, packedLight).argbInt();
-      for (String actor : ScenePasses.plan(bakedModel).actors()) {
-        ResourceLocation skin = skins.get(actor);
-        if (skin == null || !resourcePresent(skin)) {
-          skin = DefaultPlayerSkin.getDefaultTexture();
-        }
-        ScenePasses.showActor(bakedModel, actor);
+      String slot = scene.getActorSlot();
+      if (!slot.isEmpty()) {
+        ResourceLocation skin = this.sceneRenderer.actorSkin(scene);
+        int colour = getRenderer().getRenderColor(scene, partialTick, packedLight).argbInt();
+        ScenePasses.showActorSkin(bakedModel, slot);
         RenderType skinType = RenderType.entityCutoutNoCull(skin);
         getRenderer()
             .reRender(
@@ -158,7 +185,7 @@ public class SceneRenderer extends GeoEntityRenderer<GeoSceneEntity> {
                 packedOverlay,
                 colour);
       }
-      ScenePasses.showProps(bakedModel);
+      ScenePasses.showProps(bakedModel, scene.isPrimaryActor());
     }
   }
 }

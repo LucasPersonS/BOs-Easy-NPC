@@ -2,6 +2,7 @@ package de.markusbordihn.easynpc.paravexia.scene;
 
 import de.markusbordihn.easynpc.paravexia.scene.client.SceneClientEffects;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.level.Level;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -12,8 +13,8 @@ import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-/** Scene entity with a single looping GeckoLib animation, driven entirely on the client. */
-public class GeoSceneEntity extends SceneEntity implements GeoEntity {
+/** Scene actor with a single looping GeckoLib animation, driven entirely on the client. */
+public class GeoSceneNPC extends SceneNPC implements GeoEntity {
 
   public static final String CONTROLLER = "scene";
 
@@ -22,14 +23,14 @@ public class GeoSceneEntity extends SceneEntity implements GeoEntity {
   private String cachedAnimationName;
   private RawAnimation cachedAnimation;
 
-  public GeoSceneEntity(EntityType<? extends GeoSceneEntity> entityType, Level level) {
+  public GeoSceneNPC(EntityType<? extends PathfinderMob> entityType, Level level) {
     super(entityType, level);
   }
 
   @Override
   public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-    AnimationController<GeoSceneEntity> controller =
-        new AnimationController<>(this, CONTROLLER, 0, this::animationState);
+    AnimationController<GeoSceneNPC> controller =
+        new WorldPhaseAnimationController<>(this, CONTROLLER, this::animationState);
     // Keyframed sounds/particles only matter where the scene is drawn.
     if (this.level().isClientSide()) {
       controller.setSoundKeyframeHandler(SceneClientEffects::onSoundKeyframe);
@@ -38,7 +39,7 @@ public class GeoSceneEntity extends SceneEntity implements GeoEntity {
     controllers.add(controller);
   }
 
-  private PlayState animationState(AnimationState<GeoSceneEntity> state) {
+  private PlayState animationState(AnimationState<GeoSceneNPC> state) {
     String name = getAnimationName();
     if (!name.equals(this.cachedAnimationName)) {
       this.cachedAnimationName = name;

@@ -1,7 +1,7 @@
 package de.markusbordihn.easynpc.paravexia.scene.client;
 
 import de.markusbordihn.easynpc.Constants;
-import de.markusbordihn.easynpc.paravexia.scene.GeoSceneEntity;
+import de.markusbordihn.easynpc.paravexia.scene.GeoSceneNPC;
 import java.util.Optional;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -41,8 +41,8 @@ public final class SceneClientEffects {
 
   private SceneClientEffects() {}
 
-  public static void onSoundKeyframe(SoundKeyframeEvent<GeoSceneEntity> event) {
-    GeoSceneEntity scene = event.getAnimatable();
+  public static void onSoundKeyframe(SoundKeyframeEvent<GeoSceneNPC> event) {
+    GeoSceneNPC scene = event.getAnimatable();
     if (!inEffectRange(scene)) {
       return;
     }
@@ -69,8 +69,8 @@ public final class SceneClientEffects {
             false);
   }
 
-  public static void onParticleKeyframe(ParticleKeyframeEvent<GeoSceneEntity> event) {
-    GeoSceneEntity scene = event.getAnimatable();
+  public static void onParticleKeyframe(ParticleKeyframeEvent<GeoSceneNPC> event) {
+    GeoSceneNPC scene = event.getAnimatable();
     if (!inEffectRange(scene) || !(scene.level() instanceof ClientLevel level)) {
       return;
     }
@@ -103,7 +103,7 @@ public final class SceneClientEffects {
    * World offset of a bone's rest pivot. Uses the same transform as the renderer (rotation by 180
    * minus yaw around Y), so locator bones should be static points placed on the props.
    */
-  private static Vector3f locatorOffset(GeoSceneEntity scene, String locator) {
+  private static Vector3f locatorOffset(GeoSceneNPC scene, String locator) {
     Vector3f offset = new Vector3f(0F, 1F, 0F);
     if (locator == null || locator.isBlank()) {
       return offset;
@@ -116,11 +116,20 @@ public final class SceneClientEffects {
     if (bone.isEmpty()) {
       return offset;
     }
-    offset.set(bone.get().getPivotX() / 16F, bone.get().getPivotY() / 16F, bone.get().getPivotZ() / 16F);
-    return offset.rotateY((180F - scene.getYRot()) * Mth.DEG_TO_RAD);
+    // Bone pivots are in GeckoLib internal space (x negated); the anchor is in Bedrock space.
+    Vector3f anchor = scene.getAnchor();
+    offset.set(
+        (bone.get().getPivotX() + anchor.x) / 16F,
+        (bone.get().getPivotY() - anchor.y) / 16F,
+        (bone.get().getPivotZ() - anchor.z) / 16F);
+    return offset.rotateY((180F - scene.yBodyRot) * Mth.DEG_TO_RAD);
   }
 
-  private static boolean inEffectRange(GeoSceneEntity scene) {
+  // Every actor NPC runs the same animation; only the primary plays the scene's effects.
+  private static boolean inEffectRange(GeoSceneNPC scene) {
+    if (!scene.isPrimaryActor()) {
+      return false;
+    }
     LocalPlayer player = Minecraft.getInstance().player;
     return player != null && player.distanceToSqr(scene) <= MAX_EFFECT_DISTANCE_SQR;
   }

@@ -138,6 +138,9 @@ public class ModEntityType {
           EASY_MODEL_ENTITIES_TYPE,
           "Easy Model Entities");
     }
+    if (CompatConstants.MOD_GECKOLIB_LOADED) {
+      de.markusbordihn.easynpc.paravexia.scene.SceneRegistration.registerAttributes(event);
+    }
   }
 
   private static <E extends ModEntityTypeProvider> void registerEntityTypes(

@@ -10,15 +10,15 @@ import net.minecraft.world.entity.EntityType;
  */
 public final class SceneEntityTypes {
 
-  private static Supplier<? extends EntityType<? extends SceneEntity>> sceneType;
+  private static Supplier<? extends EntityType<? extends SceneNPC>> sceneType;
 
   private SceneEntityTypes() {}
 
-  public static void setSceneType(Supplier<? extends EntityType<? extends SceneEntity>> supplier) {
+  public static void setSceneType(Supplier<? extends EntityType<? extends SceneNPC>> supplier) {
     sceneType = supplier;
   }
 
-  public static Optional<EntityType<? extends SceneEntity>> sceneType() {
+  public static Optional<EntityType<? extends SceneNPC>> sceneType() {
     return sceneType == null ? Optional.empty() : Optional.ofNullable(sceneType.get());
   }
 }

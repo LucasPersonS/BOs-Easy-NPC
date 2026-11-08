@@ -10,14 +10,14 @@ import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.cache.object.GeoBone;
 
 /**
- * Decides which bones draw their cubes in each render pass of a scene.
+ * Decides which bones draw their cubes in each render pass of a scene actor NPC.
  *
  * <ul>
  *   <li>Skin bones: everything inside a top level {@code actor_*} bone, except subtrees whose bone
  *       name starts with {@code prop_} (a hammer held in the hand stays on the props texture while
  *       still following the arm animation).
- *   <li>Props pass: cubes of every non-skin bone.
- *   <li>Actor pass: cubes of the skin bones of that actor only.
+ *   <li>Props pass (drawn by the primary actor only): cubes of every non-skin bone.
+ *   <li>Skin pass: cubes of the skin bones of this NPC's own actor slot.
  * </ul>
  *
  * Hiding only a bone's own cubes (not its children) keeps the bone hierarchy and its transforms
@@ -28,29 +28,25 @@ final class ScenePasses {
   static final String PROP_BONE_PREFIX = "prop_";
 
   // Baked models are replaced on resource reload, so weak identity keys never go stale.
-  private static final Map<BakedGeoModel, Plan> PLANS = Collections.synchronizedMap(new WeakHashMap<>());
+  private static final Map<BakedGeoModel, List<Entry>> PLANS =
+      Collections.synchronizedMap(new WeakHashMap<>());
 
   private ScenePasses() {}
 
+  /** actor = slot of the actor subtree (null for props); skin = drawn with the actor skin. */
   record Entry(GeoBone bone, String actor, boolean skin) {}
 
-  record Plan(List<Entry> entries, List<String> actors) {}
-
-  static Plan plan(BakedGeoModel model) {
+  static List<Entry> plan(BakedGeoModel model) {
     return PLANS.computeIfAbsent(model, ScenePasses::buildPlan);
   }
 
-  private static Plan buildPlan(BakedGeoModel model) {
+  private static List<Entry> buildPlan(BakedGeoModel model) {
     List<Entry> entries = new ArrayList<>();
-    List<String> actors = new ArrayList<>();
     for (GeoBone top : model.topLevelBones()) {
       boolean actor = top.getName().startsWith(SceneConstants.ACTOR_BONE_PREFIX);
-      if (actor) {
-        actors.add(top.getName());
-      }
       collect(top, actor ? top.getName() : null, actor, entries);
     }
-    return new Plan(List.copyOf(entries), List.copyOf(actors));
+    return List.copyOf(entries);
   }
 
   private static void collect(GeoBone bone, String actor, boolean skin, List<Entry> entries) {
@@ -61,14 +57,18 @@ final class ScenePasses {
     }
   }
 
-  static void showProps(BakedGeoModel model) {
-    for (Entry entry : plan(model).entries()) {
-      setCubesVisible(entry.bone(), !entry.skin());
+  /**
+   * Props pass of one actor NPC: the primary draws all props (also props held by other actors so
+   * they follow their limbs); secondary actors draw nothing here.
+   */
+  static void showProps(BakedGeoModel model, boolean primary) {
+    for (Entry entry : plan(model)) {
+      setCubesVisible(entry.bone(), primary && !entry.skin());
     }
   }
 
-  static void showActor(BakedGeoModel model, String actor) {
-    for (Entry entry : plan(model).entries()) {
+  static void showActorSkin(BakedGeoModel model, String actor) {
+    for (Entry entry : plan(model)) {
       setCubesVisible(entry.bone(), entry.skin() && actor.equals(entry.actor()));
     }
   }
