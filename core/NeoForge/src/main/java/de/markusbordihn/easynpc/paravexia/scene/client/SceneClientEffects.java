@@ -19,6 +19,7 @@ import org.joml.Vector3f;
 import software.bernie.geckolib.cache.GeckoLibCache;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.cache.object.GeoBone;
+import software.bernie.geckolib.animation.keyframe.event.KeyFrameEvent;
 import software.bernie.geckolib.animation.keyframe.event.ParticleKeyframeEvent;
 import software.bernie.geckolib.animation.keyframe.event.SoundKeyframeEvent;
 
@@ -38,12 +39,18 @@ public final class SceneClientEffects {
   private static final Logger log = LogManager.getLogger(Constants.LOG_NAME);
   private static final double MAX_EFFECT_DISTANCE_SQR = 32D * 32D;
   private static final int MAX_PARTICLES_PER_KEYFRAME = 16;
+  /**
+   * GeckoLib fires every keyframe it has not executed yet once the animation time passes it. When a
+   * scene is first drawn mid-loop (the loop starts at the world phase) or wakes up from the distance
+   * freeze, all earlier keyframes would fire at once; anything this late is skipped instead.
+   */
+  private static final double MAX_KEYFRAME_LATENESS_TICKS = 4D;
 
   private SceneClientEffects() {}
 
   public static void onSoundKeyframe(SoundKeyframeEvent<GeoSceneNPC> event) {
     GeoSceneNPC scene = event.getAnimatable();
-    if (!inEffectRange(scene)) {
+    if (isLate(event) || !inEffectRange(scene)) {
       return;
     }
     String[] parts = event.getKeyframeData().getSound().split("\\|");
@@ -71,7 +78,7 @@ public final class SceneClientEffects {
 
   public static void onParticleKeyframe(ParticleKeyframeEvent<GeoSceneNPC> event) {
     GeoSceneNPC scene = event.getAnimatable();
-    if (!inEffectRange(scene) || !(scene.level() instanceof ClientLevel level)) {
+    if (isLate(event) || !inEffectRange(scene) || !(scene.level() instanceof ClientLevel level)) {
       return;
     }
     ResourceLocation particleId = ResourceLocation.tryParse(event.getKeyframeData().getEffect().trim());
@@ -123,6 +130,10 @@ public final class SceneClientEffects {
         (bone.get().getPivotY() - anchor.y) / 16F,
         (bone.get().getPivotZ() - anchor.z) / 16F);
     return offset.rotateY((180F - scene.yBodyRot) * Mth.DEG_TO_RAD);
+  }
+
+  private static boolean isLate(KeyFrameEvent<GeoSceneNPC, ?> event) {
+    return event.getAnimationTick() - event.getKeyframeData().getStartTick() > MAX_KEYFRAME_LATENESS_TICKS;
   }
 
   // Every actor NPC runs the same animation; only the primary plays the scene's effects.

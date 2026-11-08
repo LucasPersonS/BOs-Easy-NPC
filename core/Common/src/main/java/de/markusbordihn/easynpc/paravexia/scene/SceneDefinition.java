@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.Mth;
@@ -36,11 +37,15 @@ public record SceneDefinition(
     int footprintDepth,
     List<String> tags,
     List<Actor> actors,
-    int weight) {
+    int weight,
+    @Nullable Ambience ambience,
+    boolean hidden) {
 
   public static final int MAX_ACTORS = 4;
   public static final float MAX_ACTOR_OFFSET = 64F;
   public static final String DEFAULT_ANIMATION = "idle";
+  public static final int MIN_AMBIENCE_RADIUS = 4;
+  public static final int MAX_AMBIENCE_RADIUS = 64;
 
   public SceneDefinition {
     tags = List.copyOf(tags);
@@ -59,6 +64,42 @@ public record SceneDefinition(
     @Override
     public Vector3f offset() {
       return new Vector3f(this.offset);
+    }
+  }
+
+  /**
+   * Looping background sound around the scene (market chatter, village murmur). Played on the
+   * client by the primary actor; when several scenes nearby use the same sound only the closest one
+   * plays it, so a busy square never stacks the same loop.
+   */
+  public record Ambience(ResourceLocation sound, float volume, int radius) {
+
+    private static final String SEPARATOR = "|";
+
+    public Ambience {
+      volume = Mth.clamp(volume, 0F, 1F);
+      radius = Mth.clamp(radius, MIN_AMBIENCE_RADIUS, MAX_AMBIENCE_RADIUS);
+    }
+
+    /** Compact form synced to clients: {@code sound|volume|radius}. */
+    public String encode() {
+      return this.sound + SEPARATOR + this.volume + SEPARATOR + this.radius;
+    }
+
+    public static Optional<Ambience> decode(String value) {
+      if (value == null || value.isEmpty()) {
+        return Optional.empty();
+      }
+      String[] parts = value.split("\\|");
+      ResourceLocation sound = ResourceLocation.tryParse(parts[0]);
+      if (sound == null || parts.length != 3) {
+        return Optional.empty();
+      }
+      try {
+        return Optional.of(new Ambience(sound, Float.parseFloat(parts[1]), Integer.parseInt(parts[2])));
+      } catch (NumberFormatException exception) {
+        return Optional.empty();
+      }
     }
   }
 
@@ -134,8 +175,37 @@ public record SceneDefinition(
     }
 
     int weight = Mth.clamp(GsonHelper.getAsInt(json, "weight", 10), 0, 1000);
+
+    Ambience ambience = null;
+    if (json.has("ambience")) {
+      JsonObject ambienceJson = GsonHelper.getAsJsonObject(json, "ambience");
+      String sound = GsonHelper.getAsString(ambienceJson, "sound");
+      ResourceLocation soundId = ResourceLocation.tryParse(sound);
+      if (soundId == null) {
+        throw new IllegalArgumentException("invalid ambience sound '" + sound + "'");
+      }
+      ambience =
+          new Ambience(
+              soundId,
+              GsonHelper.getAsFloat(ambienceJson, "volume", 0.35F),
+              GsonHelper.getAsInt(ambienceJson, "radius", 24));
+    }
+    // Hidden scenes draw nothing: used for ambience markers placed around a village.
+    boolean hidden = GsonHelper.getAsBoolean(json, "hidden", false);
+
     return new SceneDefinition(
-        id, title, animation, hitboxWidth, hitboxHeight, footprintWidth, footprintDepth, tags, actors, weight);
+        id,
+        title,
+        animation,
+        hitboxWidth,
+        hitboxHeight,
+        footprintWidth,
+        footprintDepth,
+        tags,
+        actors,
+        weight,
+        ambience,
+        hidden);
   }
 
   /**

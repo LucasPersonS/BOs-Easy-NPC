@@ -51,6 +51,11 @@ public class SceneNPC extends PathfinderMobRaw {
       SynchedEntityData.defineId(SceneNPC.class, EntityDataSerializers.FLOAT);
   private static final EntityDataAccessor<Float> DATA_HITBOX_HEIGHT =
       SynchedEntityData.defineId(SceneNPC.class, EntityDataSerializers.FLOAT);
+  // "sound|volume|radius" on the primary actor of scenes with a background loop, else empty.
+  private static final EntityDataAccessor<String> DATA_AMBIENCE =
+      SynchedEntityData.defineId(SceneNPC.class, EntityDataSerializers.STRING);
+  private static final EntityDataAccessor<Boolean> DATA_HIDDEN =
+      SynchedEntityData.defineId(SceneNPC.class, EntityDataSerializers.BOOLEAN);
 
   private static final String TAG_SCENE = "ParavexiaScene";
   private static final String TAG_ID = "Id";
@@ -60,6 +65,8 @@ public class SceneNPC extends PathfinderMobRaw {
   private static final String TAG_ANCHOR = "Anchor";
   private static final String TAG_GROUP = "Group";
   private static final String TAG_HITBOX = "Hitbox";
+  private static final String TAG_AMBIENCE = "Ambience";
+  private static final String TAG_HIDDEN = "Hidden";
 
   // Server side only: links the actors of one placed scene for remove/rotate.
   @Nullable private UUID groupId;
@@ -91,6 +98,8 @@ public class SceneNPC extends PathfinderMobRaw {
     builder.define(DATA_ANCHOR, new Vector3f());
     builder.define(DATA_HITBOX_WIDTH, 0.8F);
     builder.define(DATA_HITBOX_HEIGHT, 2.0F);
+    builder.define(DATA_AMBIENCE, "");
+    builder.define(DATA_HIDDEN, false);
   }
 
   /**
@@ -106,9 +115,24 @@ public class SceneNPC extends PathfinderMobRaw {
     this.entityData.set(DATA_ANCHOR, actor.offset());
     this.entityData.set(DATA_HITBOX_WIDTH, definition.hitboxWidth());
     this.entityData.set(DATA_HITBOX_HEIGHT, definition.hitboxHeight());
+    applyDefinitionExtras(definition);
     this.groupId = group;
     placeAt(origin, yaw);
     this.refreshDimensions();
+  }
+
+  /**
+   * Ambience and visibility follow the current definition, so editing the JSON (and reloading)
+   * updates scenes that were placed before.
+   */
+  private void applyDefinitionExtras(SceneDefinition definition) {
+    boolean primary = isPrimaryActor();
+    this.entityData.set(
+        DATA_AMBIENCE,
+        primary && definition.ambience() != null ? definition.ambience().encode() : "");
+    this.entityData.set(DATA_HIDDEN, definition.hidden());
+    // Invisible: no shadow, and only NPC wand holders see the outline of a hidden marker.
+    this.setInvisible(definition.hidden());
   }
 
   /** Moves the actor so the scene origin is {@code origin} and the scene faces {@code yaw}. */
@@ -155,6 +179,15 @@ public class SceneNPC extends PathfinderMobRaw {
   /** Actor pivot in model pixels (Bedrock space). */
   public Vector3f getAnchor() {
     return new Vector3f(this.entityData.get(DATA_ANCHOR));
+  }
+
+  /** Encoded background loop of this actor's scene (primary actor only), or empty. */
+  public String getAmbienceData() {
+    return this.entityData.get(DATA_AMBIENCE);
+  }
+
+  public boolean isHiddenScene() {
+    return this.entityData.get(DATA_HIDDEN);
   }
 
   @Nullable
@@ -239,6 +272,8 @@ public class SceneNPC extends PathfinderMobRaw {
     if (this.groupId != null) {
       scene.putUUID(TAG_GROUP, this.groupId);
     }
+    scene.putString(TAG_AMBIENCE, getAmbienceData());
+    scene.putBoolean(TAG_HIDDEN, isHiddenScene());
     compoundTag.put(TAG_SCENE, scene);
   }
 
@@ -266,6 +301,10 @@ public class SceneNPC extends PathfinderMobRaw {
       this.entityData.set(DATA_HITBOX_HEIGHT, scene.getFloat(TAG_HITBOX + "H"));
     }
     this.groupId = scene.hasUUID(TAG_GROUP) ? scene.getUUID(TAG_GROUP) : null;
+    this.entityData.set(DATA_AMBIENCE, scene.getString(TAG_AMBIENCE));
+    this.entityData.set(DATA_HIDDEN, scene.getBoolean(TAG_HIDDEN));
+    // Scene definitions are loaded with the data packs, before entities: prefer the current one.
+    getSceneDefinition().ifPresent(this::applyDefinitionExtras);
     this.refreshDimensions();
   }
 }

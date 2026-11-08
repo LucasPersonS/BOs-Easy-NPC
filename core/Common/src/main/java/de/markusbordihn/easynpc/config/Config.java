@@ -68,6 +68,7 @@ public class Config {
     ClientHighlightConfig.registerConfig();
     ClientNameTagConfig.registerConfig();
     ClientSpeechBubbleConfig.registerConfig();
+    de.markusbordihn.easynpc.paravexia.scene.SceneClientConfig.registerConfig();
   }
 
   public static void registerServerConfig() {

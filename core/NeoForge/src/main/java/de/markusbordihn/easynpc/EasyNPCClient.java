@@ -46,6 +46,13 @@ public class EasyNPCClient {
     modEventBus.addListener(EntityRenderer::register);
     modEventBus.addListener(ClientScreens::registerScreens);
 
+    // Scene background loops; scene classes need GeckoLib, so only touch them when it is loaded.
+    // ModList directly: the compat flags are filled by the common constructor, whose order vs. this
+    // client constructor is not guaranteed.
+    if (net.neoforged.fml.ModList.get().isLoaded(de.markusbordihn.easynpc.compat.CompatConstants.MOD_GECKOLIB_ID)) {
+      de.markusbordihn.easynpc.paravexia.scene.client.SceneClientRegistration.registerGameEvents();
+    }
+
     NetworkMessageHandlerManager.registerServerHandler(new ServerNetworkMessageHandler());
     ModTabs.CREATIVE_TABS.register(modEventBus);
   }

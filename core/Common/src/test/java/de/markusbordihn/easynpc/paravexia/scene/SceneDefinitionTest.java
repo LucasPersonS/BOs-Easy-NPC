@@ -79,4 +79,24 @@ class SceneDefinitionTest {
     assertEquals(0.5D, north.y, 1e-5);
     assertEquals(1D, north.z, 1e-5);
   }
+
+  @Test
+  void parsesAmbienceAndHidden() {
+    SceneDefinition scene =
+        SceneDefinition.parse(
+            ID,
+            json(
+                "{\"hidden\":true,\"ambience\":{\"sound\":\"paravexia_cenas:ambiente.praca\",\"volume\":3,\"radius\":200},"
+                    + "\"actors\":[{\"slot\":\"actor_a\"}]}"));
+    assertTrue(scene.hidden());
+    SceneDefinition.Ambience ambience = scene.ambience();
+    assertNotNull(ambience);
+    assertEquals(ResourceLocation.fromNamespaceAndPath("paravexia_cenas", "ambiente.praca"), ambience.sound());
+    assertEquals(1F, ambience.volume(), 1e-6);
+    assertEquals(SceneDefinition.MAX_AMBIENCE_RADIUS, ambience.radius());
+    assertEquals(ambience, SceneDefinition.Ambience.decode(ambience.encode()).orElseThrow());
+    assertTrue(SceneDefinition.Ambience.decode("").isEmpty());
+    assertTrue(SceneDefinition.Ambience.decode("bad|x|1").isEmpty());
+    assertNull(SceneDefinition.parse(ID, json("{\"actors\":[{\"slot\":\"actor_a\"}]}")).ambience());
+  }
 }

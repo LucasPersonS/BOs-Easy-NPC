@@ -74,7 +74,8 @@ public class SceneRenderer extends GeoEntityRenderer<GeoSceneNPC> implements Eas
       int packedLight) {
     // GeckoLib throws on a missing model; a scene whose assets are not in the resource pack is
     // simply not drawn (its hitbox stays clickable so staff can find and remove it).
-    if (scene.getSceneId().isEmpty()
+    if (scene.isHiddenScene()
+        || scene.getSceneId().isEmpty()
         || !GeckoLibCache.getBakedModels().containsKey(SceneModel.assets(scene).model())) {
       return;
     }

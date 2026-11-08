@@ -1,6 +1,7 @@
 package de.markusbordihn.easynpc.paravexia.scene;
 
 import de.markusbordihn.easynpc.paravexia.scene.client.SceneClientEffects;
+import java.util.Optional;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.level.Level;
@@ -22,6 +23,10 @@ public class GeoSceneNPC extends SceneNPC implements GeoEntity {
   // Cached so the per-frame animation handler does not allocate.
   private String cachedAnimationName;
   private RawAnimation cachedAnimation;
+  // Client only: set by the scene model while the scene is held still beyond the freeze distance.
+  private boolean animationFrozen;
+  private String cachedAmbienceData = "";
+  private Optional<SceneDefinition.Ambience> cachedAmbience = Optional.empty();
 
   public GeoSceneNPC(EntityType<? extends PathfinderMob> entityType, Level level) {
     super(entityType, level);
@@ -46,6 +51,24 @@ public class GeoSceneNPC extends SceneNPC implements GeoEntity {
       this.cachedAnimation = RawAnimation.begin().thenLoop(name);
     }
     return state.setAndContinue(this.cachedAnimation);
+  }
+
+  public boolean isAnimationFrozen() {
+    return this.animationFrozen;
+  }
+
+  public void setAnimationFrozen(boolean frozen) {
+    this.animationFrozen = frozen;
+  }
+
+  /** Decoded background loop of this scene (primary actor only), cached until the data changes. */
+  public Optional<SceneDefinition.Ambience> getAmbience() {
+    String data = getAmbienceData();
+    if (!data.equals(this.cachedAmbienceData)) {
+      this.cachedAmbienceData = data;
+      this.cachedAmbience = SceneDefinition.Ambience.decode(data);
+    }
+    return this.cachedAmbience;
   }
 
   @Override
