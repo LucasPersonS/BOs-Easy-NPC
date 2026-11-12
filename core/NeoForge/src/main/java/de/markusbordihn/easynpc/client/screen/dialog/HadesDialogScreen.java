@@ -2,20 +2,18 @@ package de.markusbordihn.easynpc.client.screen.dialog;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.mojang.blaze3d.systems.RenderSystem;
-import de.markusbordihn.easynpc.client.renderer.screen.EntityScreenRenderer;
+import de.markusbordihn.easynpc.client.dialog.DialogUi;
+import de.markusbordihn.easynpc.client.dialog.DialogUi.ReplyState;
 import de.markusbordihn.easynpc.client.screen.Screen;
 import de.markusbordihn.easynpc.client.screen.components.Text;
-import de.markusbordihn.easynpc.compat.IntegrationRegistry;
 import de.markusbordihn.easynpc.condition.ClientConditionEvaluator;
 import de.markusbordihn.easynpc.config.ClientDialogConfig;
+import de.markusbordihn.easynpc.data.action.ActionDataType;
 import de.markusbordihn.easynpc.data.action.ActionEventType;
 import de.markusbordihn.easynpc.data.dialog.DialogButtonConditionMode;
 import de.markusbordihn.easynpc.data.dialog.DialogButtonEntry;
 import de.markusbordihn.easynpc.data.dialog.DialogMetaData;
 import de.markusbordihn.easynpc.data.dialog.DialogOptionsData;
-import de.markusbordihn.easynpc.data.render.EntityRenderConfig;
-import de.markusbordihn.easynpc.data.render.EntityRenderOverrides;
 import de.markusbordihn.easynpc.data.screen.AdditionalScreenData;
 import de.markusbordihn.easynpc.menu.dialog.DialogMenu;
 import de.markusbordihn.easynpc.network.NetworkMessageHandlerManager;
@@ -33,25 +31,24 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import org.lwjgl.glfw.GLFW;
 
-/** Cinematic interaction UI; server-owned dialog actions and locks remain authoritative. */
+/**
+ * Dialogue screen styled after the Paravexia website's dialogue library
+ * ({@code Website/admin/dialogues.css}): 2D NPC skin face in a stone frame, gold speaker name,
+ * inset dark text box, and stacked stone reply buttons with coloured left stripes.
+ */
 public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, AdditionalScreenData> {
-  private static final ResourceLocation DISPLAY_FONT =
-      ResourceLocation.fromNamespaceAndPath("easy_npc", "hades_display");
-  private static final ResourceLocation BODY_FONT =
-      ResourceLocation.fromNamespaceAndPath("easy_npc", "hades_body");
   private static final SoundEvent SPEAK = SoundEvent.createVariableRangeEvent(
       ResourceLocation.fromNamespaceAndPath("easy_npc", "gui.speak"));
   private final List<Choice> choices = new ArrayList<>();
   private final List<Button> controls = new ArrayList<>();
   private List<FormattedCharSequence> lines = List.of();
   private DialogOptionsData options = DialogOptionsData.DEFAULT;
-  private int panelX, panelY, panelWidth, panelHeight, page, linesPerPage, choiceOffset;
+  private int panelX, panelY, panelWidth, panelHeight, page, linesPerPage, choicesPerPage, choiceOffset;
+  private int visibleChoicesCount;
   private long revealStart;
   private int lastRevealed;
   private boolean revealed, opened, closed;
   private Button next, previous, more, less;
-  private ResourceLocation portrait;
-  private int portraitWidth = 512, portraitHeight = 768;
   private String subtitle = "";
   private SimpleSoundInstance speechSound;
 
@@ -66,9 +63,10 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
     if (getEasyNPC() == null) return;
     options = hasDialogData() ? getDialogData().getDialogOptions() : DialogOptionsData.DEFAULT;
     HadesLayout geometry = HadesLayout.fit(width, height);
-    panelX = geometry.x();
-    panelWidth = geometry.width();
+    panelWidth = Math.min(340, geometry.width());
+    panelX = (width - panelWidth) / 2;
     linesPerPage = geometry.linesPerPage();
+    choicesPerPage = geometry.choicesPerPage();
     panelHeight = geometry.height();
     panelY = geometry.y();
     Component text = Component.empty();
@@ -77,9 +75,9 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
           getAdditionalScreenData() != null ? getAdditionalScreenData().getScoreboardData() : null);
       String raw = getDialogData().getDialogText(metadata);
       if (raw != null) text = TextComponent.getText(raw).copy()
-          .withStyle(style -> style.withFont(BODY_FONT));
+          .withStyle(style -> style.withFont(DialogUi.FONT));
     }
-    lines = font.split(text, Math.max(40, panelWidth - 36));
+    lines = font.split(text, Math.max(40, panelWidth - 24));
     page = Math.min(page, lastPage());
     choices.clear();
     controls.clear();
@@ -91,16 +89,16 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
         addRenderableWidget(choice.button);
       }
     }
-    previous = control("‹", b -> changePage(-1), 25);
-    next = control("›", b -> advance(), 25);
-    less = control("↑", b -> { choiceOffset = Math.max(0, choiceOffset - 2); layout(); }, 22);
-    more = control("↓", b -> { choiceOffset += 2; layout(); }, 22);
+    previous = control("‹", b -> changePage(-1), 20);
+    next = control("›", b -> advance(), 20);
+    less = control("▲", b -> { choiceOffset = Math.max(0, choiceOffset - 1); layout(); }, 18);
+    more = control("▼", b -> { choiceOffset += 1; layout(); }, 18);
     if (options.showCloseButton()) {
-      Button close = control("×", b -> onClose(), 22);
-      close.setX(width - 30);
-      close.setY(10);
+      Button close = control("×", b -> onClose(), 18);
+      close.setX(panelX + panelWidth - 18);
+      close.setY(panelY - 26);
     }
-    loadPortrait();
+    loadSubtitle();
     beginReveal();
     layout();
     if (!opened) {
@@ -110,13 +108,12 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
   }
 
   private Button control(String label, Button.OnPress action, int size) {
-    Button button = new CinematicButton(0, 0, size, body(Component.literal(label)), action);
+    Button button = new SiteReplyButton(0, 0, size, 16, body(Component.literal(label)), action);
     controls.add(button);
     return addRenderableWidget(button);
   }
 
-  private void loadPortrait() {
-    portrait = null;
+  private void loadSubtitle() {
     subtitle = "";
     ResourceLocation mapping = ResourceLocation.fromNamespaceAndPath("easy_npc", "hades/portraits.json");
     var resource = minecraft.getResourceManager().getResource(mapping);
@@ -129,17 +126,12 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
       var value = root.has(uuid) ? root.get(uuid)
           : root.has(name) ? root.get(name)
           : library != null && !library.isBlank() ? root.get(library) : null;
-      if (value == null || !value.isJsonObject()) return;
-      JsonObject data = value.getAsJsonObject();
-      if (data.has("subtitle")) subtitle = data.get("subtitle").getAsString();
-      if (!data.has("texture")) return;
-      ResourceLocation texture = ResourceLocation.parse(data.get("texture").getAsString());
-      if (minecraft.getResourceManager().getResource(texture).isEmpty()) return;
-      portraitWidth = Math.max(1, data.has("width") ? data.get("width").getAsInt() : 512);
-      portraitHeight = Math.max(1, data.has("height") ? data.get("height").getAsInt() : 768);
-      portrait = texture;
+      if (value != null && value.isJsonObject()) {
+        JsonObject data = value.getAsJsonObject();
+        if (data.has("subtitle")) subtitle = data.get("subtitle").getAsString();
+      }
     } catch (Exception exception) {
-      log.warn("Unable to read Hades NPC portrait mapping; using NPC model", exception);
+      log.warn("Unable to read NPC subtitle mapping", exception);
     }
   }
 
@@ -151,27 +143,33 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
       choice.button.visible = false;
       if (!locked || options.buttonConditionMode() != DialogButtonConditionMode.HIDE) visible.add(choice);
     }
-    choiceOffset = Math.max(0, Math.min(choiceOffset, Math.max(0, visible.size() - 2)));
+    choiceOffset = Math.max(0, Math.min(choiceOffset, Math.max(0, visible.size() - choicesPerPage)));
     boolean done = !typing() && page == lastPage();
-    for (int i = choiceOffset; i < Math.min(visible.size(), choiceOffset + 2); i++) {
-      Button button = visible.get(i).button;
+    boolean needsScroll = visible.size() > choicesPerPage;
+    int replyWidth = needsScroll ? panelWidth - 22 : panelWidth;
+    int shown = 0;
+    for (int i = choiceOffset; i < Math.min(visible.size(), choiceOffset + choicesPerPage); i++) {
+      SiteReplyButton button = (SiteReplyButton) visible.get(i).button;
+      button.choiceNumber = i + 1;
       button.visible = done;
-      button.setX(panelX + 10);
-      button.setY(panelY + panelHeight + 8 + (i - choiceOffset) * 23);
-      button.setWidth(panelWidth - 42);
+      button.setX(panelX);
+      button.setY(panelY + panelHeight + 6 + (i - choiceOffset) * 19);
+      button.setWidth(replyWidth);
+      shown++;
     }
-    previous.setX(panelX + panelWidth - 65);
-    previous.setY(panelY + panelHeight - 23);
+    visibleChoicesCount = done ? shown : 0;
+    previous.setX(panelX + panelWidth - 46);
+    previous.setY(panelY + panelHeight - 19);
     previous.visible = page > 0;
-    next.setX(panelX + panelWidth - 35);
-    next.setY(panelY + panelHeight - 23);
+    next.setX(panelX + panelWidth - 23);
+    next.setY(panelY + panelHeight - 19);
     next.visible = typing() || page < lastPage() || (visible.isEmpty() && options.allowEscClose());
-    less.setX(panelX + panelWidth - 26);
-    less.setY(panelY + panelHeight + 8);
+    less.setX(panelX + panelWidth - 18);
+    less.setY(panelY + panelHeight + 6);
     less.visible = done && choiceOffset > 0;
-    more.setX(panelX + panelWidth - 26);
-    more.setY(panelY + panelHeight + 31);
-    more.visible = done && choiceOffset + 2 < visible.size();
+    more.setX(panelX + panelWidth - 18);
+    more.setY(panelY + panelHeight + 6 + Math.max(0, shown - 1) * 19);
+    more.visible = done && choiceOffset + choicesPerPage < visible.size();
   }
 
   private boolean unavailable(DialogButtonEntry entry) {
@@ -221,38 +219,44 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
 
   @Override
   public void renderBackground(GuiGraphics g, int x, int y, float delta) {
-    // Keep the world sharp behind the cinematic scrim; no vanilla blur or inventory panel.
+    // Keep the world visible behind the website-style dialogue panel.
   }
 
   @Override
   public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
     if (getEasyNPC() == null || next == null) return;
-    g.fill(0, 0, width, height, 0x65050810);
-    g.fillGradient(0, height / 3, width, height, 0x00050810, 0xd9070c14);
-    g.fill(0, 0, width, 5, 0xd9000000);
-    g.fill(0, height - 5, width, height, 0xd9000000);
-    if (options.displayAvatar() && width >= 420) renderPortrait(g);
-    HadesFrame.panel(g, panelX, panelY, panelWidth, panelHeight);
-    Component styledTitle = display(Component.literal(title.getString()));
-    int nameWidth = Math.min(panelWidth - 20, Math.max(126, font.width(styledTitle) + 34));
-    int nameX = panelX + 12;
-    HadesFrame.nameplate(g, nameX, panelY - 37, nameWidth);
-    g.drawCenteredString(font, fit(styledTitle, nameWidth - 20), nameX + nameWidth / 2,
-        panelY - 29, 0xffeee6d4);
+    g.fill(0, 0, width, height, 0x55080605);
+
+    int outerPad = 8;
+    int headerTop = panelY - 26;
+    int repliesBlock = visibleChoicesCount > 0 ? 6 + visibleChoicesCount * 19 - 3 : (!typing() && page == lastPage() ? 18 : 0);
+    int outerX = panelX - outerPad;
+    int outerY = headerTop - outerPad;
+    int outerW = panelWidth + outerPad * 2;
+    int outerH = (panelY + panelHeight + repliesBlock) - headerTop + outerPad * 2 + 14;
+
+    // .d-screen outer frame
+    DialogUi.panel(g, outerX, outerY, outerW, outerH, 1.0F);
+
+    // .d-speaker: 2D face frame + gold speaker name + optional subtitle
+    DialogUi.face(g, getEasyNPC().getLivingEntity(), panelX, headerTop, 1.0F);
+    String speaker = title.getString();
+    DialogUi.draw(g, font, speaker, panelX + DialogUi.FACE_SIZE + 6,
+        subtitle.isEmpty() ? headerTop + 6 : headerTop + 2, DialogUi.GOLD, 1.0F, true);
     if (!subtitle.isEmpty()) {
-      g.pose().pushPose();
-      g.pose().translate(nameX + nameWidth / 2.0f, panelY - 16, 0);
-      g.pose().scale(.75f, .75f, 1);
-      g.drawCenteredString(font, fit(body(Component.literal(subtitle)),
-          (int) ((nameWidth - 16) / .75)), 0, 0, HadesFrame.JADE);
-      g.pose().popPose();
-    } else HadesFrame.diamond(g, nameX + nameWidth / 2, panelY - 14, 2, HadesFrame.JADE);
+      DialogUi.draw(g, font, subtitle, panelX + DialogUi.FACE_SIZE + 6, headerTop + 12,
+          DialogUi.DIM, 1.0F, false);
+    }
+
+    // .d-text inset box
+    DialogUi.textBox(g, panelX, panelY, panelWidth, panelHeight, 1.0F);
+
     int count = revealedCharacters();
     int remaining = count;
     for (int i = page * linesPerPage; i < Math.min(lines.size(), (page + 1) * linesPerPage); i++) {
       int length = Text.length(lines.get(i));
       g.drawString(font, Text.limit(lines.get(i), Math.max(0, Math.min(length, remaining))),
-          panelX + 18, panelY + 15 + (i - page * linesPerPage) * 12, 0xffe3e3df, false);
+          panelX + 10, panelY + 10 + (i - page * linesPerPage) * 12, DialogUi.TEXT, false);
       remaining -= length;
     }
     if (count > lastRevealed && typing() && ClientDialogConfig.TYPEWRITER_ENABLED
@@ -264,9 +268,15 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
     lastRevealed = count;
     if (!typing()) stopSpeech();
     layout();
-    if (lastPage() > 0) g.drawString(font, body(Component.literal(
-            (page + 1) + " / " + (lastPage() + 1))),
-        panelX + 18, panelY + panelHeight - 17, 0xff789790, false);
+    if (lastPage() > 0) {
+      DialogUi.draw(g, font, (page + 1) + " / " + (lastPage() + 1),
+          panelX + 10, panelY + panelHeight - 14, DialogUi.DIM, 1.0F, false);
+    }
+    if (!typing() && page == lastPage() && visibleChoicesCount == 0) {
+      String end = "— fim da conversa —";
+      DialogUi.draw(g, font, end, panelX + (panelWidth - DialogUi.width(font, end)) / 2,
+          panelY + panelHeight + 6, DialogUi.DIM, 1.0F, false);
+    }
     for (Choice choice : choices) {
       choice.button.render(g, mouseX, mouseY, delta);
       if (choice.button.visible && choice.button.isHoveredOrFocused())
@@ -274,17 +284,13 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
             : body(Component.translatable("hades.easy_npc.locked")), mouseX, mouseY);
     }
     for (Button button : controls) button.render(g, mouseX, mouseY, delta);
-    g.drawString(font, body(Component.translatable(
-            typing() ? "hades.easy_npc.reveal" : "hades.easy_npc.controls")),
-        panelX + 8, height - 15, 0xff8fa39f, false);
-  }
-
-  private Component display(Component component) {
-    return component.copy().withStyle(style -> style.withFont(DISPLAY_FONT));
+    DialogUi.draw(g, font, Component.translatable(
+            typing() ? "hades.easy_npc.reveal" : "hades.easy_npc.controls"),
+        panelX, outerY + outerH - outerPad - 9, DialogUi.DIM, 1.0F, false);
   }
 
   private Component body(Component component) {
-    return component.copy().withStyle(style -> style.withFont(BODY_FONT));
+    return DialogUi.styled(component);
   }
 
   private Component fit(Component component, int maxWidth) {
@@ -297,35 +303,20 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
     return component;
   }
 
-  private void renderPortrait(GuiGraphics g) {
-    if (portrait != null) {
-      int h = height - 12;
-      int w = (int) ((long) h * portraitWidth / portraitHeight);
-      if (w > width * .56) { w = (int) (width * .56); h = (int) ((long) w * portraitHeight / portraitWidth); }
-      RenderSystem.enableBlend();
-      g.blit(portrait, Math.max(-12, panelX / 2 - w / 2), height - h, w, h,
-          0, 0, portraitWidth, portraitHeight, portraitWidth, portraitHeight);
-      RenderSystem.disableBlend();
-      return;
-    }
-    int right = Math.min(width / 2, panelX + 30);
-    int scale = Math.max(25, (int) ((height - 24) / Math.max(1.8, getEasyNPC().getLivingEntity().getBbHeight())));
-    IntegrationRegistry.setGuiPreviewMode(true);
-    g.pose().pushPose();
-    try {
-      EntityScreenRenderer.renderEntity(g, getEasyNPC(), new EntityRenderConfig(
-          right / 2, height / 2, scale, 0, 0, 0, 8, right, height - 5, 0,
-          EntityRenderOverrides.HIDE_NAME_TAG_RESET_ROOT), right / 2.0f, height / 2.0f);
-    } finally {
-      g.pose().popPose();
-      IntegrationRegistry.setGuiPreviewMode(false);
-    }
-  }
-
   @Override
   public boolean mouseClicked(double x, double y, int button) {
     if (button == 0 && typing()) { revealed = true; stopSpeech(); layout(); return true; }
     return super.mouseClicked(x, y, button);
+  }
+
+  @Override
+  public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    if (!typing() && page == lastPage() && scrollY != 0.0D) {
+      choiceOffset = Math.max(0, choiceOffset + (scrollY < 0.0D ? 1 : -1));
+      layout();
+      return true;
+    }
+    return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
   }
 
   @Override
@@ -339,6 +330,16 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
       else if (getFocused() instanceof Button button && button.visible && button.active) button.onPress();
       else advance();
       return true;
+    }
+    if (key >= GLFW.GLFW_KEY_1 && key <= GLFW.GLFW_KEY_9) {
+      int choiceNumber = key - GLFW.GLFW_KEY_0;
+      for (Choice choice : choices) {
+        SiteReplyButton button = (SiteReplyButton) choice.button;
+        if (button.visible && button.active && button.choiceNumber == choiceNumber) {
+          button.onPress();
+          return true;
+        }
+      }
     }
     if (key == GLFW.GLFW_KEY_RIGHT) { advance(); return true; }
     if (key == GLFW.GLFW_KEY_LEFT) { if (page > 0) changePage(-1); return true; }
@@ -364,8 +365,14 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
     final Button button;
     Choice(DialogButtonEntry entry) {
       this.entry = entry;
-      this.button = new CinematicButton(0, 0, 100,
-          body(TextComponent.getTextComponentRaw(entry.name(), entry.isTranslationKey())), b -> {
+      this.button = new SiteReplyButton(
+          0,
+          0,
+          100,
+          16,
+          body(TextComponent.getTextComponentRaw(entry.name(), entry.isTranslationKey())),
+          entry.actionDataSet().hasActionDataType(ActionDataType.OPEN_TRADING_SCREEN),
+          b -> {
             if (typing() || page != lastPage() || unavailable(entry)) return;
             action(ActionEventType.ON_BUTTON_CLICK);
             if (entry.hasActionData()) NetworkMessageHandlerManager.getServerHandler()
@@ -375,22 +382,59 @@ public class HadesDialogScreen<T extends DialogMenu> extends Screen<T, Additiona
     }
   }
 
-  private final class CinematicButton extends Button {
-    CinematicButton(int x, int y, int w, Component message, OnPress onPress) {
-      super(x, y, w, 20, message, onPress, DEFAULT_NARRATION);
+  private final class SiteReplyButton extends Button {
+    private final boolean merchantAction;
+    private int choiceNumber;
+
+    SiteReplyButton(int x, int y, int w, int h, Component message, OnPress onPress) {
+      this(x, y, w, h, message, false, onPress);
     }
+
+    SiteReplyButton(
+        int x, int y, int w, int h, Component message, boolean merchantAction, OnPress onPress) {
+      super(x, y, w, h, message, onPress, DEFAULT_NARRATION);
+      this.merchantAction = merchantAction;
+    }
+
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float delta) {
       boolean focus = isHoveredOrFocused();
-      g.fill(getX(), getY(), getX() + getWidth(), getY() + height, focus ? 0xe52b4947 : 0xc80a1419);
-      HadesFrame.line(g, getX() + 5, getY() + height - 1, getX() + getWidth() - 5,
-          getY() + height - 1, focus ? HadesFrame.JADE : 0xff365453);
-      if (getWidth() > 30) HadesFrame.diamond(g, getX() + 8, getY() + 9, 2,
-          active ? HadesFrame.JADE : 0xff657476);
-      int inset = getWidth() > 30 ? 17 : 4;
-      Component label = fit(getMessage(), Math.max(1, getWidth() - inset - 5));
-      g.drawString(font, label, getX() + inset, getY() + 6,
-          active ? 0xffe5e3d6 : 0xff718080, false);
+      ReplyState state = !active ? ReplyState.LOCKED : focus ? ReplyState.HOVER : ReplyState.IDLE;
+      if (choiceNumber > 0) {
+        int stripe = DialogUi.segment(choiceNumber - 1);
+        DialogUi.reply(g, getX(), getY(), getWidth(), height, state, stripe, 1.0F);
+        DialogUi.keycap(
+            g,
+            font,
+            getX() + 5,
+            getY() + (height - DialogUi.KEY) / 2,
+            Integer.toString(choiceNumber),
+            focus && active,
+            active,
+            1.0F);
+        int tagSpace = merchantAction ? 48 : 6;
+        Component prefixed = body(Component.literal("▸ " + getMessage().getString()));
+        Component label = fit(prefixed, Math.max(1, getWidth() - DialogUi.LABEL_X - tagSpace));
+        int color = !active ? DialogUi.DIM : focus ? DialogUi.GOLD : DialogUi.TEXT;
+        g.drawString(font, label, getX() + DialogUi.LABEL_X, getY() + (height - 8) / 2, color, false);
+        if (merchantAction) {
+          String tag = "comércio";
+          DialogUi.draw(
+              g,
+              font,
+              tag,
+              getX() + getWidth() - DialogUi.width(font, tag) - 5,
+              getY() + (height - 8) / 2,
+              DialogUi.DIM,
+              1.0F,
+              false);
+        }
+      } else {
+        DialogUi.reply(g, getX(), getY(), getWidth(), height, state, DialogUi.GOLD, 1.0F);
+        int color = !active ? DialogUi.DIM : focus ? DialogUi.GOLD : DialogUi.TEXT;
+        g.drawCenteredString(
+            font, getMessage(), getX() + getWidth() / 2, getY() + (height - 8) / 2, color);
+      }
     }
   }
 }

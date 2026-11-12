@@ -25,6 +25,9 @@ import de.markusbordihn.easynpc.network.message.client.HighlightEasyNPCMessage;
 import de.markusbordihn.easynpc.network.message.client.OpenMenuCallbackMessage;
 import de.markusbordihn.easynpc.network.message.client.SpeechBubbleMessage;
 import de.markusbordihn.easynpc.network.message.client.SyncDataMessage;
+import de.markusbordihn.easynpc.network.message.client.WorldDialogStateMessage;
+import de.markusbordihn.easynpc.network.message.server.BeginWorldDialogMessage;
+import de.markusbordihn.easynpc.network.message.server.CloseWorldDialogMessage;
 import de.markusbordihn.easynpc.network.message.server.ExecuteActionEventMessage;
 import de.markusbordihn.easynpc.network.message.server.ExecuteDialogButtonActionMessage;
 import de.markusbordihn.easynpc.network.message.server.OpenMenuMessage;
@@ -121,6 +124,12 @@ public class NetworkHandlerManager {
         HighlightEasyNPCMessage.STREAM_CODEC,
         HighlightEasyNPCMessage.class,
         HighlightEasyNPCMessage::create);
+
+    networkHandler.registerClientNetworkMessage(
+        WorldDialogStateMessage.PAYLOAD_TYPE,
+        WorldDialogStateMessage.STREAM_CODEC,
+        WorldDialogStateMessage.class,
+        WorldDialogStateMessage::create);
   }
 
   public static void registerServerNetworkHandler() {
@@ -155,5 +164,17 @@ public class NetworkHandlerManager {
         RequestDataSyncMessage.STREAM_CODEC,
         RequestDataSyncMessage.class,
         RequestDataSyncMessage::create);
+
+    networkHandler.registerServerNetworkMessage(
+        BeginWorldDialogMessage.PAYLOAD_TYPE,
+        BeginWorldDialogMessage.STREAM_CODEC,
+        BeginWorldDialogMessage.class,
+        BeginWorldDialogMessage::create);
+
+    networkHandler.registerServerNetworkMessage(
+        CloseWorldDialogMessage.PAYLOAD_TYPE,
+        CloseWorldDialogMessage.STREAM_CODEC,
+        CloseWorldDialogMessage.class,
+        CloseWorldDialogMessage::create);
   }
 }

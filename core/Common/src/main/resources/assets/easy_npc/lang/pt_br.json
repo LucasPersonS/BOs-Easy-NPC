@@ -1,7 +1,7 @@
 {
   "hades.easy_npc.locked": "Requisitos não atendidos",
   "hades.easy_npc.reveal": "Espaço / clique: revelar diálogo",
-  "hades.easy_npc.controls": "Tab: selecionar   Enter: confirmar",
+  "hades.easy_npc.controls": "1-3: escolher   Tab: selecionar   Enter: confirmar",
   "hades.easy_npc.speaking": "NPC falando",
   "block.easy_npc.boss_spawner": "Gerador de Chefe EasyNPC",
   "block.easy_npc.default_spawner": "Gerador Padrão EasyNPC",
@@ -129,5 +129,11 @@
   "tooltip.easy_npc.spawner.boss_spawner": "O Gerador de Chefe é um gerador especial que permite gerar um NPC chefe.",
   "tooltip.easy_npc.spawner.default_spawner": "O Gerador Padrão é um gerador que permite gerar um NPC padrão.",
   "tooltip.easy_npc.spawner.group_spawner": "O Gerador de Grupo é um gerador que permite gerar um grupo de NPCs.",
-  "tooltip.easy_npc.spawner.single_spawner": "O Gerador Único é um gerador que permite gerar um único NPC."
+  "tooltip.easy_npc.spawner.single_spawner": "O Gerador Único é um gerador que permite gerar um único NPC.",
+  "easy_npc.world_dialog.talk": "Conversar",
+  "easy_npc.world_dialog.show_quests": "Missões",
+  "easy_npc.world_dialog.show_dialog": "Conversa",
+  "easy_npc.world_dialog.switch_hint": "Clique direito no NPC: %s",
+  "easy_npc.world_dialog.choose_hint": "Escolher   Roda: navegar   Teclas 1-%s",
+  "easy_npc.world_dialog.choose_hint_one": "Clique ou Tecla 1: escolher"
 }

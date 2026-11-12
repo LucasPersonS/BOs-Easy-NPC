@@ -19,12 +19,13 @@
 
 package de.markusbordihn.easynpc.commands;
 
+import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.commands.manager.CommandManager;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
-@EventBusSubscriber
+@EventBusSubscriber(modid = Constants.MOD_ID)
 public class CommandsEventHandler {
 
   protected CommandsEventHandler() {}

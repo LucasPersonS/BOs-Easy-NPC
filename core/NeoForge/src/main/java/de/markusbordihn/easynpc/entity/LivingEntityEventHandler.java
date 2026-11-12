@@ -19,6 +19,7 @@
 
 package de.markusbordihn.easynpc.entity;
 
+import de.markusbordihn.easynpc.Constants;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -26,7 +27,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 
-@EventBusSubscriber
+@EventBusSubscriber(modid = Constants.MOD_ID)
 public class LivingEntityEventHandler {
   private LivingEntityEventHandler() {}
 

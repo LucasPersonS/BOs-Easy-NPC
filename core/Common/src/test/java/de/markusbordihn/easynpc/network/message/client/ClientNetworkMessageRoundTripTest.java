@@ -20,12 +20,16 @@
 package de.markusbordihn.easynpc.network.message.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.Unpooled;
 import java.util.UUID;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.Bootstrap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +47,12 @@ class ClientNetworkMessageRoundTripTest {
     FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
     message.write(buffer);
     return SpeechBubbleMessage.create(buffer);
+  }
+
+  private static WorldDialogStateMessage roundTrip(WorldDialogStateMessage message) {
+    FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+    message.write(buffer);
+    return WorldDialogStateMessage.create(buffer);
   }
 
   @Test
@@ -69,5 +79,26 @@ class ClientNetworkMessageRoundTripTest {
     SpeechBubbleMessage loaded = roundTrip(message);
 
     assertEquals(message.text(), loaded.text());
+  }
+
+  @Test
+  @DisplayName("An open world dialog keeps its encoded screen data")
+  void testOpenWorldDialog() {
+    CompoundTag data = new CompoundTag();
+    data.putString("marker", "floating");
+
+    WorldDialogStateMessage loaded = roundTrip(WorldDialogStateMessage.open(data));
+
+    assertTrue(loaded.open());
+    assertEquals("floating", loaded.data().getString("marker"));
+  }
+
+  @Test
+  @DisplayName("A closed world dialog does not carry screen data")
+  void testCloseWorldDialog() {
+    WorldDialogStateMessage loaded = roundTrip(WorldDialogStateMessage.close());
+
+    assertFalse(loaded.open());
+    assertNull(loaded.data());
   }
 }

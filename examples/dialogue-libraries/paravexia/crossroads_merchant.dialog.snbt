@@ -1,0 +1,56 @@
+{
+  Id:"paravexia:crossroads/merchant",
+  DialogData:{
+    Type:"STANDARD",
+    DialogDataSet:[
+      {
+        Label:"default",
+        Name:"Teddy Tuck",
+        Priority:100,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"What is it? I was dreaming of somewhere with better prices."}],
+        Buttons:[
+          {
+            Label:"browse_wares",
+            Name:"Show me your wares.",
+            Actions:[{Type:"OPEN_TRADING_SCREEN"}]
+          },
+          {
+            Label:"ask_about_sleeping",
+            Name:"You sleep on the job?",
+            Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"sleeping"}]
+          },
+          {
+            Label:"leave",
+            Name:"Rest. I'll return later.",
+            Actions:[{Type:"CLOSE_DIALOG"}]
+          }
+        ]
+      },
+      {
+        Label:"sleeping",
+        Name:"Teddy Tuck",
+        Priority:0,
+        Options:{AllowEscClose:1b,ShowCloseButton:0b,DisplayAvatar:1b},
+        Texts:[{Text:"A merchant who never rests soon has nothing worth selling."}],
+        Buttons:[
+          {
+            Label:"browse_after_chat",
+            Name:"Then show me what you kept safe.",
+            Actions:[{Type:"OPEN_TRADING_SCREEN"}]
+          },
+          {
+            Label:"back",
+            Name:"I have another question.",
+            Actions:[{Type:"OPEN_NAMED_DIALOG",Cmd:"default"}]
+          },
+          {
+            Label:"leave_after_chat",
+            Name:"Sleep well.",
+            Actions:[{Type:"CLOSE_DIALOG"}]
+          }
+        ]
+      }
+    ]
+  }
+}

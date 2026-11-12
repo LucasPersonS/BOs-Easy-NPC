@@ -59,3 +59,26 @@ ordem de preferência é UUID, nome e biblioteca, permitindo um retrato específ
 ```
 
 Sem retrato, a tela renderiza o modelo 3D do NPC automaticamente.
+
+## Diálogo de comerciante
+
+O exemplo `examples/dialogue-libraries/paravexia/crossroads_merchant.dialog.snbt` reproduz o fluxo
+de um comerciante cinematográfico: saudação, três respostas numeradas, conversa secundária e uma
+ação `OPEN_TRADING_SCREEN` que entrega o controle à tela de trocas segura do servidor.
+
+Copie o arquivo para `config/easy_npc/dialogues/paravexia/crossroads_merchant.dialog.snbt`, recarregue
+e aplique `paravexia:crossroads/merchant` ao NPC. O NPC também precisa ter o tipo de comércio e as
+ofertas configurados na seção **Trading**; a biblioteca controla a conversa e quando a loja abre,
+mas não inventa ou substitui as ofertas do comerciante.
+
+## Interface flutuante no mundo (NeoForge)
+
+No cliente NeoForge, aproximar-se até seis blocos de um NPC que tenha um diálogo disponível abre a
+conversa automaticamente, sem pausar o jogo nem soltar o mouse. O balão acompanha o ponto de cabeça
+do modelo e as respostas ficam ao lado dele. Mire em uma resposta e use ataque ou interação para
+selecioná-la; quando houver mais de três respostas, use a roda do mouse.
+
+Condições, limites de execução, transições e recompensas continuam validados pelo servidor. Ao
+afastar-se, perder a linha de visão ou abrir outra tela, a sessão flutuante é encerrada. Para evitar
+que ela reabra imediatamente, o mesmo NPC só volta a iniciar o diálogo depois que o jogador sair da
+área e se aproximar novamente.

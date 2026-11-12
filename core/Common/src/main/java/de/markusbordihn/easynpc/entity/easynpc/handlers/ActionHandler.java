@@ -32,6 +32,7 @@ import de.markusbordihn.easynpc.data.action.ActionManager;
 import de.markusbordihn.easynpc.data.action.PendingActionChain;
 import de.markusbordihn.easynpc.data.action.WaitDuration;
 import de.markusbordihn.easynpc.data.condition.ConditionType;
+import de.markusbordihn.easynpc.data.dialog.WorldDialogSessionManager;
 import de.markusbordihn.easynpc.data.execution.ExecutionId;
 import de.markusbordihn.easynpc.data.status.StatusDataType;
 import de.markusbordihn.easynpc.data.ticker.TickerType;
@@ -720,7 +721,11 @@ public interface ActionHandler<E extends Mob> extends EasyNPC<E> {
         break;
       case CLOSE_DIALOG:
         if (serverPlayer != null) {
-          serverPlayer.closeContainer();
+          if (WorldDialogSessionManager.hasSession(serverPlayer)) {
+            WorldDialogSessionManager.close(serverPlayer, true);
+          } else {
+            serverPlayer.closeContainer();
+          }
         } else {
           log.warn("Skipping CLOSE_DIALOG action because no ServerPlayer is available");
         }
@@ -762,6 +767,7 @@ public interface ActionHandler<E extends Mob> extends EasyNPC<E> {
         if (serverPlayer != null) {
           TradingDataCapable<E> tradingData = this.getEasyNPCTradingData();
           if (tradingData != null) {
+            WorldDialogSessionManager.close(serverPlayer, true);
             tradingData.openTradingScreen(serverPlayer);
           } else {
             log.warn(

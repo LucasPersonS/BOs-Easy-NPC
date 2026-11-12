@@ -24,6 +24,7 @@ import de.markusbordihn.easynpc.condition.ConditionManager;
 import de.markusbordihn.easynpc.data.action.ActionContext;
 import de.markusbordihn.easynpc.data.action.ActionDataSet;
 import de.markusbordihn.easynpc.data.dialog.DialogButtonEntry;
+import de.markusbordihn.easynpc.data.dialog.QuestDialogBridge;
 import de.markusbordihn.easynpc.data.execution.ExecutionId;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import de.markusbordihn.easynpc.entity.easynpc.data.DialogDataCapable;
@@ -95,6 +96,11 @@ public record ExecuteDialogButtonActionMessage(UUID uuid, UUID dialogId, UUID di
           this.dialogId,
           easyNPC,
           serverPlayer);
+      return;
+    }
+
+    if (QuestDialogBridge.DIALOG_ID.equals(this.dialogId)) {
+      QuestDialogBridge.choose(serverPlayer, this.uuid, this.dialogId, this.dialogButtonId);
       return;
     }
 

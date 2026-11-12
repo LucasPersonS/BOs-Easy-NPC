@@ -103,6 +103,12 @@ public class SpeechBubbleFrameRenderer {
       screenRects.add(screenRect);
     }
 
+    // Forget offsets of bubbles that were not drawn this frame (out of range, behind the camera),
+    // so they reappear in place instead of sliding in from a stale position.
+    smoothedOffsets
+        .keySet()
+        .removeIf(
+            uuid -> speechBubbleInstances.stream().noneMatch(instance -> instance.uuid().equals(uuid)));
     if (speechBubbleInstances.isEmpty()) {
       return;
     }
