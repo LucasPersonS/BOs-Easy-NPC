@@ -217,6 +217,6 @@
   "easy_npc.world_dialog.show_quests": "Quests",
   "easy_npc.world_dialog.show_dialog": "Conversation",
   "easy_npc.world_dialog.switch_hint": "Right-click the NPC: %s",
-  "easy_npc.world_dialog.choose_hint": "Keys 1-%s or aim and click",
-  "easy_npc.world_dialog.choose_hint_one": "Key 1 or aim and click"
+  "easy_npc.world_dialog.choose_hint": "Choose   Wheel: scroll   Keys 1-%s",
+  "easy_npc.world_dialog.choose_hint_one": "Click or Key 1: choose"
 }

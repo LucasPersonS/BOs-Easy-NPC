@@ -76,8 +76,8 @@ public class DialogTextEditorScreen<T extends EditorMenu> extends EditorScreen<T
     this.homeButton =
         this.addRenderableWidget(
             new TextButton(
-                this.leftPos + 7,
-                this.topPos + 7,
+                this.leftPos + 3,
+                this.topPos + 3,
                 10,
                 16,
                 "<",
@@ -89,7 +89,7 @@ public class DialogTextEditorScreen<T extends EditorMenu> extends EditorScreen<T
         this.addRenderableWidget(
             new DialogButton(
                 this.homeButton.getX() + this.homeButton.getWidth(),
-                this.topPos + 7,
+                this.topPos + 3,
                 140,
                 this.getDialogData().getName(21),
                 onPress ->
@@ -100,7 +100,7 @@ public class DialogTextEditorScreen<T extends EditorMenu> extends EditorScreen<T
         this.addRenderableWidget(
             new DialogButton(
                 this.dialogButton.getX() + this.dialogButton.getWidth(),
-                this.topPos + 7,
+                this.topPos + 3,
                 140,
                 "Dialog Text",
                 onPress -> {}));

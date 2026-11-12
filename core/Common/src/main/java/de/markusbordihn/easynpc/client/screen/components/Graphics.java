@@ -19,6 +19,7 @@
 
 package de.markusbordihn.easynpc.client.screen.components;
 
+import de.markusbordihn.easynpc.Constants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
@@ -49,6 +50,21 @@ public class Graphics {
       int textureY,
       int textureWidth,
       int textureHeight) {
+    if (Constants.TEXTURE_INVENTORY.equals(texture)) {
+      if (textureX > 0 && textureY > 0 && textureX % 18 == 0 && textureY % 18 == 0) {
+        ConfigUi.drawSlotRegion(guiGraphics, x, y, textureX, textureY);
+        return;
+      }
+      if (width == 212 && height == 0 && textureX == 16 && textureY == 16) {
+        // Trading arrow (replace vanilla grey arrow with Paravexia gold/stone chevron)
+        int cy = y + 7;
+        guiGraphics.fill(x + 2, cy, x + 11, cy + 2, ConfigUi.GOLD_DARK);
+        guiGraphics.fill(x + 9, cy - 2, x + 11, cy + 4, ConfigUi.GOLD);
+        guiGraphics.fill(x + 11, cy - 1, x + 13, cy + 3, ConfigUi.GOLD);
+        guiGraphics.fill(x + 13, cy, x + 14, cy + 2, ConfigUi.TEXT_BRIGHT);
+        return;
+      }
+    }
     guiGraphics.blit(texture, x, y, width, height, textureX, textureY, textureWidth, textureHeight);
   }
 

@@ -86,14 +86,14 @@ public class ColorPickerPopup extends Popup {
 
   private static int getSwatchBorderColor(boolean selected, boolean hovered) {
     if (selected) {
-      return 0xFFFFFFFF;
+      return de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD;
     }
 
     if (hovered) {
-      return 0xFFFFFFAA;
+      return de.markusbordihn.easynpc.client.screen.components.ConfigUi.TEXT_BRIGHT;
     }
 
-    return 0xFF000000;
+    return de.markusbordihn.easynpc.client.screen.components.ConfigUi.BLACK;
   }
 
   public void toggle(

@@ -151,18 +151,8 @@ public class CustomPoseConfigurationScreen<T extends ConfigurationMenu>
     super.renderBg(guiGraphics, partialTicks, mouseX, mouseY);
 
     int backgroundTopPos = this.contentTopPos + 30;
-    guiGraphics.fill(
-        this.contentLeftPos + 109,
-        backgroundTopPos,
-        this.contentLeftPos + 206,
-        this.contentTopPos + 178,
-        0xff000000);
-    guiGraphics.fill(
-        this.contentLeftPos + 110,
-        backgroundTopPos + 1,
-        this.contentLeftPos + 205,
-        this.contentTopPos + 177,
-        0xffaaaaaa);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawEntityStage(
+        guiGraphics, this.contentLeftPos + 109, backgroundTopPos, 97, 148, true);
 
     Text.drawConfigString(
         guiGraphics, this.font, "animation", this.contentLeftPos + 134, this.bottomPos - 37);

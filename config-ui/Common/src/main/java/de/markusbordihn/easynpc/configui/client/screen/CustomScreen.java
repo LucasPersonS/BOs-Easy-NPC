@@ -61,37 +61,19 @@ public class CustomScreen<
 
   @Override
   protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-    guiGraphics.drawString(this.font, this.title, 6, 6, Constants.FONT_COLOR_BLACK, false);
+    guiGraphics.drawString(
+        this.font,
+        this.title,
+        10,
+        6,
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD,
+        true);
   }
 
   @Override
   public void renderBackground(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
-    Graphics.blitStretched(
-        guiGraphics,
-        Constants.TEXTURE_PRESET_BROWSER_BACKGROUND,
-        0,
-        0,
-        this.width,
-        TITLE_HEIGHT,
-        1,
-        1,
-        333,
-        19,
-        512,
-        512);
-    Graphics.blitStretched(
-        guiGraphics,
-        Constants.TEXTURE_PRESET_BROWSER_BACKGROUND,
-        0,
-        TITLE_HEIGHT,
-        this.width,
-        this.height - TITLE_HEIGHT,
-        1,
-        20,
-        333,
-        244,
-        512,
-        512);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawCustomWindow(
+        guiGraphics, 0, 0, this.width, this.height, TITLE_HEIGHT);
     this.renderLabels(guiGraphics, x, y);
   }
 }

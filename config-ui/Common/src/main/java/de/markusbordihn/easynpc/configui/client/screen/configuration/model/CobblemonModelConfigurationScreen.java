@@ -328,18 +328,8 @@ public class CobblemonModelConfigurationScreen<T extends ConfigurationMenu>
   }
 
   private void renderSkinSelectionBackground(GuiGraphics guiGraphics) {
-    guiGraphics.fill(
-        this.contentLeftPos,
-        this.contentTopPos + 104,
-        this.contentLeftPos + 302,
-        this.contentTopPos + 190,
-        0xff000000);
-    guiGraphics.fill(
-        this.contentLeftPos + 1,
-        this.contentTopPos + 105,
-        this.contentLeftPos + 301,
-        this.contentTopPos + 189,
-        0xffaaaaaa);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawInset(
+        guiGraphics, this.contentLeftPos, this.contentTopPos + 104, 302, 86);
   }
 
   private void onSearchFieldChanged(String searchText) {

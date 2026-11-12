@@ -184,8 +184,7 @@ public class SpriteButton extends CustomButton {
   public void renderButtonText(
       GuiGraphics guiGraphics, Font font, Component component, int x, int y) {
     if (component != null && !component.getString().isEmpty()) {
-      int foregroundColor =
-          this.active ? Constants.FONT_COLOR_WHITE : Constants.FONT_COLOR_LIGHT_GRAY;
+      int foregroundColor = this.getButtonTextColor() & 0x00FFFFFF;
       int textColor = foregroundColor | Mth.ceil(this.alpha * 255.0F) << 24;
       if (this.renderCenter) {
         guiGraphics.drawCenteredString(
@@ -201,7 +200,7 @@ public class SpriteButton extends CustomButton {
             this.getX() + this.spriteWidth + 4,
             this.getY() + (this.height - 8) / 2,
             textColor,
-            false);
+            true);
       }
     }
   }

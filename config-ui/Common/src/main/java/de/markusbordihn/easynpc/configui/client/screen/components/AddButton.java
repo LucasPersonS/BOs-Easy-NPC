@@ -51,6 +51,9 @@ public class AddButton extends SpriteButton {
         SPRITE_WIDTH,
         SPRITE_HEIGHT,
         onPress);
+    if (width > 24) {
+      this.setAccentColor(de.markusbordihn.easynpc.client.screen.components.ConfigUi.GREEN);
+    }
   }
 
   public AddButton(int left, int top, int width, Component component, OnPress onPress) {
@@ -68,5 +71,8 @@ public class AddButton extends SpriteButton {
         SPRITE_WIDTH,
         SPRITE_HEIGHT,
         onPress);
+    if (width > 24) {
+      this.setAccentColor(de.markusbordihn.easynpc.client.screen.components.ConfigUi.GREEN);
+    }
   }
 }

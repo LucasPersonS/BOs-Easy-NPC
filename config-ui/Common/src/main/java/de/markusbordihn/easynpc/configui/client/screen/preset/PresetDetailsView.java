@@ -148,9 +148,9 @@ public class PresetDetailsView {
 
   private static int getSecurityColor(PresetFeatureStatus status) {
     return switch (status) {
-      case ALLOWED -> 0x00AA00;
-      case BLOCKED -> 0xAA0000;
-      case REDUCED -> 0xAA7700;
+      case ALLOWED -> de.markusbordihn.easynpc.client.screen.components.ConfigUi.GREEN;
+      case BLOCKED -> de.markusbordihn.easynpc.client.screen.components.ConfigUi.RED;
+      case REDUCED -> de.markusbordihn.easynpc.client.screen.components.ConfigUi.ORANGE;
     };
   }
 

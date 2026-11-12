@@ -43,14 +43,22 @@ public class SelectBox<T> extends AbstractWidget {
   private static final int ARROW_WIDTH = 12;
   private static final int SCROLLBAR_WIDTH = 3;
   private static final int SEARCH_MAX_LENGTH = 128;
-  private static final int COLOR_BACKGROUND = 0xFF000000;
-  private static final int COLOR_BORDER = 0xFFA0A0A0;
-  private static final int COLOR_BORDER_INACTIVE = 0xFF707070;
-  private static final int COLOR_ENTRY_HOVER = 0xFF404040;
-  private static final int COLOR_ENTRY_SELECTED = 0xFF303030;
-  private static final int COLOR_SCROLLBAR = 0xFF808080;
-  private static final int COLOR_TEXT = 0xFFE0E0E0;
-  private static final int COLOR_TEXT_INACTIVE = 0xFF707070;
+  private static final int COLOR_BACKGROUND =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.TEXT_FILL;
+  private static final int COLOR_BORDER =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.TEXT_IN;
+  private static final int COLOR_BORDER_INACTIVE =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN;
+  private static final int COLOR_ENTRY_HOVER =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.STONE_HI;
+  private static final int COLOR_ENTRY_SELECTED =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.STONE;
+  private static final int COLOR_SCROLLBAR =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD_DARK;
+  private static final int COLOR_TEXT =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.TEXT;
+  private static final int COLOR_TEXT_INACTIVE =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.DIM;
   private static final String NO_SELECTION_LABEL = "-";
 
   private final List<SelectOption<T>> options = new ArrayList<>();
@@ -326,14 +334,13 @@ public class SelectBox<T> extends AbstractWidget {
     int borderColor = this.active ? COLOR_BORDER : COLOR_BORDER_INACTIVE;
     int textColor = this.active ? COLOR_TEXT : COLOR_TEXT_INACTIVE;
 
-    DrawBoxWithBorder.draw(
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawInput(
         guiGraphics,
         this.getX(),
         this.getY(),
         this.width,
         this.height,
-        COLOR_BACKGROUND,
-        borderColor);
+        this.open || this.isHoveredOrFocused());
     String selectedLabel =
         this.selectedIndex >= 0 && this.selectedIndex < this.options.size()
             ? this.options.get(this.selectedIndex).label()
@@ -344,20 +351,24 @@ public class SelectBox<T> extends AbstractWidget {
         this.getX() + 4,
         this.getY() + (this.height - 8) / 2,
         textColor,
-        false);
+        true);
 
     int arrowLeft = this.getX() + this.width - ARROW_WIDTH;
     guiGraphics.fill(
-        arrowLeft, this.getY() + 1, arrowLeft + 1, this.getY() + this.height - 1, borderColor);
+        arrowLeft, this.getY() + 2, arrowLeft + 1, this.getY() + this.height - 2, borderColor);
     int arrowCenterX = arrowLeft + ARROW_WIDTH / 2;
     int arrowTop = this.getY() + (this.height - 3) / 2;
+    int arrowColor =
+        this.active && (this.open || this.isHoveredOrFocused())
+            ? de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD
+            : textColor;
     for (int row = 0; row < 3; row++) {
       guiGraphics.fill(
           arrowCenterX - 3 + row,
           arrowTop + row,
           arrowCenterX + 4 - row,
           arrowTop + row + 1,
-          textColor);
+          arrowColor);
     }
 
     if (!this.open) {
@@ -373,23 +384,17 @@ public class SelectBox<T> extends AbstractWidget {
   private void renderDropdown(
       GuiGraphics guiGraphics, Font font, int mouseX, int mouseY, float partialTicks) {
     int dropdownTop = this.getDropdownTop();
-    DrawBoxWithBorder.draw(
-        guiGraphics,
-        this.getX(),
-        dropdownTop,
-        this.width,
-        this.getDropdownHeight(),
-        COLOR_BACKGROUND,
-        COLOR_BORDER);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawCard(
+        guiGraphics, this.getX(), dropdownTop, this.width, this.getDropdownHeight());
 
     if (this.searchField != null) {
       this.searchField.setX(this.getX() + 5);
       this.searchField.setY(dropdownTop + 4);
       this.searchField.render(guiGraphics, mouseX, mouseY, partialTicks);
       guiGraphics.fill(
-          this.getX() + 1,
+          this.getX() + 2,
           dropdownTop + this.getSearchHeight(),
-          this.getX() + this.width - 1,
+          this.getX() + this.width - 2,
           dropdownTop + this.getSearchHeight() + 1,
           COLOR_BORDER);
     }
@@ -409,19 +414,27 @@ public class SelectBox<T> extends AbstractWidget {
               && this.options.get(this.selectedIndex).equals(option);
       if (entryHovered || entrySelected) {
         guiGraphics.fill(
-            this.getX() + 1,
+            this.getX() + 2,
             entryTop,
-            this.getX() + this.width - 1,
+            this.getX() + this.width - 2,
             entryTop + ENTRY_HEIGHT,
             entryHovered ? COLOR_ENTRY_HOVER : COLOR_ENTRY_SELECTED);
+        guiGraphics.fill(
+            this.getX() + 2,
+            entryTop + 1,
+            this.getX() + 4,
+            entryTop + ENTRY_HEIGHT - 1,
+            de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
       }
       guiGraphics.drawString(
           font,
           font.plainSubstrByWidth(option.label(), this.width - 10),
-          this.getX() + 5,
+          this.getX() + 6,
           entryTop + (ENTRY_HEIGHT - 8) / 2,
-          COLOR_TEXT,
-          false);
+          entrySelected
+              ? de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD
+              : COLOR_TEXT,
+          true);
     }
 
     this.renderScrollbar(guiGraphics, entriesTop);

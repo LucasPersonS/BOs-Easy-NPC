@@ -53,8 +53,10 @@ public class ActionDataListEntry extends ObjectSelectionList.Entry<ActionDataLis
   private static final int VALUE_MAX_LENGTH = 16;
   private static final int LIST_WIDTH = 309;
 
-  private static final int COLOR_SEPARATOR_LINE = 0xffaaaaaa;
-  private static final int COLOR_COLUMN_SEPARATOR = 0xff666666;
+  private static final int COLOR_SEPARATOR_LINE =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN;
+  private static final int COLOR_COLUMN_SEPARATOR =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN;
 
   private final Font font;
   private final int leftPos;

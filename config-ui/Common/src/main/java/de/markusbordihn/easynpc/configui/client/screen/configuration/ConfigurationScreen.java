@@ -104,6 +104,25 @@ public class ConfigurationScreen<T extends ConfigUIMenu> extends Screen<T, Addit
                 onPress ->
                     NetworkMessageHandlerManager.getServerHandler()
                         .openConfiguration(this.getEasyNPCUUID(), ConfigurationType.MAIN)));
+    if (this.homeButton
+        instanceof de.markusbordihn.easynpc.client.screen.components.CustomButton customHome) {
+      customHome.setAccentColor(de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
+    }
+  }
+
+  @Override
+  protected <
+          W extends
+              net.minecraft.client.gui.components.events.GuiEventListener
+                  & net.minecraft.client.gui.components.Renderable
+                  & net.minecraft.client.gui.narration.NarratableEntry>
+      W addRenderableWidget(W widget) {
+    if (widget instanceof de.markusbordihn.easynpc.client.screen.components.CustomButton btn
+        && btn.getY() == this.buttonTopPos
+        && btn.getX() >= this.buttonLeftPos) {
+      btn.setTabButton(true);
+    }
+    return super.addRenderableWidget(widget);
   }
 
   @Override
@@ -113,9 +132,9 @@ public class ConfigurationScreen<T extends ConfigUIMenu> extends Screen<T, Addit
           guiGraphics,
           this.font,
           this.title,
-          this.leftPos + this.titleLabelX,
+          this.leftPos + this.titleLabelX + 3,
           this.topPos + this.titleLabelY,
-          4210752);
+          de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
     }
   }
 
@@ -189,6 +208,9 @@ public class ConfigurationScreen<T extends ConfigUIMenu> extends Screen<T, Addit
     }
 
     button.active = false;
+    if (button instanceof de.markusbordihn.easynpc.client.screen.components.CustomButton customBtn) {
+      customBtn.setBlocked(true);
+    }
     button.setTooltip(Tooltip.create(TextComponent.getTranslatedConfigText(reasonTranslationKey)));
   }
 

@@ -23,7 +23,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 public class DrawBorder {
 
-  private static final int DEFAULT_BORDER_COLOR = 0xFF555555;
+  private static final int DEFAULT_BORDER_COLOR = ConfigUi.TEXT_IN;
 
   private DrawBorder() {}
 
@@ -33,14 +33,25 @@ public class DrawBorder {
 
   public static void draw(
       GuiGraphics guiGraphics, int x, int y, int width, int height, int borderColor) {
-    guiGraphics.fill(x, y, x + width, y + 1, borderColor);
-    guiGraphics.fill(x, y + height - 1, x + width, y + height, borderColor);
-    guiGraphics.fill(x, y, x + 1, y + height, borderColor);
-    guiGraphics.fill(x + width - 1, y, x + width, y + height, borderColor);
+    int mapped =
+        switch (borderColor) {
+          case 0xFF555555, 0xFFAAAAAA, 0xFF888888, 0xFF404040, 0xFF3F3F3F -> ConfigUi.TEXT_IN;
+          case 0xFFFFFFFF -> ConfigUi.GOLD;
+          default -> borderColor;
+        };
+    guiGraphics.fill(x, y, x + width, y + 1, mapped);
+    guiGraphics.fill(x, y + height - 1, x + width, y + height, mapped);
+    guiGraphics.fill(x, y, x + 1, y + height, mapped);
+    guiGraphics.fill(x + width - 1, y, x + width, y + height, mapped);
   }
 
   public static void drawVerticalSeparator(
       GuiGraphics guiGraphics, int x, int y, int height, int color) {
-    guiGraphics.fill(x, y, x + 1, y + height, color);
+    int mapped =
+        switch (color) {
+          case 0xFF555555, 0xFFAAAAAA, 0xFF888888, 0xFF404040 -> ConfigUi.PANEL_IN;
+          default -> color;
+        };
+    guiGraphics.fill(x, y, x + 1, y + height, mapped);
   }
 }

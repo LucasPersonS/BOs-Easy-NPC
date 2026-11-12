@@ -51,6 +51,9 @@ public class DeleteButton extends SpriteButton {
         SPRITE_WIDTH,
         SPRITE_HEIGHT,
         onPress);
+    if (width > 24) {
+      this.setAccentColor(de.markusbordihn.easynpc.client.screen.components.ConfigUi.RED);
+    }
   }
 
   public DeleteButton(int left, int top, OnPress onPress) {
@@ -76,5 +79,8 @@ public class DeleteButton extends SpriteButton {
         SPRITE_WIDTH,
         SPRITE_HEIGHT,
         onPress);
+    if (width > 24) {
+      this.setAccentColor(de.markusbordihn.easynpc.client.screen.components.ConfigUi.RED);
+    }
   }
 }

@@ -140,6 +140,6 @@
   "easy_npc.world_dialog.show_quests": "Missões",
   "easy_npc.world_dialog.show_dialog": "Conversa",
   "easy_npc.world_dialog.switch_hint": "Clique direito no NPC: %s",
-  "easy_npc.world_dialog.choose_hint": "Teclas 1-%s ou mire e clique",
-  "easy_npc.world_dialog.choose_hint_one": "Tecla 1 ou mire e clique"
+  "easy_npc.world_dialog.choose_hint": "Escolher   Roda: navegar   Teclas 1-%s",
+  "easy_npc.world_dialog.choose_hint_one": "Clique ou Tecla 1: escolher"
 }

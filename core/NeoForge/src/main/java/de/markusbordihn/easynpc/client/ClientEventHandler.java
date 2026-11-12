@@ -104,6 +104,11 @@ class ClientGameEventHandler {
   }
 
   @SubscribeEvent
+  public static void onKeyInput(InputEvent.Key event) {
+    WorldDialogOverlay.onKey(event.getKey(), event.getAction());
+  }
+
+  @SubscribeEvent
   public static void onRenderLevelStage(RenderLevelStageEvent event) {
     if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) {
       return;

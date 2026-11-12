@@ -182,8 +182,8 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
     this.homeButton =
         this.addRenderableWidget(
             new TextButton(
-                this.leftPos + 7,
-                this.topPos + 7,
+                this.leftPos + 3,
+                this.topPos + 3,
                 10,
                 16,
                 "<",
@@ -195,7 +195,7 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
           this.addRenderableWidget(
               new ActionsButton(
                   contextButtonX,
-                  this.topPos + 7,
+                  this.topPos + 3,
                   140,
                   this.context.breadcrumbLabel(),
                   onPress -> this.context.openParentEditor()));
@@ -204,7 +204,7 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
           this.addRenderableWidget(
               new DialogButton(
                   contextButtonX,
-                  this.topPos + 7,
+                  this.topPos + 3,
                   140,
                   this.context.breadcrumbLabel(),
                   onPress -> this.context.openParentEditor()));
@@ -214,7 +214,7 @@ public class ConditionDataEntryEditorContainerScreen<T extends EditorMenu> exten
         this.addRenderableWidget(
             new ActionButton(
                 this.contextButton.getX() + this.contextButton.getWidth(),
-                this.topPos + 7,
+                this.topPos + 3,
                 140,
                 "dialog.conditions",
                 onPress -> this.navigateToConditionDataEditor()));

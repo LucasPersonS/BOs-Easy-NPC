@@ -175,17 +175,7 @@ public class EquipmentConfigurationContainerScreen<T extends ConfigurationMenu>
         162,
         18);
 
-    guiGraphics.fill(
-        this.contentLeftPos + 109,
-        slotPositionTop - 8,
-        this.contentLeftPos + 169,
-        slotPositionTop + 102,
-        0xff000000);
-    guiGraphics.fill(
-        this.contentLeftPos + 110,
-        slotPositionTop - 7,
-        this.contentLeftPos + 168,
-        slotPositionTop + 101,
-        0xffaaaaaa);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawEntityStage(
+        guiGraphics, this.contentLeftPos + 109, slotPositionTop - 8, 60, 110, true);
   }
 }

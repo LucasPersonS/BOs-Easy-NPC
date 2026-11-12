@@ -19,6 +19,7 @@
 
 package de.markusbordihn.easynpc.configui.client.screen.configuration.skin;
 
+import de.markusbordihn.easynpc.client.screen.components.ConfigUi;
 import de.markusbordihn.easynpc.client.screen.components.Text;
 import de.markusbordihn.easynpc.client.screen.components.TextButton;
 import de.markusbordihn.easynpc.client.texture.TextureManager;
@@ -144,18 +145,7 @@ public class SkinConfigurationScreen<T extends ConfigurationMenu> extends Config
   }
 
   protected void renderSkinSelectionBackground(GuiGraphics guiGraphics) {
-    guiGraphics.fill(
-        this.contentLeftPos,
-        this.contentTopPos + 104,
-        this.contentLeftPos + 302,
-        this.contentTopPos + 190,
-        0xff000000);
-    guiGraphics.fill(
-        this.contentLeftPos + 1,
-        this.contentTopPos + 105,
-        this.contentLeftPos + 301,
-        this.contentTopPos + 189,
-        0xffaaaaaa);
+    ConfigUi.drawInset(guiGraphics, this.contentLeftPos, this.contentTopPos + 104, 302, 86);
   }
 
   @Override

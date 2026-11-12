@@ -43,21 +43,20 @@ public class SearchField extends TextField {
 
   @Override
   public void renderWidget(GuiGraphics guiGraphics, int left, int top, float partialTicks) {
-    super.renderWidget(guiGraphics, left, top, partialTicks);
-
+    if (!this.isVisible()) {
+      return;
+    }
     int stylePositionX = this.getX() - SPRITE_WIDTH;
+    int totalX = stylePositionX - 1;
+    int totalW = this.getWidth() + SPRITE_WIDTH + 1;
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawInput(
+        guiGraphics, totalX, this.getY(), totalW, this.height, this.isFocused());
     guiGraphics.fill(
-        stylePositionX - 1,
-        this.getY(),
-        stylePositionX + 16,
-        this.getY() + this.height,
-        this.isFocused() ? 0xFFFFFFFF : 0xFFA0A0A0);
-    guiGraphics.fill(
-        stylePositionX,
-        this.getY() + 1,
-        stylePositionX + 16,
-        this.getY() + this.height - 1,
-        0xFF000000);
+        this.getX() - 1,
+        this.getY() + 2,
+        this.getX(),
+        this.getY() + this.height - 2,
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN);
 
     guiGraphics.blit(
         SPRITE,
@@ -69,5 +68,22 @@ public class SearchField extends TextField {
         SPRITE_HEIGHT,
         256,
         256);
+
+    int origX = this.getX();
+    int origY = this.getY();
+    int origW = this.getWidth();
+    boolean wasBordered = this.isBordered();
+    this.setBordered(false);
+    this.setX(origX + 3);
+    this.setY(origY + (this.height - 8) / 2);
+    this.setWidth(Math.max(4, origW - 6));
+    try {
+      super.renderWidget(guiGraphics, left, top, partialTicks);
+    } finally {
+      this.setBordered(wasBordered);
+      this.setX(origX);
+      this.setY(origY);
+      this.setWidth(origW);
+    }
   }
 }

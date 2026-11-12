@@ -61,13 +61,37 @@ public class ConfigurationContainerScreen<T extends ConfigUIMenu> extends Contai
                 onPress ->
                     NetworkMessageHandlerManager.getServerHandler()
                         .openConfiguration(this.getEasyNPCUUID(), ConfigurationType.MAIN)));
+    if (this.homeButton
+        instanceof de.markusbordihn.easynpc.client.screen.components.CustomButton customHome) {
+      customHome.setAccentColor(de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
+    }
+  }
+
+  @Override
+  protected <
+          W extends
+              net.minecraft.client.gui.components.events.GuiEventListener
+                  & net.minecraft.client.gui.components.Renderable
+                  & net.minecraft.client.gui.narration.NarratableEntry>
+      W addRenderableWidget(W widget) {
+    if (widget instanceof de.markusbordihn.easynpc.client.screen.components.CustomButton btn
+        && btn.getY() == this.buttonTopPos
+        && btn.getX() >= this.buttonLeftPos) {
+      btn.setTabButton(true);
+    }
+    return super.addRenderableWidget(widget);
   }
 
   @Override
   protected void renderLabels(GuiGraphics guiGraphics, int x, int y) {
     if (!this.compactMode) {
       Text.drawString(
-          guiGraphics, this.font, this.title, this.titleLabelX, this.titleLabelY, 4210752);
+          guiGraphics,
+          this.font,
+          this.title,
+          this.titleLabelX + 3,
+          this.titleLabelY,
+          de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
     }
   }
 

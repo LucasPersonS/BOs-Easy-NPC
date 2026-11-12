@@ -182,7 +182,7 @@ public class Screen<
         this.title,
         this.leftPos + this.titleLabelX,
         this.topPos + this.titleLabelY,
-        4210752);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
   }
 
   protected void updateTick() {}

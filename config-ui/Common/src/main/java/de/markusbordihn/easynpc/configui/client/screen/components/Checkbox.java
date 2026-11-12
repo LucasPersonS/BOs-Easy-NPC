@@ -150,12 +150,19 @@ public class Checkbox extends AbstractButton {
         64);
 
     if (this.showLabel) {
+      int labelColor =
+          this.active
+              ? (this.isHoveredOrFocused()
+                  ? de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD
+                  : de.markusbordihn.easynpc.client.screen.components.ConfigUi.TEXT)
+              : de.markusbordihn.easynpc.client.screen.components.ConfigUi.DIM;
       Text.drawString(
           guiGraphics,
           this.font,
           this.getMessage(),
           this.getX() + BOX_SIZE + LABEL_GAP,
-          this.getY() + (this.height - 8) / 2);
+          this.getY() + (this.height - 8) / 2,
+          labelColor);
     }
   }
 

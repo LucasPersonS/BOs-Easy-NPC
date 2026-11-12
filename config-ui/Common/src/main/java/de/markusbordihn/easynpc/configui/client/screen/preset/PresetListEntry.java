@@ -19,8 +19,7 @@
 
 package de.markusbordihn.easynpc.configui.client.screen.preset;
 
-import de.markusbordihn.easynpc.client.screen.components.DrawBorder;
-import de.markusbordihn.easynpc.client.screen.components.DrawBox;
+import de.markusbordihn.easynpc.client.screen.components.ConfigUi;
 import de.markusbordihn.easynpc.client.screen.components.Text;
 import de.markusbordihn.easynpc.configui.Constants;
 import de.markusbordihn.easynpc.configui.client.renderer.screen.EntityConfigScreenRenderer;
@@ -237,23 +236,28 @@ public class PresetListEntry extends ObjectSelectionList.Entry<PresetListEntry> 
       boolean isMouseOver,
       float partialTicks) {
 
-    guiGraphics.fill(
-        left,
-        top,
-        left + width,
-        top + height,
-        this.screen.isSelected(this.preset) ? 0x80FFFFFF : isMouseOver ? 0x40FFFFFF : 0);
+    boolean selected = this.screen.isSelected(this.preset);
+    if (selected || isMouseOver) {
+      guiGraphics.fill(
+          left,
+          top,
+          left + width,
+          top + height,
+          selected ? 0x33F1B64B : 0x1AEFE5D6);
+      if (selected) {
+        guiGraphics.fill(left, top, left + 2, top + height, 0xFF000000 | ConfigUi.GOLD);
+      }
+    }
 
-    int previewBoxX = left + 1;
+    int previewBoxX = left + 3;
     int previewBoxY = top + 1;
 
     this.renderPreviewBox(guiGraphics, previewBoxX, previewBoxY, mouseX, mouseY);
-    this.renderPresetInfo(guiGraphics, left, top);
+    this.renderPresetInfo(guiGraphics, left + 2, top);
   }
 
   private void renderPreviewBox(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
-    DrawBox.draw(guiGraphics, x, y, PREVIEW_BOX_SIZE, PREVIEW_BOX_SIZE);
-    DrawBorder.draw(guiGraphics, x, y, PREVIEW_BOX_SIZE, PREVIEW_BOX_SIZE);
+    ConfigUi.drawEntityStage(guiGraphics, x, y, PREVIEW_BOX_SIZE, PREVIEW_BOX_SIZE, false);
 
     if (this.previewNPC != null) {
       EntityConfigScreenRenderer.renderEntity(
@@ -279,7 +283,7 @@ public class PresetListEntry extends ObjectSelectionList.Entry<PresetListEntry> 
         LocalPresetDataFiles.getPresetDisplayName(this.preset, this.metadata),
         scaledX,
         scaledY,
-        0x000000);
+        this.screen.isSelected(this.preset) ? ConfigUi.GOLD : ConfigUi.TEXT);
 
     Text.drawString(
         guiGraphics,
@@ -287,7 +291,7 @@ public class PresetListEntry extends ObjectSelectionList.Entry<PresetListEntry> 
         this.presetType.name() + " - " + this.metadata.category(),
         scaledX,
         scaledY + lineHeight,
-        0x3F3F3F);
+        ConfigUi.MUTED);
 
     String versionLine = this.metadata.version();
     if (!OWN_NAMESPACE.equals(this.preset.getNamespace())) {
@@ -303,7 +307,7 @@ public class PresetListEntry extends ObjectSelectionList.Entry<PresetListEntry> 
         versionLine,
         scaledX,
         scaledY + lineHeight * 2,
-        0x3F3F3F);
+        ConfigUi.DIM);
 
     guiGraphics.pose().popPose();
   }

@@ -25,13 +25,16 @@ import net.minecraft.client.gui.GuiGraphics;
 
 public class DrawBoxWithBorder {
 
-  private static final int DEFAULT_BACKGROUND_COLOR = 0xF0E0E0E0;
-  private static final int DEFAULT_BORDER_COLOR = 0xFF555555;
+  private static final int DEFAULT_BACKGROUND_COLOR =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.TEXT_FILL;
+  private static final int DEFAULT_BORDER_COLOR =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.TEXT_IN;
 
   private DrawBoxWithBorder() {}
 
   public static void draw(GuiGraphics guiGraphics, int x, int y, int width, int height) {
-    draw(guiGraphics, x, y, width, height, DEFAULT_BACKGROUND_COLOR, DEFAULT_BORDER_COLOR);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawInset(
+        guiGraphics, x, y, width, height);
   }
 
   public static void draw(

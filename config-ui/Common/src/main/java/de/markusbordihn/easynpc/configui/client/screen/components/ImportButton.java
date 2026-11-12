@@ -58,6 +58,9 @@ public class ImportButton extends SpriteButton {
         SPRITE_WIDTH,
         SPRITE_HEIGHT,
         onPress);
+    if (width > 24) {
+      this.setAccentColor(de.markusbordihn.easynpc.client.screen.components.ConfigUi.BLUE);
+    }
   }
 
   public ImportButton(int left, int top, int width, int height, String label, OnPress onPress) {
@@ -75,6 +78,9 @@ public class ImportButton extends SpriteButton {
         SPRITE_WIDTH,
         SPRITE_HEIGHT,
         onPress);
+    if (width > 24) {
+      this.setAccentColor(de.markusbordihn.easynpc.client.screen.components.ConfigUi.BLUE);
+    }
   }
 
   public ImportButton(int left, int top, int width, Component component, OnPress onPress) {

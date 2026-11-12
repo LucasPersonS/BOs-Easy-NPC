@@ -26,4 +26,8 @@ pluginManagement {
 
 rootProject.name = 'config-ui'
 
-include("Common", "Fabric", "Forge", "NeoForge")
+if (providers.gradleProperty('neoforgeOnly').isPresent()) {
+  include("Common", "NeoForge")
+} else {
+  include("Common", "Fabric", "Forge", "NeoForge")
+}

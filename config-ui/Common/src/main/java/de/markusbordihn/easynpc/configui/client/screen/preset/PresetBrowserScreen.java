@@ -19,6 +19,7 @@
 
 package de.markusbordihn.easynpc.configui.client.screen.preset;
 
+import de.markusbordihn.easynpc.client.screen.components.ConfigUi;
 import de.markusbordihn.easynpc.client.screen.components.SpinButton;
 import de.markusbordihn.easynpc.client.screen.components.Text;
 import de.markusbordihn.easynpc.client.screen.components.TextButton;
@@ -211,25 +212,27 @@ public class PresetBrowserScreen extends CustomScreen<PresetBrowserMenu, Additio
             INFO_BOX_MIN_HEIGHT,
             Math.min(buttonY - (PREVIEW_Y - 45 + 115) - 5, INFO_BOX_MAX_HEIGHT));
 
-    this.spawnAsNewButton =
-        this.addRenderableWidget(
-            new TextButton(
-                rightPanelX,
-                buttonY,
-                buttonWidth,
-                "preset_browser.spawn_new",
-                button -> this.spawnPreset(false)));
+    TextButton spawnNewBtn =
+        new TextButton(
+            rightPanelX,
+            buttonY,
+            buttonWidth,
+            "preset_browser.spawn_new",
+            button -> this.spawnPreset(false));
+    spawnNewBtn.setAccentColor(ConfigUi.GREEN);
+    this.spawnAsNewButton = this.addRenderableWidget(spawnNewBtn);
     this.spawnAsNewButton.setTooltip(
         Tooltip.create(TextComponent.getTranslatedConfigText("preset_browser.spawn_new_tooltip")));
 
-    this.spawnWithOriginalButton =
-        this.addRenderableWidget(
-            new TextButton(
-                rightPanelX + buttonWidth + 5,
-                buttonY,
-                buttonWidth,
-                "preset_browser.spawn_original",
-                button -> this.spawnPreset(true)));
+    TextButton spawnOriginalBtn =
+        new TextButton(
+            rightPanelX + buttonWidth + 5,
+            buttonY,
+            buttonWidth,
+            "preset_browser.spawn_original",
+            button -> this.spawnPreset(true));
+    spawnOriginalBtn.setAccentColor(ConfigUi.GOLD);
+    this.spawnWithOriginalButton = this.addRenderableWidget(spawnOriginalBtn);
 
     this.autoCloseCheckbox =
         this.addRenderableWidget(
@@ -597,6 +600,12 @@ public class PresetBrowserScreen extends CustomScreen<PresetBrowserMenu, Additio
   public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
     super.render(guiGraphics, mouseX, mouseY, partialTicks);
 
+    ConfigUi.drawInset(
+        guiGraphics,
+        LIST_X - 1,
+        LIST_Y - 1,
+        LIST_WIDTH + 2,
+        this.height - LIST_Y - LIST_BOTTOM_MARGIN + 2);
     this.presetListWidget.render(guiGraphics, mouseX, mouseY, partialTicks);
     this.renderListStatus(guiGraphics);
 
@@ -610,7 +619,7 @@ public class PresetBrowserScreen extends CustomScreen<PresetBrowserMenu, Additio
           TextComponent.getTranslatedConfigText("preset_browser.select_hint"),
           LIST_X + LIST_WIDTH + 20,
           PREVIEW_Y,
-          0x3F3F3F);
+          ConfigUi.MUTED);
     }
   }
 
@@ -624,7 +633,7 @@ public class PresetBrowserScreen extends CustomScreen<PresetBrowserMenu, Additio
             String.valueOf(this.presetEntries.size())),
         LIST_X + 2,
         COUNT_Y,
-        0x3F3F3F);
+        ConfigUi.MUTED);
 
     if (this.presetListWidget.children().isEmpty()) {
       Text.drawString(
@@ -633,7 +642,7 @@ public class PresetBrowserScreen extends CustomScreen<PresetBrowserMenu, Additio
           TextComponent.getTranslatedConfigText("preset_browser.empty"),
           LIST_X + 4,
           LIST_Y + 10,
-          0x3F3F3F);
+          ConfigUi.MUTED);
     }
   }
 
@@ -645,7 +654,7 @@ public class PresetBrowserScreen extends CustomScreen<PresetBrowserMenu, Additio
             this.selectedEntry.getPreset(), this.selectedEntry.getMetadata()),
         this.spawnAsNewButton.getX() + 5,
         PREVIEW_Y - 50,
-        0x3F3F3F);
+        ConfigUi.GOLD);
   }
 
   private void renderPreviewPanels(GuiGraphics guiGraphics, int mouseX, int mouseY) {

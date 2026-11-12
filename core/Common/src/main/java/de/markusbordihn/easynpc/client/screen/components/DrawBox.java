@@ -23,7 +23,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 public class DrawBox {
 
-  private static final int DEFAULT_BACKGROUND_COLOR = 0xF0E0E0E0;
+  private static final int DEFAULT_BACKGROUND_COLOR = ConfigUi.TEXT_FILL;
 
   private DrawBox() {}
 
@@ -33,6 +33,12 @@ public class DrawBox {
 
   public static void draw(
       GuiGraphics guiGraphics, int x, int y, int width, int height, int backgroundColor) {
-    guiGraphics.fill(x, y, x + width, y + height, backgroundColor);
+    int mapped =
+        switch (backgroundColor) {
+          case 0xF0E0E0E0, 0xFFE0E0E0, 0xFFEEEEEE, 0xFFC6C6C6 -> ConfigUi.TEXT_FILL;
+          case 0xFF000000 -> ConfigUi.STAGE_FILL;
+          default -> backgroundColor;
+        };
+    guiGraphics.fill(x, y, x + width, y + height, mapped);
   }
 }

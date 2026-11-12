@@ -244,29 +244,20 @@ public class ScalingConfigurationScreen<T extends ConfigurationMenu>
   protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
     super.renderBg(guiGraphics, partialTicks, mouseX, mouseY);
 
-    guiGraphics.fill(
-        this.contentLeftPos,
-        this.contentTopPos,
-        this.contentLeftPos + 159,
-        this.contentTopPos + 207,
-        0xff000000);
-    guiGraphics.fill(
-        this.contentLeftPos + 1,
-        this.contentTopPos + 1,
-        this.contentLeftPos + 158,
-        this.contentTopPos + 206,
-        0xffaaaaaa);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawEntityStage(
+        guiGraphics, this.contentLeftPos, this.contentTopPos, 159, 207, false);
 
-    int scaleLinesColor = 0xaa555555;
+    int scaleLinesColor = de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN;
+    int scaleTextColor = de.markusbordihn.easynpc.client.screen.components.ConfigUi.DIM;
     int scaleLinesTop = this.contentTopPos + 193;
     int scaleLinesLeft = this.contentLeftPos + 4;
     String[] scaleValues = {"  0", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0"};
 
     for (String scaleValue : scaleValues) {
       Text.drawString(
-          guiGraphics, this.font, scaleValue, scaleLinesLeft, scaleLinesTop - 4, scaleLinesColor);
+          guiGraphics, this.font, scaleValue, scaleLinesLeft, scaleLinesTop - 4, scaleTextColor);
       guiGraphics.fill(
-          this.contentLeftPos + 20,
+          this.contentLeftPos + 22,
           scaleLinesTop - 1,
           this.contentLeftPos + 152,
           scaleLinesTop,

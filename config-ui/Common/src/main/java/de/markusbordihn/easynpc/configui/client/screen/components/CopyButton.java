@@ -51,6 +51,9 @@ public class CopyButton extends SpriteButton {
         SPRITE_WIDTH,
         SPRITE_HEIGHT,
         onPress);
+    if (width > 24) {
+      this.setAccentColor(de.markusbordihn.easynpc.client.screen.components.ConfigUi.BLUE);
+    }
   }
 
   public CopyButton(int left, int top, OnPress onPress) {

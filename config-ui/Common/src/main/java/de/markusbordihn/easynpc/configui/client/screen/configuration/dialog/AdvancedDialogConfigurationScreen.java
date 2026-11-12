@@ -97,36 +97,41 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
     int listTop = this.contentTopPos + LIST_AREA_TOP_OFFSET;
     int listBottom = this.contentTopPos + LIST_AREA_BOTTOM + FOOTER_HEIGHT;
 
-    guiGraphics.fill(listLeft, listTop, listRight, listBottom, 0xffeeeeee);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawTableBody(
+        guiGraphics, listLeft, listTop - 2, listRight - listLeft, listBottom - listTop + 2);
 
     guiGraphics.fill(
         this.leftPos + COLUMN_LABEL_START - 1,
         listTop,
         this.leftPos + COLUMN_LABEL_START,
         this.contentTopPos + LIST_AREA_BOTTOM,
-        0xffbbbbbb);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN);
     guiGraphics.fill(
         this.leftPos + COLUMN_NAME_START,
         listTop,
         this.leftPos + COLUMN_NAME_START + 1,
         this.contentTopPos + LIST_AREA_BOTTOM,
-        0xffbbbbbb);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN);
     guiGraphics.fill(
         this.leftPos + COLUMN_TEXT_START - 1,
         listTop,
         this.leftPos + COLUMN_TEXT_START,
         this.contentTopPos + LIST_AREA_BOTTOM,
-        0xffbbbbbb);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN);
 
     if (this.dialogList != null) {
       this.dialogList.renderSelectionList(guiGraphics, x, y, partialTicks);
     }
 
-    guiGraphics.fill(
-        listLeft, this.contentTopPos, listRight, this.contentTopPos + HEADER_HEIGHT, 0xffaaaaaa);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawTableHeader(
+        guiGraphics, listLeft, this.contentTopPos, listRight - listLeft, HEADER_HEIGHT);
 
-    guiGraphics.fill(
-        listLeft, this.contentTopPos + LIST_AREA_BOTTOM + 1, listRight, listBottom, 0xffc6c6c6);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawTableFooter(
+        guiGraphics,
+        listLeft,
+        this.contentTopPos + LIST_AREA_BOTTOM + 1,
+        listRight - listLeft,
+        FOOTER_HEIGHT);
 
     int headerLeft = this.leftPos + COLUMN_PRIORITY_START + 5;
     Text.drawString(
@@ -135,47 +140,47 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
         "Prio",
         headerLeft,
         this.contentTopPos + 5,
-        Constants.FONT_COLOR_BLACK);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
     Text.drawConfigString(
         guiGraphics,
         this.font,
         "label_id",
         this.leftPos + COLUMN_LABEL_START + 3,
         this.contentTopPos + 5,
-        Constants.FONT_COLOR_BLACK);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
     Text.drawString(
         guiGraphics,
         this.font,
         "Name",
         this.leftPos + COLUMN_NAME_START + 3,
         this.contentTopPos + 5,
-        Constants.FONT_COLOR_BLACK);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
     Text.drawString(
         guiGraphics,
         this.font,
         "Text",
         this.leftPos + COLUMN_TEXT_START + 2,
         this.contentTopPos + 5,
-        Constants.FONT_COLOR_BLACK);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
 
     guiGraphics.fill(
         this.leftPos + COLUMN_LABEL_START - 1,
-        this.contentTopPos,
+        this.contentTopPos + 2,
         this.leftPos + COLUMN_LABEL_START,
-        this.contentTopPos + HEADER_HEIGHT,
-        0xff666666);
+        this.contentTopPos + HEADER_HEIGHT - 2,
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN);
     guiGraphics.fill(
         this.leftPos + COLUMN_NAME_START,
-        this.contentTopPos,
+        this.contentTopPos + 2,
         this.leftPos + COLUMN_NAME_START + 1,
-        this.contentTopPos + HEADER_HEIGHT,
-        0xff666666);
+        this.contentTopPos + HEADER_HEIGHT - 2,
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN);
     guiGraphics.fill(
         this.leftPos + COLUMN_TEXT_START - 1,
-        this.contentTopPos,
+        this.contentTopPos + 2,
         this.leftPos + COLUMN_TEXT_START,
-        this.contentTopPos + HEADER_HEIGHT,
-        0xff666666);
+        this.contentTopPos + HEADER_HEIGHT - 2,
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN);
 
     // Re-render button for visibility
     if (this.newDialogButton != null) {
@@ -401,7 +406,12 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
                 + COLUMN_TEXT_START
                 + COLUMN_TEXT_WIDTH
                 + 4;
-        guiGraphics.fill(listLeft, top + 17, listRight, top + 18, 0xffaaaaaa);
+        guiGraphics.fill(
+            listLeft + 1,
+            top + 17,
+            listRight - 1,
+            top + 18,
+            de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN);
       }
     }
   }

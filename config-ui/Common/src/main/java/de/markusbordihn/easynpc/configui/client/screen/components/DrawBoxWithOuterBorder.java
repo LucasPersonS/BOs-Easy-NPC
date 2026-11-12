@@ -24,13 +24,16 @@ import net.minecraft.client.gui.GuiGraphics;
 
 public class DrawBoxWithOuterBorder {
 
-  private static final int DEFAULT_BACKGROUND_COLOR = 0xFF2B2B2B;
-  private static final int DEFAULT_BORDER_COLOR = 0xFF000000;
+  private static final int DEFAULT_BACKGROUND_COLOR =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_FILL;
+  private static final int DEFAULT_BORDER_COLOR =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.BLACK;
 
   private DrawBoxWithOuterBorder() {}
 
   public static void draw(GuiGraphics guiGraphics, int x, int y, int width, int height) {
-    draw(guiGraphics, x, y, width, height, DEFAULT_BACKGROUND_COLOR, DEFAULT_BORDER_COLOR);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawCard(
+        guiGraphics, x - 1, y - 1, width + 2, height + 2);
   }
 
   public static void draw(

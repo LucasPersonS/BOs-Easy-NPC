@@ -62,5 +62,39 @@ public class TextField extends EditBox {
 
   private TextField(Font font, int x, int y, int width, int height, Component component) {
     super(font, x, y, width, height, component);
+    this.setTextColor(ConfigUi.TEXT & 0x00FFFFFF);
+    this.setTextColorUneditable(ConfigUi.DIM & 0x00FFFFFF);
+  }
+
+  @Override
+  public void renderWidget(
+      net.minecraft.client.gui.GuiGraphics guiGraphics,
+      int mouseX,
+      int mouseY,
+      float partialTicks) {
+    if (!this.isVisible()) {
+      return;
+    }
+    if (this.isBordered()) {
+      int origX = this.getX();
+      int origY = this.getY();
+      int origW = this.getWidth();
+      int origH = this.getHeight();
+      ConfigUi.drawInput(guiGraphics, origX, origY, origW, origH, this.isFocused());
+      this.setBordered(false);
+      this.setX(origX + 4);
+      this.setY(origY + (origH - 8) / 2);
+      this.setWidth(Math.max(4, origW - 8));
+      try {
+        super.renderWidget(guiGraphics, mouseX, mouseY, partialTicks);
+      } finally {
+        this.setBordered(true);
+        this.setX(origX);
+        this.setY(origY);
+        this.setWidth(origW);
+      }
+    } else {
+      super.renderWidget(guiGraphics, mouseX, mouseY, partialTicks);
+    }
   }
 }

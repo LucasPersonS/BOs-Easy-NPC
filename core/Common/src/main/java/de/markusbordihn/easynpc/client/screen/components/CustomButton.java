@@ -35,11 +35,13 @@ public class CustomButton extends Button {
 
   protected static final WidgetSprites SPRITES =
       new WidgetSprites(
-          ResourceLocation.fromNamespaceAndPath(Constants.MINECRAFT_PREFIX, "widget/button"),
-          ResourceLocation.fromNamespaceAndPath(
-              Constants.MINECRAFT_PREFIX, "widget/button_disabled"),
-          ResourceLocation.fromNamespaceAndPath(
-              Constants.MINECRAFT_PREFIX, "widget/button_highlighted"));
+          ConfigUi.BUTTON,
+          ConfigUi.BUTTON_DISABLED,
+          ConfigUi.BUTTON_HOVER);
+
+  private int accentColor = 0;
+  private boolean blocked = false;
+  private boolean tabButton = false;
 
   public CustomButton(int left, int top, int width, int height) {
     this(left, top, width, height, null, unused -> {});
@@ -61,6 +63,47 @@ public class CustomButton extends Button {
         Button.DEFAULT_NARRATION);
   }
 
+  public CustomButton setAccentColor(int accentColor) {
+    this.accentColor = accentColor;
+    return this;
+  }
+
+  public int getAccentColor() {
+    return this.accentColor;
+  }
+
+  public CustomButton setBlocked(boolean blocked) {
+    this.blocked = blocked;
+    return this;
+  }
+
+  public boolean isBlocked() {
+    return this.blocked;
+  }
+
+  public CustomButton setTabButton(boolean tabButton) {
+    this.tabButton = tabButton;
+    return this;
+  }
+
+  public boolean isTabButton() {
+    return this.tabButton;
+  }
+
+  public boolean isSelectedTab() {
+    return this.tabButton && !this.active && !this.blocked;
+  }
+
+  public int getButtonTextColor() {
+    if (this.isSelectedTab()) {
+      return ConfigUi.GOLD;
+    }
+    if (!this.active) {
+      return ConfigUi.DIM;
+    }
+    return this.isHoveredOrFocused() ? ConfigUi.TEXT_BRIGHT : ConfigUi.TEXT;
+  }
+
   public boolean isHovered() {
     return this.isHovered;
   }
@@ -68,8 +111,7 @@ public class CustomButton extends Button {
   public void renderButtonText(
       GuiGraphics guiGraphics, Font font, Component component, int x, int y) {
     if (component != null && !component.getString().isEmpty()) {
-      int foregroundColor =
-          this.active ? Constants.FONT_COLOR_WHITE : Constants.FONT_COLOR_LIGHT_GRAY;
+      int foregroundColor = this.getButtonTextColor() & 0x00FFFFFF;
       guiGraphics.drawCenteredString(
           font,
           component,
@@ -98,13 +140,17 @@ public class CustomButton extends Button {
     RenderSystem.defaultBlendFunc();
     RenderSystem.enableDepthTest();
 
-    // Background
-    guiGraphics.blitSprite(
-        SPRITES.get(this.active, this.isHoveredOrFocused()),
+    // Background (Paravexia dark stone nine-slice with optional accent stripe / active tab bar)
+    ConfigUi.drawButton(
+        guiGraphics,
         this.getX(),
         this.getY(),
         this.getWidth(),
-        this.getHeight());
+        this.getHeight(),
+        this.active,
+        this.isHoveredOrFocused(),
+        this.isSelectedTab(),
+        this.accentColor);
 
     this.renderButtonText(guiGraphics, font, this.getMessage(), this.getX(), this.getY());
   }

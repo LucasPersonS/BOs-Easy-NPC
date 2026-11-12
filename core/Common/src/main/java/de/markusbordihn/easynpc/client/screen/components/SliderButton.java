@@ -39,16 +39,11 @@ public class SliderButton extends AbstractSliderButton {
   public static final int DEFAULT_HEIGHT = 16;
   protected static final Component EMPTY_TEXT = TextComponent.getBlankText();
   protected static final Logger log = LogManager.getLogger(Constants.LOG_NAME);
-  private static final ResourceLocation SLIDER_SPRITE =
-      ResourceLocation.fromNamespaceAndPath(Constants.MINECRAFT_PREFIX, "widget/slider");
-  private static final ResourceLocation HIGHLIGHTED_SPRITE =
-      ResourceLocation.fromNamespaceAndPath(
-          Constants.MINECRAFT_PREFIX, "widget/slider_highlighted");
-  private static final ResourceLocation SLIDER_HANDLE_SPRITE =
-      ResourceLocation.fromNamespaceAndPath(Constants.MINECRAFT_PREFIX, "widget/slider_handle");
+  private static final ResourceLocation SLIDER_SPRITE = ConfigUi.SLIDER_TRACK;
+  private static final ResourceLocation HIGHLIGHTED_SPRITE = ConfigUi.INPUT_FOCUSED;
+  private static final ResourceLocation SLIDER_HANDLE_SPRITE = ConfigUi.SLIDER_HANDLE;
   private static final ResourceLocation SLIDER_HANDLE_HIGHLIGHTED_SPRITE =
-      ResourceLocation.fromNamespaceAndPath(
-          Constants.MINECRAFT_PREFIX, "widget/slider_handle_highlighted");
+      ConfigUi.SLIDER_HANDLE_HOVER;
   protected final SliderButton.OnChange onChange;
   protected final float maxValue;
   private final float minValue;
@@ -357,6 +352,17 @@ public class SliderButton extends AbstractSliderButton {
     guiGraphics.blitSprite(
         this.getSliderSprite(), this.getX(), this.getY(), this.getWidth(), this.getHeight());
 
+    // Subtle warm gold fill indicator
+    int fillWidth = (int) (this.value * (this.width - 8));
+    if (fillWidth > 2) {
+      guiGraphics.fill(
+          this.getX() + 2,
+          this.getY() + this.getHeight() - 3,
+          this.getX() + 2 + fillWidth,
+          this.getY() + this.getHeight() - 2,
+          ConfigUi.GOLD_DARK);
+    }
+
     // Slider Handle
     guiGraphics.blitSprite(
         this.getSliderHandleSprite(),
@@ -366,7 +372,10 @@ public class SliderButton extends AbstractSliderButton {
         this.getHeight());
 
     int foregroundColor =
-        this.active ? Constants.FONT_COLOR_WHITE : Constants.FONT_COLOR_LIGHT_GRAY;
+        (this.active
+                ? (this.isHoveredOrFocused() ? ConfigUi.GOLD : ConfigUi.TEXT)
+                : ConfigUi.DIM)
+            & 0x00FFFFFF;
     guiGraphics.drawCenteredString(
         font,
         this.getMessage(),

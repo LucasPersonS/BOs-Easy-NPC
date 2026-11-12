@@ -43,15 +43,31 @@ public class EditorScreen<T extends ConfigUIMenu> extends Screen<T, AdditionalSc
   }
 
   @Override
+  protected <
+          W extends
+              net.minecraft.client.gui.components.events.GuiEventListener
+                  & net.minecraft.client.gui.components.Renderable
+                  & net.minecraft.client.gui.narration.NarratableEntry>
+      W addRenderableWidget(W widget) {
+    if (widget instanceof de.markusbordihn.easynpc.client.screen.components.CustomButton btn
+        && btn.getY() >= this.topPos + 2
+        && btn.getY() <= this.topPos + 8
+        && btn.getX() >= this.leftPos + 13) {
+      btn.setTabButton(true);
+    }
+    return super.addRenderableWidget(widget);
+  }
+
+  @Override
   protected void renderLabels(GuiGraphics guiGraphics, int x, int y) {
     if (!this.compactMode) {
       Text.drawString(
           guiGraphics,
           this.font,
           this.title,
-          this.leftPos + this.titleLabelX,
+          this.leftPos + this.titleLabelX + 3,
           this.topPos + this.titleLabelY,
-          4210752);
+          de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
     }
   }
 }

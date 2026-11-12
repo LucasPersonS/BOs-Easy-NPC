@@ -19,9 +19,8 @@
 
 package de.markusbordihn.easynpc.configui.client.screen.configuration.rotation;
 
-import de.markusbordihn.easynpc.client.screen.components.Graphics;
+import de.markusbordihn.easynpc.client.screen.components.ConfigUi;
 import de.markusbordihn.easynpc.client.screen.components.TextButton;
-import de.markusbordihn.easynpc.configui.Constants;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.ConfigurationScreen;
 import de.markusbordihn.easynpc.configui.menu.configuration.ConfigurationMenu;
 import de.markusbordihn.easynpc.configui.network.NetworkMessageHandlerManager;
@@ -63,17 +62,7 @@ public class RotationConfigurationScreen<T extends ConfigurationMenu>
   @Override
   public void renderDefaultScreenBg(
       GuiGraphics guiGraphics, int leftPos, int topPos, boolean compactMode) {
-    Graphics.blit(
-        guiGraphics,
-        Constants.TEXTURE_CONFIG_SCREEN_BACKGROUND_SMALL,
-        leftPos,
-        topPos,
-        1,
-        1,
-        333,
-        80,
-        512,
-        256);
+    ConfigUi.drawSmallWindow(guiGraphics, leftPos, topPos, 333, 80);
   }
 
   @Override

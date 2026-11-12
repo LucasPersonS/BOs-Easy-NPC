@@ -433,20 +433,31 @@ public class DialogScreen<T extends DialogMenu> extends Screen<T, AdditionalScre
             ? this.cachedDialogOptions.avatarScale()
             : this.getEasyNPC().getEasyNPCDialogData().getEntityDialogScaling();
 
-    guiGraphics.pose().pushPose();
-    guiGraphics.pose().translate(0, 0, 1000);
+    if (ScenePortrait.applies(this.getEasyNPC())) {
+      // Scene actors are drawn by the scene renderer (whole diorama, props, or nothing when the
+      // scene is hidden), so their avatar is the face of the actor skin instead.
+      ScenePortrait.render(
+          guiGraphics,
+          this.getEasyNPC(),
+          this.leftPos + 40 + entityLeft,
+          this.topPos + 80 + entityTop,
+          scale);
+    } else {
+      guiGraphics.pose().pushPose();
+      guiGraphics.pose().translate(0, 0, 1000);
 
-    IntegrationRegistry.setGuiPreviewMode(true);
-    EntityScreenRenderer.renderEntity(
-        guiGraphics,
-        this.getEasyNPC(),
-        EntityRenderConfig.dialog(
-            this.leftPos + 40 + entityLeft, this.topPos + 80 + entityTop, scale),
-        this.xMouse,
-        this.yMouse);
-    IntegrationRegistry.setGuiPreviewMode(false);
+      IntegrationRegistry.setGuiPreviewMode(true);
+      EntityScreenRenderer.renderEntity(
+          guiGraphics,
+          this.getEasyNPC(),
+          EntityRenderConfig.dialog(
+              this.leftPos + 40 + entityLeft, this.topPos + 80 + entityTop, scale),
+          this.xMouse,
+          this.yMouse);
+      IntegrationRegistry.setGuiPreviewMode(false);
 
-    guiGraphics.pose().popPose();
+      guiGraphics.pose().popPose();
+    }
 
     this.renderDialog(guiGraphics);
     this.renderDialogButtonLocks(guiGraphics, x, y);
@@ -492,7 +503,7 @@ public class DialogScreen<T extends DialogMenu> extends Screen<T, AdditionalScre
       int lockLeft = dialogButton.getX() + dialogButton.getWidth() - 12;
       int lockTop = dialogButton.getY() + (dialogButton.getHeight() - 8) / 2;
       if (locked) {
-        int lockColor = 0xffd0d0d0;
+        int lockColor = de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD;
         guiGraphics.fill(lockLeft + 2, lockTop, lockLeft + 5, lockTop + 1, lockColor);
         guiGraphics.fill(lockLeft + 1, lockTop + 1, lockLeft + 2, lockTop + 3, lockColor);
         guiGraphics.fill(lockLeft + 5, lockTop + 1, lockLeft + 6, lockTop + 3, lockColor);
@@ -534,7 +545,8 @@ public class DialogScreen<T extends DialogMenu> extends Screen<T, AdditionalScre
         this.font,
         this.title,
         this.leftPos + this.titleLabelX,
-        this.topPos + this.titleLabelY);
+        this.topPos + this.titleLabelY,
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
   }
 
   @Override
@@ -546,46 +558,31 @@ public class DialogScreen<T extends DialogMenu> extends Screen<T, AdditionalScre
       COMPACT_TEXT_WITH_ONE_BUTTON,
       COMPACT_TEXT_WITH_TWO_BUTTONS,
       COMPACT_TEXT_WITH_TWO_LARGE_BUTTONS:
-        Graphics.blit(
-            guiGraphics,
-            Constants.TEXTURE_DIALOG_SCENE_SMALL,
-            this.leftPos,
-            this.topPos,
-            1,
-            1,
-            295,
-            176,
-            512,
-            256);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawCustomWindow(
+            guiGraphics, this.leftPos, this.topPos, 295, 176, 18);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawEntityStage(
+            guiGraphics, this.leftPos + 6, this.topPos + 22, 68, 92, true);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawInset(
+            guiGraphics, this.leftPos + 78, this.topPos + 22, 210, 92);
         break;
       case COMPACT_TEXT_WITH_THREE_BUTTONS,
       COMPACT_TEXT_WITH_FOUR_BUTTONS,
       COMPACT_TEXT_WITH_FIVE_BUTTONS,
       COMPACT_TEXT_WITH_SIX_BUTTONS:
-        Graphics.blit(
-            guiGraphics,
-            Constants.TEXTURE_DIALOG_SCENE_MEDIUM,
-            this.leftPos,
-            this.topPos,
-            1,
-            1,
-            295,
-            216,
-            512,
-            256);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawCustomWindow(
+            guiGraphics, this.leftPos, this.topPos, 295, 216, 18);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawEntityStage(
+            guiGraphics, this.leftPos + 6, this.topPos + 22, 68, 92, true);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawInset(
+            guiGraphics, this.leftPos + 78, this.topPos + 22, 210, 92);
         break;
       default:
-        Graphics.blit(
-            guiGraphics,
-            Constants.TEXTURE_DIALOG_SCENE_LARGE,
-            this.leftPos,
-            this.topPos,
-            1,
-            1,
-            295,
-            216,
-            512,
-            256);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawCustomWindow(
+            guiGraphics, this.leftPos, this.topPos, 295, 216, 18);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawEntityStage(
+            guiGraphics, this.leftPos + 6, this.topPos + 22, 68, 130, true);
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawInset(
+            guiGraphics, this.leftPos + 78, this.topPos + 22, 210, 130);
     }
   }
 

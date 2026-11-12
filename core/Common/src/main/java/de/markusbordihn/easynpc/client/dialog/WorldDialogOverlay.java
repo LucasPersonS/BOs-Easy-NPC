@@ -21,6 +21,7 @@ package de.markusbordihn.easynpc.client.dialog;
 
 import static de.markusbordihn.easynpc.client.dialog.WorldDialogStyle.*;
 
+import de.markusbordihn.easynpc.client.dialog.DialogUi.ReplyState;
 import de.markusbordihn.easynpc.condition.ClientConditionEvaluator;
 import de.markusbordihn.easynpc.data.action.ActionDataType;
 import de.markusbordihn.easynpc.data.action.ActionEventType;
@@ -65,26 +66,25 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.LivingEntity;
 import org.joml.Matrix4f;
+import org.lwjgl.glfw.GLFW;
 
 /**
- * NPC dialogue shown over the game world, drawn as HUD pixels anchored to the NPC's head.
+ * NPC dialogue shown over the game world:
  *
  * <ul>
- *   <li><b>Teaser</b>: walking up to an NPC (or looking at one) shows a short, read-only line over
- *       its head. The server owns the session, exactly as before.
+ *   <li><b>Teaser</b>: walking up to an NPC (or looking at one) shows a compact preview box over
+ *       its head in the website's style.
  *   <li><b>Prompt</b>: looking at an NPC that can talk outlines it and shows a right-mouse sprite
  *       next to the crosshair.
- *   <li><b>Full</b>: right-click expands the teaser into the full dialogue with choices (aim + click,
- *       or keys 1-9). Right-clicking the NPC again switches between its quest list and its own
- *       dialogue when it has both.
+ *   <li><b>Full</b>: right-click expands into the fixed bottom dialogue panel matching the website's
+ *       dialogue library ({@code Website/admin/dialogues.css}): 2D NPC face in a stone frame, gold
+ *       speaker name, dark inset text box, and stacked stone reply buttons with coloured stripes.
  * </ul>
- *
- * <p>Nothing is world geometry any more: no z-fighting, no shader lighting, no depth sorting.
  */
 public final class WorldDialogOverlay {
 
   private static DialogDataEntry cachedTextDialog;
-  private static java.util.UUID cachedTextNpc;
+  private static UUID cachedTextNpc;
   private static String cachedText = "";
 
   private enum Mode {
@@ -97,6 +97,11 @@ public final class WorldDialogOverlay {
   private static final int AIM_DWELL_TICKS = 4;
   private static final int CLICK_COOLDOWN_TICKS = 5;
   private static final int OUTLINE_TICKS = 2;
+
+  private static final int PANEL_MAX_WIDTH = 300;
+  private static final int PANEL_MIN_WIDTH = 200;
+  private static final int PANEL_BOTTOM_CLEARANCE = 52;
+  private static final int FULL_TEXT_MAX_LINES = 6;
 
   /** An NPC that did not answer an automatic request is not asked again for this long. */
   private static final long QUIET_NPC_MS = 30_000L;
@@ -122,6 +127,9 @@ public final class WorldDialogOverlay {
   private static boolean npcDialogPresented;
   private static List<ChoiceView> choices = List.of();
   private static int choiceOffset;
+  private static int selectedIndex;
+  private static int textPage;
+  private static int textPageCount = 1;
   private static int outOfRangeTicks;
 
   // Opening / closing bookkeeping.
@@ -187,6 +195,9 @@ public final class WorldDialogOverlay {
     if (!isOpen() || mode != Mode.FULL || minecraft.screen != null || pending) {
       return;
     }
+    if (hasMoreTextPages()) {
+      return;
+    }
     // Number keys pick choices while talking, instead of switching the hotbar slot.
     KeyMapping[] slots = minecraft.options.keyHotbarSlots;
     for (int index = 0; index < slots.length && index < choices.size(); index++) {
@@ -195,6 +206,7 @@ public final class WorldDialogOverlay {
         pressed = true;
       }
       if (pressed) {
+        selectedIndex = index;
         ensureVisible(index);
         choose(choices.get(index));
         return;
@@ -232,6 +244,7 @@ public final class WorldDialogOverlay {
       if (tickOpenSession(minecraft)) {
         EasyNPC<?> active = LivingEntityManager.getClientEasyNPCEntityByUUID(screenData.uuid());
         choices = active != null ? collectChoices(minecraft, active) : List.of();
+        selectedIndex = clampIndex(selectedIndex);
         choiceOffset = clampOffset(choiceOffset);
         // A teaser follows the player's gaze: looking at another NPC lets that one speak.
         if (mode == Mode.TEASER
@@ -431,6 +444,9 @@ public final class WorldDialogOverlay {
     if (newSession || pageChanged) {
       openedAtMs = now;
       choiceOffset = 0;
+      selectedIndex = 0;
+      textPage = 0;
+      textPageCount = 1;
       hoverProgress.clear();
       lastHoverId = null;
     }
@@ -511,7 +527,17 @@ public final class WorldDialogOverlay {
     long gameTime = minecraft.level.getGameTime();
     boolean freshPress = useKey ? !useHeld : !attackHeld;
 
-    // 1) A choice under the crosshair takes either button.
+    // 1) While there are more text pages in FULL mode, any click advances to the next text bubble.
+    if (isOpen() && mode == Mode.FULL && hasMoreTextPages()) {
+      markHeld(useKey);
+      if (freshPress && gameTime >= nextClickTick) {
+        nextClickTick = gameTime + CLICK_COOLDOWN_TICKS;
+        advanceTextPage();
+      }
+      return true;
+    }
+
+    // 2) A choice directly under the crosshair takes either button.
     if (isOpen() && mode == Mode.FULL && aimedChoice != null) {
       markHeld(useKey);
       if (freshPress && !pending && gameTime >= nextClickTick) {
@@ -520,65 +546,167 @@ public final class WorldDialogOverlay {
       }
       return true;
     }
-    if (!useKey || aimedNpc == null) {
-      return false;
-    }
 
-    // 2) Right-click on an NPC.
-    UUID target = aimedNpcId;
-    boolean sessionNpc = isOpen() && target.equals(screenData.uuid());
-    boolean talkative = sessionNpc || talkativeNpcs.contains(target);
-    boolean act = freshPress && gameTime >= nextClickTick;
-    markHeld(true);
-    if (act) {
-      nextClickTick = gameTime + CLICK_COOLDOWN_TICKS;
-    }
+    // 3) Right-click on an NPC.
+    if (useKey && aimedNpc != null) {
+      UUID target = aimedNpcId;
+      boolean sessionNpc = isOpen() && target.equals(screenData.uuid());
+      boolean talkative = sessionNpc || talkativeNpcs.contains(target);
+      boolean act = freshPress && gameTime >= nextClickTick;
 
-    if (sessionNpc) {
-      if (act) {
-        promptClickAtMs = Util.getMillis();
+      if (sessionNpc) {
         if (mode == Mode.TEASER) {
-          expand();
-        } else if (alternateAvailable) {
-          playSound(SoundEvents.BOOK_PAGE_TURN, 0.95F, 0.45F);
-          NetworkHandlerManager.sendMessageToServer(
-              new BeginWorldDialogMessage(target, BeginWorldDialogMessage.Kind.ALTERNATE));
+          markHeld(true);
+          if (act) {
+            nextClickTick = gameTime + CLICK_COOLDOWN_TICKS;
+            promptClickAtMs = Util.getMillis();
+            expand();
+          }
+          return true;
         }
+        if (alternateAvailable) {
+          markHeld(true);
+          if (act) {
+            nextClickTick = gameTime + CLICK_COOLDOWN_TICKS;
+            promptClickAtMs = Util.getMillis();
+            playSound(SoundEvents.BOOK_PAGE_TURN, 0.95F, 0.45F);
+            NetworkHandlerManager.sendMessageToServer(
+                new BeginWorldDialogMessage(target, BeginWorldDialogMessage.Kind.ALTERNATE));
+          }
+          return true;
+        }
+        // In FULL mode without alternate view, right-clicking the NPC confirms the selected reply.
+        if (!choices.isEmpty()) {
+          markHeld(true);
+          if (act && !pending) {
+            nextClickTick = gameTime + CLICK_COOLDOWN_TICKS;
+            choose(choices.get(clampIndex(selectedIndex)));
+          }
+          return true;
+        }
+        return true;
       }
-      return true;
+
+      // Another NPC: leave the current one (if any) and open this one straight in full.
+      markHeld(true);
+      if (act) {
+        nextClickTick = gameTime + CLICK_COOLDOWN_TICKS;
+        promptClickAtMs = Util.getMillis();
+        if (screenData != null) {
+          if (mode == Mode.FULL) requestClose(true);
+          else closeQuietly();
+        }
+        if (target.equals(suppressedNpc)) suppressedNpc = null;
+        quietNpcs.remove(target);
+        expandOnArrival = target;
+        expandOnArrivalUntilMs = Util.getMillis() + EXPAND_WAIT_MS;
+        requestedNpc = target;
+        nextRequestTick = gameTime + REQUEST_INTERVAL_TICKS;
+        // A click is talking: the server opens the dialogue and runs the NPC's interaction actions.
+        NetworkHandlerManager.sendMessageToServer(
+            new BeginWorldDialogMessage(target, BeginWorldDialogMessage.Kind.ENGAGE));
+      }
+      // An NPC we never heard talk keeps its vanilla interaction (trading, commands, ...).
+      return talkative;
     }
 
-    // Another NPC: leave the current one (if any) and open this one straight in full.
-    if (act) {
-      promptClickAtMs = Util.getMillis();
-      if (screenData != null) {
-        if (mode == Mode.FULL) requestClose(true);
-        else closeQuietly();
+    // 4) While FULL dialogue is open at the bottom, clicking confirms the selected reply (or closes if none).
+    if (isOpen() && mode == Mode.FULL) {
+      if (!choices.isEmpty()) {
+        markHeld(useKey);
+        if (freshPress && !pending && gameTime >= nextClickTick) {
+          nextClickTick = gameTime + CLICK_COOLDOWN_TICKS;
+          choose(choices.get(clampIndex(selectedIndex)));
+        }
+        return true;
       }
-      if (target.equals(suppressedNpc)) suppressedNpc = null;
-      quietNpcs.remove(target);
-      expandOnArrival = target;
-      expandOnArrivalUntilMs = Util.getMillis() + EXPAND_WAIT_MS;
-      requestedNpc = target;
-      nextRequestTick = gameTime + REQUEST_INTERVAL_TICKS;
-      // A click is talking: the server opens the dialogue and runs the NPC's interaction actions.
-      NetworkHandlerManager.sendMessageToServer(
-          new BeginWorldDialogMessage(target, BeginWorldDialogMessage.Kind.ENGAGE));
     }
-    // An NPC we never heard talk keeps its vanilla interaction (trading, commands, ...).
-    return talkative;
+
+    return false;
+  }
+
+  private static boolean hasMoreTextPages() {
+    return textPage < textPageCount - 1;
+  }
+
+  private static void advanceTextPage() {
+    if (textPage < textPageCount - 1) {
+      textPage++;
+      openedAtMs = Util.getMillis();
+      playSound(SoundEvents.BOOK_PAGE_TURN, 1.2F, 0.4F);
+    }
   }
 
   public static boolean scroll(double delta) {
-    if (!isOpen() || mode != Mode.FULL || choices.size() <= MAX_VISIBLE_CHOICES || delta == 0.0D) {
+    if (!isOpen() || mode != Mode.FULL || delta == 0.0D) {
       return false;
     }
-    int next = clampOffset(choiceOffset + (delta < 0.0D ? 1 : -1));
-    if (next != choiceOffset) {
-      choiceOffset = next;
-      playSound(SoundEvents.NOTE_BLOCK_HAT.value(), 1.4F, 0.15F);
+    if (hasMoreTextPages()) {
+      if (delta < 0.0D) {
+        advanceTextPage();
+        return true;
+      }
+      if (delta > 0.0D && textPage > 0) {
+        textPage--;
+        playSound(SoundEvents.BOOK_PAGE_TURN, 1.05F, 0.35F);
+        return true;
+      }
+      return false;
+    }
+    if (choices.size() <= 1) {
+      return false;
+    }
+    int step = delta < 0.0D ? 1 : -1;
+    int next = clampIndex(selectedIndex + step);
+    if (next != selectedIndex) {
+      selectedIndex = next;
+      ensureVisible(selectedIndex);
+      playSound(SoundEvents.NOTE_BLOCK_HAT.value(), 1.55F, 0.16F);
     }
     return true;
+  }
+
+  /** Up / Down arrows select replies; Enter / Space / Right advances text pages or confirms. */
+  public static boolean onKey(int key, int action) {
+    if (action != GLFW.GLFW_PRESS && action != GLFW.GLFW_REPEAT) {
+      return false;
+    }
+    Minecraft minecraft = Minecraft.getInstance();
+    if (!isOpen() || mode != Mode.FULL || minecraft.screen != null || pending) {
+      return false;
+    }
+    if (key == GLFW.GLFW_KEY_LEFT && textPage > 0) {
+      textPage--;
+      playSound(SoundEvents.BOOK_PAGE_TURN, 1.05F, 0.35F);
+      return true;
+    }
+    if (hasMoreTextPages()) {
+      if (action == GLFW.GLFW_PRESS
+          && (key == GLFW.GLFW_KEY_ENTER
+              || key == GLFW.GLFW_KEY_KP_ENTER
+              || key == GLFW.GLFW_KEY_SPACE
+              || key == GLFW.GLFW_KEY_RIGHT
+              || key == GLFW.GLFW_KEY_DOWN)) {
+        advanceTextPage();
+        return true;
+      }
+      return false;
+    }
+    if (choices.isEmpty()) {
+      return false;
+    }
+    if (key == GLFW.GLFW_KEY_UP) {
+      return scroll(1.0D);
+    }
+    if (key == GLFW.GLFW_KEY_DOWN) {
+      return scroll(-1.0D);
+    }
+    if (action == GLFW.GLFW_PRESS
+        && (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)) {
+      choose(choices.get(clampIndex(selectedIndex)));
+      return true;
+    }
+    return false;
   }
 
   private static void markHeld(boolean useKey) {
@@ -596,6 +724,9 @@ public final class WorldDialogOverlay {
     }
     openedAtMs = Util.getMillis();
     choiceOffset = 0;
+    selectedIndex = 0;
+    textPage = 0;
+    textPageCount = 1;
     hoverProgress.clear();
     lastHoverId = null;
     playSound(SoundEvents.BOOK_PAGE_TURN, 1.1F, 0.5F);
@@ -637,6 +768,10 @@ public final class WorldDialogOverlay {
     } else if (index >= choiceOffset + MAX_VISIBLE_CHOICES) {
       choiceOffset = clampOffset(index - MAX_VISIBLE_CHOICES + 1);
     }
+  }
+
+  private static int clampIndex(int index) {
+    return choices.isEmpty() ? 0 : Math.max(0, Math.min(index, choices.size() - 1));
   }
 
   private static int clampOffset(int offset) {
@@ -685,6 +820,9 @@ public final class WorldDialogOverlay {
     npcDialogPresented = false;
     choices = List.of();
     choiceOffset = 0;
+    selectedIndex = 0;
+    textPage = 0;
+    textPageCount = 1;
     aimedChoice = null;
     outOfRangeTicks = 0;
     pending = false;
@@ -723,7 +861,7 @@ public final class WorldDialogOverlay {
     }
   }
 
-  /** GUI layer: teaser / full dialogue at the NPC's head, prompt next to the crosshair. */
+  /** GUI layer: teaser over the NPC's head, full dialogue panel at the bottom, prompt at crosshair. */
   public static void renderHud(GuiGraphics graphics, DeltaTracker deltaTracker) {
     Minecraft minecraft = Minecraft.getInstance();
     aimedChoice = null;
@@ -744,21 +882,22 @@ public final class WorldDialogOverlay {
     int crosshairY = screenHeight / 2;
     boolean canAim = minecraft.screen == null;
 
-    if (isOpen() && anchorVisible) {
+    if (isOpen()) {
       EasyNPC<?> easyNPC = LivingEntityManager.getClientEasyNPCEntityByUUID(screenData.uuid());
       if (easyNPC != null && easyNPC.getLivingEntity() != null) {
-        int headX = Math.round((anchorX * 0.5F + 0.5F) * screenWidth);
-        int headY = Math.round((0.5F - anchorY * 0.5F) * screenHeight);
         float open = WorldDialogHud.clamp01((now - openedAtMs) / (float) OPEN_ANIM_MS);
         float eased = 1.0F - (1.0F - open) * (1.0F - open) * (1.0F - open);
         int rise = Math.round(3.0F * (1.0F - eased));
         if (mode == Mode.TEASER) {
-          renderTeaser(graphics, font, minecraft, easyNPC, headX, headY + rise, screenWidth,
-              screenHeight, eased);
+          if (anchorVisible) {
+            int headX = Math.round((anchorX * 0.5F + 0.5F) * screenWidth);
+            int headY = Math.round((0.5F - anchorY * 0.5F) * screenHeight);
+            renderTeaser(graphics, font, minecraft, easyNPC, headX, headY + rise, screenWidth,
+                screenHeight, eased);
+          }
         } else {
-          renderFull(graphics, font, minecraft, easyNPC, headX, headY + rise, screenWidth,
-              screenHeight, canAim ? crosshairX : Integer.MIN_VALUE, crosshairY, eased, now,
-              frameMs);
+          renderFull(graphics, font, minecraft, easyNPC, rise, screenWidth, screenHeight,
+              canAim ? crosshairX : Integer.MIN_VALUE, crosshairY, eased, now, frameMs);
         }
       }
     }
@@ -779,7 +918,6 @@ public final class WorldDialogOverlay {
   private static void renderTeaser(
       GuiGraphics graphics, Font font, Minecraft minecraft, EasyNPC<?> easyNPC, int headX,
       int headY, int screenWidth, int screenHeight, float alpha) {
-    // Off screen: nothing to point at.
     if (headX < -40 || headX > screenWidth + 40 || headY < 0 || headY > screenHeight + 60) {
       return;
     }
@@ -788,113 +926,194 @@ public final class WorldDialogOverlay {
     List<String> lines =
         WorldDialogHud.wrap(font, dialogText(easyNPC, minecraft), TEASER_WIDTH - 2 * PAD,
             TEASER_LINES);
-    int width = Math.max(WorldDialogHud.maxWidth(font, lines), font.width(name)) + 2 * PAD;
-    int height = PAD + 9 + 3 + lines.size() * LINE + PAD - 3;
+    int width = Math.max(WorldDialogHud.maxWidth(font, lines), DialogUi.width(font, name)) + 2 * PAD;
+    int height = PAD + 10 + lines.size() * LINE + PAD - 3;
     int x = clamp(headX - width / 2, SCREEN_MARGIN, screenWidth - width - SCREEN_MARGIN);
-    int y = Math.max(SCREEN_MARGIN, headY - TAIL - height);
+    int y = Math.max(SCREEN_MARGIN, headY - DialogUi.TAIL_HEIGHT - height);
 
-    WorldDialogHud.panel(graphics, x, y, width, height, INK, RIM, alpha);
+    DialogUi.textBox(graphics, x, y, width, height, alpha);
     int tailX = clamp(headX, x + 6, x + width - 6);
-    WorldDialogHud.tail(graphics, tailX, y + height, INK, RIM, alpha);
-    graphics.flush();
+    DialogUi.tail(graphics, tailX, y + height, alpha);
 
-    WorldDialogHud.text(graphics, font, name, x + PAD, y + PAD - 1, GOLD, alpha);
+    WorldDialogHud.textShadow(graphics, font, name, x + PAD, y + PAD - 2, DialogUi.GOLD, alpha);
     for (int line = 0; line < lines.size(); line++) {
-      WorldDialogHud.text(graphics, font, lines.get(line), x + PAD, y + PAD + 11 + line * LINE,
-          TEXT, alpha);
+      WorldDialogHud.text(graphics, font, lines.get(line), x + PAD, y + PAD + 9 + line * LINE,
+          DialogUi.TEXT, alpha);
     }
   }
 
   private static void renderFull(
-      GuiGraphics graphics, Font font, Minecraft minecraft, EasyNPC<?> easyNPC, int headX,
-      int headY, int screenWidth, int screenHeight, int crosshairX, int crosshairY, float alpha,
-      long now, float frameMs) {
-    // --- Layout -------------------------------------------------------------------------------
+      GuiGraphics graphics, Font font, Minecraft minecraft, EasyNPC<?> easyNPC, int rise,
+      int screenWidth, int screenHeight, int crosshairX, int crosshairY, float alpha, long now,
+      float frameMs) {
+    int panelWidth =
+        Math.max(PANEL_MIN_WIDTH, Math.min(PANEL_MAX_WIDTH, screenWidth - 2 * SCREEN_MARGIN - 16));
+    int innerWidth = panelWidth - 2 * DialogUi.PAD;
+    int textBoxPad = 5;
     List<FormattedCharSequence> lines =
-        font.split(Component.literal(dialogText(easyNPC, minecraft)), SPEECH_WIDTH - 2 * PAD);
-    int shownLines = Math.max(1, Math.min(SPEECH_LINES, lines.size()));
-    boolean footer = alternateAvailable;
-    int speechHeight = PAD + shownLines * LINE + PAD - 3 + (footer ? 17 : 0);
-
-    String name = WorldDialogHud.ellipsize(font, easyNPC.getLivingEntity().getName().getString(),
-        SPEECH_WIDTH - 30, false);
-    int tabWidth = font.width(name) + 12;
-    int tabHeight = 13;
+        DialogUi.split(font, dialogText(easyNPC, minecraft), innerWidth - 2 * textBoxPad);
+    textPageCount = Math.max(1, (lines.size() + FULL_TEXT_MAX_LINES - 1) / FULL_TEXT_MAX_LINES);
+    textPage = Math.max(0, Math.min(textPage, textPageCount - 1));
+    boolean moreTextPages = textPage < textPageCount - 1;
+    int lineStart = textPage * FULL_TEXT_MAX_LINES;
+    int lineEnd = Math.min(lines.size(), lineStart + FULL_TEXT_MAX_LINES);
+    int shownLines = Math.max(1, lineEnd - lineStart);
+    int textBoxHeight = 4 + shownLines * DialogUi.LINE + 4 + (textPageCount > 1 ? 8 : 0);
 
     List<ChoiceLayout> layouts = new ArrayList<>();
     int end = Math.min(choices.size(), choiceOffset + MAX_VISIBLE_CHOICES);
-    int columnHeight = 0;
-    for (int index = choiceOffset; index < end; index++) {
-      ChoiceView choice = choices.get(index);
-      Component label =
-          TextComponent.getTextComponentRaw(choice.entry().name(), choice.entry().isTranslationKey());
-      List<String> labelLines =
-          WorldDialogHud.wrap(font, label.getString(), CHOICE_WIDTH - 24, CHOICE_MAX_LINES);
-      int height = Math.max(16, 6 + labelLines.size() * LINE);
-      layouts.add(new ChoiceLayout(choice, index, labelLines, 0, columnHeight, height));
-      columnHeight += height + CHOICE_GAP;
+    int repliesHeight = 0;
+    if (!moreTextPages) {
+      for (int index = choiceOffset; index < end; index++) {
+        ChoiceView choice = choices.get(index);
+        Component label =
+            TextComponent.getTextComponentRaw(choice.entry().name(), choice.entry().isTranslationKey());
+        boolean merchant =
+            choice.entry().actionDataSet().hasActionDataType(ActionDataType.OPEN_TRADING_SCREEN);
+        int tagSpace = merchant ? 48 : 6;
+        List<String> labelLines =
+            DialogUi.wrap(font, label.getString(), innerWidth - DialogUi.LABEL_X - tagSpace, 4);
+        int rowH = DialogUi.rowHeight(labelLines.size());
+        layouts.add(new ChoiceLayout(choice, index, labelLines, merchant, 0, repliesHeight, rowH));
+        repliesHeight += rowH + DialogUi.ROW_GAP;
+      }
     }
     boolean hasChoices = !layouts.isEmpty();
-    int hintHeight = hasChoices ? 12 : 0;
-    if (hasChoices) columnHeight -= CHOICE_GAP;
+    if (hasChoices) {
+      repliesHeight -= DialogUi.ROW_GAP;
+    } else if (!moreTextPages) {
+      repliesHeight = 12;
+    }
 
-    int groupWidth = SPEECH_WIDTH + (hasChoices ? COLUMN_GAP + CHOICE_WIDTH : 0);
-    int speechX = headX - SPEECH_WIDTH / 2;
-    int shift = 0;
-    if (speechX + groupWidth > screenWidth - SCREEN_MARGIN) {
-      shift = screenWidth - SCREEN_MARGIN - (speechX + groupWidth);
-    }
-    if (speechX + shift < SCREEN_MARGIN) {
-      shift = SCREEN_MARGIN - speechX;
-    }
-    speechX += shift;
-    int speechY = headY - TAIL - speechHeight;
-    int minTop = SCREEN_MARGIN + tabHeight - 2;
-    speechY = Math.max(minTop, speechY);
-    int bottomLimit = screenHeight - SCREEN_MARGIN;
-    int tallest = Math.max(speechHeight, columnHeight + hintHeight);
-    if (speechY + tallest > bottomLimit) {
-      speechY = Math.max(minTop, bottomLimit - tallest);
-    }
-    int choiceX = speechX + SPEECH_WIDTH + COLUMN_GAP;
-    int choiceY = speechY;
+    int headerHeight = DialogUi.FACE_SIZE;
+    boolean hasOverflow = !moreTextPages && choices.size() > MAX_VISIBLE_CHOICES;
+    int footerHeight = hasOverflow ? 9 : 0;
+    int panelHeight =
+        DialogUi.PAD
+            + headerHeight
+            + 4
+            + textBoxHeight
+            + (repliesHeight > 0 ? 4 + repliesHeight : 0)
+            + (hasOverflow ? 2 + footerHeight : 0)
+            + DialogUi.PAD;
 
-    // --- Hover (hit test on the resting rectangles, so sliding never flickers) ------------------
+    int panelX = (screenWidth - panelWidth) / 2;
+    int maxBottom = screenHeight - PANEL_BOTTOM_CLEARANCE;
+    int panelY = Math.max(SCREEN_MARGIN, maxBottom - panelHeight) + rise;
+
+    int headerX = panelX + DialogUi.PAD;
+    int headerY = panelY + DialogUi.PAD;
+    int textBoxX = headerX;
+    int textBoxY = headerY + headerHeight + 4;
+    int repliesX = headerX;
+    int repliesY = textBoxY + textBoxHeight + 4;
+
     ChoiceLayout hovered = null;
     for (ChoiceLayout layout : layouts) {
-      int x = choiceX;
-      int y = choiceY + layout.y();
-      if (crosshairX >= x - 1 && crosshairX <= x + CHOICE_WIDTH + 1
+      int x = repliesX;
+      int y = repliesY + layout.y();
+      if (crosshairX >= x - 1 && crosshairX <= x + innerWidth + 1
           && crosshairY >= y - 1 && crosshairY <= y + layout.height() + 1) {
         hovered = layout;
         break;
       }
     }
+    if (hovered != null) {
+      selectedIndex = hovered.index();
+    }
+    selectedIndex = clampIndex(selectedIndex);
     aimedChoice = hovered != null ? hovered.choice() : null;
-    UUID aimedId = aimedChoice != null ? aimedChoice.entry().id() : null;
-    if (aimedId != null && !aimedId.equals(lastHoverId) && aimedChoice.active() && !pending
+
+    ChoiceView activeFocus =
+        hovered != null
+            ? hovered.choice()
+            : (!choices.isEmpty() ? choices.get(selectedIndex) : null);
+    UUID focusId = activeFocus != null ? activeFocus.entry().id() : null;
+    if (focusId != null && !focusId.equals(lastHoverId) && activeFocus.active() && !pending
         && now - lastHoverSoundMs > HOVER_SOUND_GAP_MS) {
       playSound(SoundEvents.NOTE_BLOCK_HAT.value(), 1.8F, 0.18F);
       lastHoverSoundMs = now;
     }
-    lastHoverId = aimedId;
+    lastHoverId = focusId;
 
-    // --- Speech panel ---------------------------------------------------------------------------
-    WorldDialogHud.panel(graphics, speechX, speechY, SPEECH_WIDTH, speechHeight, INK, RIM, alpha);
-    int tailX = clamp(headX, speechX + 8, speechX + SPEECH_WIDTH - 8);
-    if (headY > speechY + speechHeight) {
-      WorldDialogHud.tail(graphics, tailX, speechY + speechHeight, INK, RIM, alpha);
-    }
-    int tabX = speechX + 8;
-    int tabY = speechY - tabHeight + 2;
-    WorldDialogHud.panel(graphics, tabX, tabY, tabWidth, tabHeight, INK, RIM, alpha);
-    if (footer) {
-      int lineY = speechY + speechHeight - 20;
-      graphics.fill(speechX + PAD, lineY, speechX + SPEECH_WIDTH - PAD, lineY + 1,
-          WorldDialogHud.fade(RIM_INNER, alpha));
+    DialogUi.panel(graphics, panelX, panelY, panelWidth, panelHeight, alpha);
+    LivingEntity npcEntity = easyNPC.getLivingEntity();
+    DialogUi.face(graphics, npcEntity, headerX, headerY, alpha);
+
+    int alternateWidth = 0;
+    if (alternateAvailable) {
+      Component alt = alternateLabel();
+      alternateWidth = 18 + DialogUi.width(font, alt) + 4;
+      WorldDialogHud.prompt(
+          graphics,
+          font,
+          panelX + panelWidth - DialogUi.PAD - alternateWidth + 2,
+          headerY + 2,
+          alt,
+          now - promptClickAtMs < PROMPT_CLICK_MS,
+          false,
+          alpha);
     }
 
-    // --- Choices --------------------------------------------------------------------------------
+    String speakerName =
+        DialogUi.ellipsize(
+            font,
+            npcEntity.getName().getString(),
+            innerWidth - DialogUi.FACE_SIZE - 8 - alternateWidth,
+            false);
+    DialogUi.draw(
+        graphics,
+        font,
+        speakerName,
+        headerX + DialogUi.FACE_SIZE + 6,
+        headerY + 6,
+        DialogUi.GOLD,
+        alpha,
+        true);
+
+    DialogUi.textBox(graphics, textBoxX, textBoxY, innerWidth, textBoxHeight, alpha);
+    for (int line = 0; line < shownLines && (lineStart + line) < lines.size(); line++) {
+      FormattedCharSequence text = lines.get(lineStart + line);
+      int lineY = textBoxY + 4 + line * DialogUi.LINE;
+      DialogUi.draw(graphics, font, text, textBoxX + textBoxPad, lineY, DialogUi.TEXT, alpha);
+    }
+    if (textPageCount > 1) {
+      int pageY = textBoxY + textBoxHeight - 10;
+      String pageNum = (textPage + 1) + "/" + textPageCount;
+      DialogUi.draw(
+          graphics, font, pageNum, textBoxX + textBoxPad, pageY, DialogUi.DIM, alpha, false);
+      if (moreTextPages) {
+        int bounce = (now / 350L) % 2L == 0L ? 0 : 1;
+        DialogUi.draw(
+            graphics,
+            font,
+            "▸",
+            textBoxX + innerWidth - textBoxPad - 5 + bounce,
+            pageY,
+            DialogUi.GOLD,
+            alpha,
+            false);
+      }
+    }
+
+    if (moreTextPages) {
+      return;
+    }
+
+    if (!hasChoices) {
+      String endText = "— fim da conversa —";
+      DialogUi.draw(
+          graphics,
+          font,
+          endText,
+          panelX + (panelWidth - DialogUi.width(font, endText)) / 2,
+          repliesY + 2,
+          DialogUi.DIM,
+          alpha,
+          false);
+      return;
+    }
+
     float approach = Math.min(1.0F, frameMs / HOVER_RATE_MS);
     for (ChoiceLayout layout : layouts) {
       ChoiceView choice = layout.choice();
@@ -903,103 +1122,85 @@ public final class WorldDialogOverlay {
       boolean confirming = pressed && pending;
       boolean dimmed = pending && !pressed;
       boolean locked = !choice.active();
-      float target = id.equals(aimedId) && choice.active() && !pending ? 1.0F : 0.0F;
+      boolean isSelected = layout.index() == selectedIndex && !dimmed;
+      float target = isSelected && choice.active() && !pending ? 1.0F : 0.0F;
       float hover = hoverProgress.getOrDefault(id, 0.0F);
       hover += (target - hover) * approach;
       hoverProgress.put(id, hover);
       if (confirming) hover = 1.0F;
-      float flash =
-          pressed ? 1.0F - WorldDialogHud.clamp01((now - pressedAtMs) / (float) PRESS_FLASH_MS)
-              : 0.0F;
       float deny =
           id.equals(deniedId) ? 1.0F - WorldDialogHud.clamp01((now - deniedAtMs) / (float) DENY_MS)
               : 0.0F;
-      int shake = deny > 0.0F ? Math.round((float) Math.sin((now - deniedAtMs) / 18.0D) * 3.0F * deny)
-          : 0;
-      boolean merchant =
-          choice.entry().actionDataSet().hasActionDataType(ActionDataType.OPEN_TRADING_SCREEN);
-      boolean special = choice.entry().label().startsWith("pq_");
+      int shake =
+          deny > 0.0F ? Math.round((float) Math.sin((now - deniedAtMs) / 18.0D) * 3.0F * deny) : 0;
 
-      int x = choiceX + Math.round(2.0F * hover) + shake;
-      int y = choiceY + layout.y();
+      int x = repliesX + Math.round(2.0F * hover) + shake;
+      int y = repliesY + layout.y();
       int h = layout.height();
-      int fill = locked || dimmed ? INK_LOCKED : WorldDialogHud.lerp(INK_RAISED, INK_HOVER, hover);
-      fill = WorldDialogHud.lerp(fill, GOLD_DIM, 0.55F * flash * flash);
-      int idleRim = special || merchant ? GOLD_DIM : RIM_DIM;
-      int rim = locked || dimmed ? RIM_INNER : WorldDialogHud.lerp(idleRim, GOLD, hover);
-      if (confirming) rim = GOLD;
-      rim = WorldDialogHud.lerp(rim, DENY, deny);
-      WorldDialogHud.panel(graphics, x, y, CHOICE_WIDTH, h, fill, rim, alpha);
 
-      int box = locked || dimmed ? INK : WorldDialogHud.lerp(INK, GOLD, hover);
-      graphics.fill(x + 4, y + 3, x + 15, y + 13, WorldDialogHud.fade(box, alpha));
-    }
-    graphics.flush();
+      ReplyState state =
+          locked || dimmed
+              ? ReplyState.LOCKED
+              : pressed
+                  ? ReplyState.PRESSED
+                  : isSelected
+                      ? ReplyState.HOVER
+                      : ReplyState.IDLE;
+      int stripe =
+          deny > 0.0F
+              ? WorldDialogHud.lerp(DialogUi.segment(layout.index()), DialogUi.DENY, deny)
+              : DialogUi.segment(layout.index());
+      DialogUi.reply(graphics, x, y, innerWidth, h, state, stripe, alpha);
 
-    // --- Text on top ----------------------------------------------------------------------------
-    WorldDialogHud.text(graphics, font, name, tabX + 6, tabY + 3, GOLD, alpha);
-    for (int line = 0; line < shownLines; line++) {
-      FormattedCharSequence text = lines.get(line);
-      if (line == shownLines - 1 && lines.size() > shownLines) {
-        WorldDialogHud.text(graphics, font, text, speechX + PAD, speechY + PAD + line * LINE, TEXT,
-            alpha);
-        WorldDialogHud.text(graphics, font, "…", speechX + SPEECH_WIDTH - PAD - 8,
-            speechY + PAD + line * LINE, MUTED, alpha);
-      } else {
-        WorldDialogHud.text(graphics, font, text, speechX + PAD, speechY + PAD + line * LINE, TEXT,
-            alpha);
-      }
-    }
-    if (footer) {
-      Component hint =
-          Component.translatable("easy_npc.world_dialog.switch_hint", alternateLabel());
-      WorldDialogHud.prompt(graphics, font, speechX + PAD - 2, speechY + speechHeight - 18, hint,
-          now - promptClickAtMs < PROMPT_CLICK_MS, false, alpha);
-    }
-
-    for (ChoiceLayout layout : layouts) {
-      ChoiceView choice = layout.choice();
-      UUID id = choice.entry().id();
-      boolean pressed = id.equals(pressedId);
-      boolean usable = choice.active() && !(pending && !pressed);
-      float hover = pressed && pending ? 1.0F : hoverProgress.getOrDefault(id, 0.0F);
-      float deny =
-          id.equals(deniedId) ? 1.0F - WorldDialogHud.clamp01((now - deniedAtMs) / (float) DENY_MS)
-              : 0.0F;
-      int shake = deny > 0.0F ? Math.round((float) Math.sin((now - deniedAtMs) / 18.0D) * 3.0F * deny)
-          : 0;
-      int x = choiceX + Math.round(2.0F * hover) + shake;
-      int y = choiceY + layout.y();
-
+      boolean usable = !locked && !dimmed;
       String number = Integer.toString(layout.index() + 1);
-      int numberColor = !usable ? MUTED : hover > 0.5F ? INK : GOLD;
-      WorldDialogHud.text(graphics, font, number, x + 10 - font.width(number) / 2, y + 4,
-          numberColor, alpha);
-      int labelColor = usable ? WorldDialogHud.lerp(TEXT, TEXT_BRIGHT, hover) : MUTED;
+      DialogUi.keycap(graphics, font, x + 5, y + 2, number, isSelected && usable, usable, alpha);
+
+      int labelColor =
+          !usable
+              ? DialogUi.DIM
+              : isSelected
+                  ? DialogUi.GOLD
+                  : DialogUi.TEXT;
       for (int line = 0; line < layout.lines().size(); line++) {
-        WorldDialogHud.text(graphics, font, layout.lines().get(line), x + 19, y + 4 + line * LINE,
-            labelColor, alpha);
+        String prefix = line == 0 ? "▸ " : "  ";
+        DialogUi.draw(
+            graphics,
+            font,
+            prefix + layout.lines().get(line),
+            x + DialogUi.LABEL_X,
+            y + 3 + line * DialogUi.LINE,
+            labelColor,
+            alpha,
+            false);
+      }
+
+      if (layout.merchant()) {
+        String tag = "comércio";
+        DialogUi.draw(
+            graphics,
+            font,
+            tag,
+            x + innerWidth - DialogUi.width(font, tag) - 5,
+            y + 3,
+            DialogUi.DIM,
+            alpha,
+            false);
       }
     }
 
-    if (hasChoices) {
-      int centerX = choiceX + CHOICE_WIDTH / 2;
-      if (choiceOffset > 0) {
-        WorldDialogHud.text(graphics, font, "▲", centerX - font.width("▲") / 2, choiceY - 9, GOLD,
-            alpha);
-      }
-      int hintY = choiceY + columnHeight + 3;
-      if (end < choices.size()) {
-        WorldDialogHud.text(graphics, font, "▼", centerX - font.width("▼") / 2, hintY, GOLD, alpha);
-        hintY += 9;
-      }
-      int keyCount = Math.min(9, choices.size());
-      Component keys =
-          keyCount == 1
-              ? Component.translatable("easy_npc.world_dialog.choose_hint_one")
-              : Component.translatable("easy_npc.world_dialog.choose_hint", keyCount);
-      WorldDialogHud.text(graphics, font, keys.getVisualOrderText(), choiceX + 2, hintY + 1, MUTED,
-          alpha);
+    if (hasOverflow) {
+      int footerY = repliesY + repliesHeight + 2;
+      String arrows = (choiceOffset > 0 ? "▲" : "") + (choiceOffset > 0 && end < choices.size() ? " " : "") + (end < choices.size() ? "▼" : "");
+      DialogUi.draw(
+          graphics,
+          font,
+          arrows,
+          panelX + (panelWidth - DialogUi.width(font, arrows)) / 2,
+          footerY,
+          DialogUi.GOLD,
+          alpha,
+          false);
     }
   }
 
@@ -1027,8 +1228,6 @@ public final class WorldDialogOverlay {
   }
 
   private static String dialogText(EasyNPC<?> easyNPC, Minecraft minecraft) {
-    // Dialogs with several texts pick one at random on every getDialogText call; this runs every
-    // frame, so keep the pick for as long as the same dialog is shown instead of flickering.
     if (dialog == cachedTextDialog && easyNPC.getEntityUUID().equals(cachedTextNpc)) {
       return cachedText;
     }
@@ -1074,5 +1273,11 @@ public final class WorldDialogOverlay {
   private record ChoiceView(DialogButtonEntry entry, boolean active) {}
 
   private record ChoiceLayout(
-      ChoiceView choice, int index, List<String> lines, int x, int y, int height) {}
+      ChoiceView choice,
+      int index,
+      List<String> lines,
+      boolean merchant,
+      int x,
+      int y,
+      int height) {}
 }

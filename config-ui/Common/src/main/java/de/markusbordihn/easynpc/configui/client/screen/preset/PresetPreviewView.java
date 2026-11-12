@@ -19,9 +19,9 @@
 
 package de.markusbordihn.easynpc.configui.client.screen.preset;
 
+import de.markusbordihn.easynpc.client.screen.components.ConfigUi;
 import de.markusbordihn.easynpc.client.screen.components.Text;
 import de.markusbordihn.easynpc.configui.client.renderer.screen.EntityConfigScreenRenderer;
-import de.markusbordihn.easynpc.configui.client.screen.components.DrawBoxWithBorder;
 import de.markusbordihn.easynpc.data.render.EntityRenderConfig;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import de.markusbordihn.easynpc.network.components.TextComponent;
@@ -43,7 +43,7 @@ public class PresetPreviewView {
       int previewY,
       int mouseX,
       int mouseY) {
-    DrawBoxWithBorder.draw(guiGraphics, x, y, width, height);
+    ConfigUi.drawEntityStage(guiGraphics, x, y, width, height, true);
     if (npc != null) {
       EntityConfigScreenRenderer.renderEntity(
           guiGraphics,
@@ -58,7 +58,7 @@ public class PresetPreviewView {
           TextComponent.getTranslatedConfigText("preset_browser.preview.unavailable"),
           x + 10,
           previewY,
-          0x3F3F3F);
+          ConfigUi.MUTED);
     }
   }
 }

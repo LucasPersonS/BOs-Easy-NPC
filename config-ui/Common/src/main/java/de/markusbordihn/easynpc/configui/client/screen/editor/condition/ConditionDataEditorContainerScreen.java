@@ -58,10 +58,14 @@ public class ConditionDataEditorContainerScreen<T extends EditorMenu> extends Ed
   private static final int ADD_BUTTON_X_OFFSET = 7;
   private static final int ADD_BUTTON_WIDTH = 300;
 
-  private static final int COLOR_LIST_BACKGROUND = 0xffeeeeee;
-  private static final int COLOR_HEADER_BACKGROUND = 0xffaaaaaa;
-  private static final int COLOR_FOOTER_BACKGROUND = 0xffc6c6c6;
-  private static final int COLOR_SEPARATOR = 0xff666666;
+  private static final int COLOR_LIST_BACKGROUND =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.TEXT_FILL;
+  private static final int COLOR_HEADER_BACKGROUND =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.STONE;
+  private static final int COLOR_FOOTER_BACKGROUND =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_FILL;
+  private static final int COLOR_SEPARATOR =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.PANEL_IN;
 
   private final ConditionDataSet conditionDataSet;
   private final ConditionEditorContext context;
@@ -179,12 +183,13 @@ public class ConditionDataEditorContainerScreen<T extends EditorMenu> extends Ed
   public void render(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
     super.render(guiGraphics, x, y, partialTicks);
 
-    guiGraphics.fill(
+    int listWidth = LIST_TOTAL_WIDTH - LIST_X_OFFSET;
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawTableBody(
+        guiGraphics,
         this.leftPos + LIST_X_OFFSET,
         this.topPos + HEADER_Y_OFFSET + 5,
-        this.leftPos + LIST_TOTAL_WIDTH,
-        this.topPos + LIST_Y_END,
-        COLOR_LIST_BACKGROUND);
+        listWidth,
+        LIST_Y_END - (HEADER_Y_OFFSET + 5));
 
     if (this.conditionDataList != null) {
       this.conditionDataList.render(guiGraphics, x, y, partialTicks);
@@ -202,20 +207,21 @@ public class ConditionDataEditorContainerScreen<T extends EditorMenu> extends Ed
         this.font,
         "condition.info.and_logic",
         this.leftPos + LIST_X_OFFSET + 5,
-        this.topPos + LIST_Y_END + 5,
-        Constants.FONT_COLOR_DARK_RED);
+        this.topPos + LIST_Y_END + 4,
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
   }
 
   private void renderHeader(GuiGraphics guiGraphics) {
-    guiGraphics.fill(
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawTableHeader(
+        guiGraphics,
         this.leftPos + LIST_X_OFFSET,
         this.topPos + HEADER_Y_OFFSET,
-        this.leftPos + LIST_TOTAL_WIDTH,
-        this.topPos + HEADER_Y_OFFSET + HEADER_HEIGHT,
-        COLOR_HEADER_BACKGROUND);
+        LIST_TOTAL_WIDTH - LIST_X_OFFSET,
+        HEADER_HEIGHT);
 
     int headerLeft = this.leftPos + 10;
     int headerTop = this.topPos + HEADER_Y_OFFSET + 5;
+    int gold = de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD;
 
     Text.drawString(
         guiGraphics,
@@ -223,56 +229,56 @@ public class ConditionDataEditorContainerScreen<T extends EditorMenu> extends Ed
         "ID",
         headerLeft + ConditionDataListEntry.ID_LEFT_POS,
         headerTop,
-        Constants.FONT_COLOR_BLACK);
+        gold);
     Text.drawConfigString(
         guiGraphics,
         this.font,
         "type",
         headerLeft + ConditionDataListEntry.TYPE_LEFT_POS,
         headerTop,
-        Constants.FONT_COLOR_BLACK);
+        gold);
     Text.drawConfigString(
         guiGraphics,
         this.font,
         "value",
         headerLeft + ConditionDataListEntry.VALUE_LEFT_POS,
         headerTop,
-        Constants.FONT_COLOR_BLACK);
+        gold);
     Text.drawString(
         guiGraphics,
         this.font,
         "Action",
         headerLeft + ConditionDataListEntry.OPTIONS_LEFT_POS,
         headerTop,
-        Constants.FONT_COLOR_BLACK);
+        gold);
 
-    int separatorTop = headerTop - 5;
+    int separatorTop = headerTop - 3;
     guiGraphics.fill(
         headerLeft + ConditionDataListEntry.TYPE_LEFT_POS - 3,
         separatorTop,
         headerLeft + ConditionDataListEntry.TYPE_LEFT_POS - 2,
-        separatorTop + HEADER_HEIGHT,
+        separatorTop + HEADER_HEIGHT - 4,
         COLOR_SEPARATOR);
     guiGraphics.fill(
         headerLeft + ConditionDataListEntry.VALUE_LEFT_POS - 3,
         separatorTop,
         headerLeft + ConditionDataListEntry.VALUE_LEFT_POS - 2,
-        separatorTop + HEADER_HEIGHT,
+        separatorTop + HEADER_HEIGHT - 4,
         COLOR_SEPARATOR);
     guiGraphics.fill(
         headerLeft + ConditionDataListEntry.OPTIONS_LEFT_POS - 3,
         separatorTop,
         headerLeft + ConditionDataListEntry.OPTIONS_LEFT_POS - 2,
-        separatorTop + HEADER_HEIGHT,
+        separatorTop + HEADER_HEIGHT - 4,
         COLOR_SEPARATOR);
   }
 
   private void renderFooter(GuiGraphics guiGraphics) {
-    guiGraphics.fill(
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawTableFooter(
+        guiGraphics,
         this.leftPos + LIST_X_OFFSET,
         this.topPos + LIST_Y_END,
-        this.leftPos + LIST_TOTAL_WIDTH,
-        this.topPos + LIST_Y_END + FOOTER_HEIGHT,
-        COLOR_FOOTER_BACKGROUND);
+        LIST_TOTAL_WIDTH - LIST_X_OFFSET,
+        FOOTER_HEIGHT);
   }
 }

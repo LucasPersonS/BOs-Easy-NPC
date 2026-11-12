@@ -60,30 +60,7 @@ public interface ScreenInterface
   @Override
   default void renderDefaultScreenBg(
       GuiGraphics guiGraphics, int leftPos, int topPos, boolean compactMode) {
-    if (compactMode) {
-      Graphics.blit(
-          guiGraphics,
-          Constants.TEXTURE_CONFIG_SCREEN_BACKGROUND,
-          leftPos,
-          topPos,
-          1,
-          17,
-          333,
-          247,
-          512,
-          512);
-    } else {
-      Graphics.blit(
-          guiGraphics,
-          Constants.TEXTURE_CONFIG_SCREEN_BACKGROUND,
-          leftPos,
-          topPos - 16,
-          1,
-          1,
-          333,
-          263,
-          512,
-          512);
-    }
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawWindow(
+        guiGraphics, leftPos, topPos, 328, 243, compactMode);
   }
 }

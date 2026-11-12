@@ -19,9 +19,8 @@
 
 package de.markusbordihn.easynpc.configui.client.screen.configuration.position;
 
-import de.markusbordihn.easynpc.client.screen.components.Graphics;
+import de.markusbordihn.easynpc.client.screen.components.ConfigUi;
 import de.markusbordihn.easynpc.client.screen.components.TextButton;
-import de.markusbordihn.easynpc.configui.Constants;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.ConfigurationScreen;
 import de.markusbordihn.easynpc.configui.menu.configuration.ConfigurationMenu;
 import de.markusbordihn.easynpc.configui.network.NetworkMessageHandlerManager;
@@ -65,30 +64,7 @@ public class PositionConfigurationScreen<T extends ConfigurationMenu>
   @Override
   public void renderDefaultScreenBg(
       GuiGraphics guiGraphics, int leftPos, int topPos, boolean compactMode) {
-    int topSliceHeight = BACKGROUND_HEIGHT / 2;
-    int bottomSliceHeight = BACKGROUND_HEIGHT - topSliceHeight;
-    Graphics.blit(
-        guiGraphics,
-        Constants.TEXTURE_CONFIG_SCREEN_BACKGROUND_SMALL,
-        leftPos,
-        topPos,
-        1,
-        1,
-        BACKGROUND_WIDTH,
-        topSliceHeight,
-        512,
-        256);
-    Graphics.blit(
-        guiGraphics,
-        Constants.TEXTURE_CONFIG_SCREEN_BACKGROUND_SMALL,
-        leftPos,
-        topPos + topSliceHeight,
-        1,
-        1 + BACKGROUND_TEXTURE_HEIGHT - bottomSliceHeight,
-        BACKGROUND_WIDTH,
-        bottomSliceHeight,
-        512,
-        256);
+    ConfigUi.drawSmallWindow(guiGraphics, leftPos, topPos, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
   }
 
   @Override

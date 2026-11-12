@@ -28,9 +28,11 @@ import net.minecraft.world.item.ItemStack;
 public class ItemToggleButton extends CustomButton {
 
   public static final int SIZE = 20;
-  private static final int SELECTED_BORDER_COLOR = 0xFF55FF55;
-  private static final int HOVERED_BORDER_COLOR = 0xFFFFFFFF;
-  private static final int UNSELECTED_OVERLAY_COLOR = 0x50000000;
+  private static final int SELECTED_BORDER_COLOR =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD;
+  private static final int HOVERED_BORDER_COLOR =
+      de.markusbordihn.easynpc.client.screen.components.ConfigUi.TEXT_BRIGHT;
+  private static final int UNSELECTED_OVERLAY_COLOR = 0x55000000;
   private static final float OVERLAY_DEPTH = 200.0F;
 
   private final ItemStack itemStack;

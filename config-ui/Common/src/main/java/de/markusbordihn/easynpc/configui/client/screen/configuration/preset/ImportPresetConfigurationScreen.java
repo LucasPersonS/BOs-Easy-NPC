@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc.configui.client.screen.configuration.preset;
 
 import de.markusbordihn.easynpc.client.screen.Screen;
+import de.markusbordihn.easynpc.client.screen.components.ConfigUi;
 import de.markusbordihn.easynpc.client.screen.components.Text;
 import de.markusbordihn.easynpc.client.screen.components.TextButton;
 import de.markusbordihn.easynpc.configui.Constants;
@@ -213,16 +214,14 @@ public class ImportPresetConfigurationScreen<T extends ConfigurationMenu>
     super.renderBg(guiGraphics, partialTicks, mouseX, mouseY);
 
     int fileListTop = this.topPos + 55;
-    int fileListHeight = fileListTop + 110;
     int fileListWidth = this.leftPos + 290;
 
-    guiGraphics.fill(
+    ConfigUi.drawTableBody(
+        guiGraphics,
         this.contentLeftPos - 1,
         fileListTop - 1,
-        fileListWidth + 1,
-        fileListHeight + 1,
-        0xff000000);
-    guiGraphics.fill(this.contentLeftPos, fileListTop, fileListWidth, fileListHeight, 0xffaaaaaa);
+        fileListWidth - this.contentLeftPos + 2,
+        112);
   }
 
   class ImportFileSelectionList extends ObjectSelectionList<ImportFileSelectionList.Entry> {
@@ -319,18 +318,12 @@ public class ImportPresetConfigurationScreen<T extends ConfigurationMenu>
 
         int fileListTop = ImportPresetConfigurationScreen.this.topPos + 55;
         int fileListWidth = ImportPresetConfigurationScreen.this.leftPos + 290;
-        guiGraphics.fill(
+        ConfigUi.drawTableHeader(
+            guiGraphics,
             ImportPresetConfigurationScreen.this.contentLeftPos - 1,
             fileListTop - 4,
-            fileListWidth + 1,
-            fileListTop + 12,
-            0xff000000);
-        guiGraphics.fill(
-            ImportPresetConfigurationScreen.this.contentLeftPos,
-            fileListTop - 3,
-            fileListWidth,
-            fileListTop + 11,
-            0xff888888);
+            fileListWidth - ImportPresetConfigurationScreen.this.contentLeftPos + 2,
+            16);
         Text.drawConfigStringShadowWithData(
             guiGraphics,
             ImportPresetConfigurationScreen.this.font,
@@ -338,7 +331,7 @@ public class ImportPresetConfigurationScreen<T extends ConfigurationMenu>
             this.skinModel.getName(),
             ImportPresetConfigurationScreen.this.contentLeftPos + 3,
             fileListTop,
-            Constants.FONT_COLOR_WHITE);
+            ConfigUi.GOLD);
 
         Text.drawStringShadow(
             guiGraphics,

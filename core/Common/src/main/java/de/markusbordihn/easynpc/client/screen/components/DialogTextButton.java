@@ -38,6 +38,7 @@ public class DialogTextButton extends TextButton {
       int left, int top, int width, Component label, boolean hasCondition, OnPress onPress) {
     super(left, top, width, label, onPress);
     this.rightPadding = hasCondition ? LOCK_RESERVE : TEXT_PADDING;
+    this.setAccentColor(ConfigUi.GOLD);
   }
 
   public boolean isTextTruncated() {
@@ -58,7 +59,7 @@ public class DialogTextButton extends TextButton {
     }
 
     int color =
-        (this.active ? Constants.FONT_COLOR_WHITE : Constants.FONT_COLOR_LIGHT_GRAY)
+        (this.getButtonTextColor() & 0x00FFFFFF)
             | Mth.ceil(this.alpha * 255.0F) << 24;
     int textTop = this.getY() + (this.height - 8) / 2;
     int areaLeft = this.getX() + TEXT_PADDING;

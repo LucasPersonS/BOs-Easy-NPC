@@ -174,13 +174,15 @@ public class MainConfigurationScreen<T extends ConfigurationMenu> extends Config
         this.font,
         "UUID: " + this.getEasyNPCEntity().getUUID(),
         Math.round((this.contentLeftPos + 1) / ENTITY_TEXT_SCALE),
-        Math.round((this.buttonTopPos + 1) / ENTITY_TEXT_SCALE));
+        Math.round((this.buttonTopPos + 1) / ENTITY_TEXT_SCALE),
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.DIM);
     Text.drawString(
         guiGraphics,
         this.font,
         this.getEasyNPCEntity().getType().getDescription(),
-        Math.round((this.contentLeftPos + 3) / ENTITY_TEXT_SCALE),
-        Math.round((this.avatarTopPos + 4) / ENTITY_TEXT_SCALE));
+        Math.round((this.contentLeftPos + 5) / ENTITY_TEXT_SCALE),
+        Math.round((this.avatarTopPos + 4) / ENTITY_TEXT_SCALE),
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
 
     // Make sure that entity text is always on top
     guiGraphics.pose().translate(0, 0, 100);
@@ -281,31 +283,26 @@ public class MainConfigurationScreen<T extends ConfigurationMenu> extends Config
   protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
     super.renderBg(guiGraphics, partialTicks, mouseX, mouseY);
 
+    // Entity type badge plaque & 3D entity stage
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawCard(
+        guiGraphics, this.contentLeftPos, this.avatarTopPos, 110, 14);
     guiGraphics.fill(
+        this.contentLeftPos + 2,
+        this.avatarTopPos + 3,
+        this.contentLeftPos + 4,
+        this.avatarTopPos + 11,
+        de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawEntityStage(
+        guiGraphics,
         this.contentLeftPos,
-        this.avatarTopPos,
-        this.leftPos + 117,
-        this.avatarTopPos + 135,
-        0xff000000);
-    guiGraphics.fill(
-        this.leftPos + 8,
-        this.avatarTopPos + 1,
-        this.leftPos + 116,
-        this.avatarTopPos + 134,
-        0xffffffff);
-
-    guiGraphics.fill(
-        this.contentLeftPos,
-        this.avatarTopPos + 12,
-        this.leftPos + 117,
-        this.avatarTopPos + this.avatarHeight,
-        0xff000000);
-    guiGraphics.fill(
-        this.leftPos + 8,
         this.avatarTopPos + 13,
-        this.leftPos + 116,
-        this.avatarTopPos + this.avatarHeight,
-        0xffaaaaaa);
+        110,
+        this.avatarHeight - 13,
+        true);
+
+    // Identity & Preset controls inset on the right
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawInset(
+        guiGraphics, this.contentLeftPos + 113, this.contentTopPos - 1, 204, 56);
   }
 
   private void openConfiguration(ConfigurationType configurationType) {
@@ -462,6 +459,10 @@ public class MainConfigurationScreen<T extends ConfigurationMenu> extends Config
                           case CUSTOM -> ConfigurationType.CUSTOM_SKIN;
                           default -> ConfigurationType.DEFAULT_SKIN;
                         })));
+    if (editSkinButton
+        instanceof de.markusbordihn.easynpc.client.screen.components.CustomButton customBtn) {
+      customBtn.setAccentColor(de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD);
+    }
     editSkinButton.active = this.supportsConfigurationType(ConfigurationType.SKIN);
   }
 
@@ -491,6 +492,10 @@ public class MainConfigurationScreen<T extends ConfigurationMenu> extends Config
                     this.openConfiguration(ConfigurationType.DEFAULT_MODEL);
                   }
                 }));
+    if (changeModelButton
+        instanceof de.markusbordihn.easynpc.client.screen.components.CustomButton customBtn) {
+      customBtn.setAccentColor(de.markusbordihn.easynpc.client.screen.components.ConfigUi.PURPLE);
+    }
     changeModelButton.active =
         this.supportsConfigurationType(ConfigurationType.CUSTOM_MODEL)
             || this.supportsConfigurationType(ConfigurationType.COBBLEMON_MODEL)
@@ -500,6 +505,22 @@ public class MainConfigurationScreen<T extends ConfigurationMenu> extends Config
           Tooltip.create(
               TextComponent.getTranslatedConfigText("change_model.tooltip.only_doppler")));
     }
+  }
+
+  private static int getMenuAccentColor(String buttonName) {
+    return switch (buttonName) {
+      case "dialog" -> de.markusbordihn.easynpc.client.screen.components.ConfigUi.GOLD;
+      case "actions" -> de.markusbordihn.easynpc.client.screen.components.ConfigUi.PURPLE;
+      case "equipment", "inventory" ->
+          de.markusbordihn.easynpc.client.screen.components.ConfigUi.BLUE;
+      case "trading", "attributes" ->
+          de.markusbordihn.easynpc.client.screen.components.ConfigUi.GREEN;
+      case "objective" -> de.markusbordihn.easynpc.client.screen.components.ConfigUi.ORANGE;
+      case "pose", "position", "rotation" ->
+          de.markusbordihn.easynpc.client.screen.components.ConfigUi.CYAN;
+      case "scaling" -> de.markusbordihn.easynpc.client.screen.components.ConfigUi.SEGMENTS[5];
+      default -> de.markusbordihn.easynpc.client.screen.components.ConfigUi.SEGMENTS[6];
+    };
   }
 
   protected void defineMenuButtons() {
@@ -543,6 +564,10 @@ public class MainConfigurationScreen<T extends ConfigurationMenu> extends Config
           button.setTooltip(
               Tooltip.create(TextComponent.getTranslatedConfigText("menu.tooltip.no_permission")));
         }
+      }
+      if (button
+          instanceof de.markusbordihn.easynpc.client.screen.components.CustomButton customBtn) {
+        customBtn.setAccentColor(getMenuAccentColor(buttonName));
       }
 
       buttonIndex++;

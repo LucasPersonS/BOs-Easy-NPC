@@ -271,8 +271,8 @@ public class DefaultPoseConfigurationScreen<T extends ConfigurationMenu>
           indicator,
           this.contentLeftPos + 175,
           this.contentTopPos + 182,
-          0xAAAAAA,
-          false);
+          de.markusbordihn.easynpc.client.screen.components.ConfigUi.DIM,
+          true);
     }
   }
 
@@ -280,31 +280,10 @@ public class DefaultPoseConfigurationScreen<T extends ConfigurationMenu>
   protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
     super.renderBg(guiGraphics, partialTicks, mouseX, mouseY);
 
-    guiGraphics.fill(
-        this.contentLeftPos,
-        this.contentTopPos,
-        this.contentLeftPos + 154,
-        this.contentTopPos + 207,
-        0xff000000);
-    guiGraphics.fill(
-        this.contentLeftPos + 1,
-        this.contentTopPos + 1,
-        this.contentLeftPos + 153,
-        this.contentTopPos + 206,
-        0xffaaaaaa);
-
-    guiGraphics.fill(
-        this.contentLeftPos + 1,
-        this.contentTopPos + 145,
-        this.contentLeftPos + 153,
-        this.contentTopPos + 206,
-        0xaa888888);
-    guiGraphics.fill(
-        this.contentLeftPos + 1,
-        this.contentTopPos + 145,
-        this.contentLeftPos + 153,
-        this.contentTopPos + 150,
-        0xaa888888);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawEntityStage(
+        guiGraphics, this.contentLeftPos, this.contentTopPos, 154, 145, true);
+    de.markusbordihn.easynpc.client.screen.components.ConfigUi.drawInset(
+        guiGraphics, this.contentLeftPos, this.contentTopPos + 145, 154, 62);
 
     Text.drawConfigString(
         guiGraphics, this.font, "animation", this.contentLeftPos + 46, this.contentTopPos + 179);
